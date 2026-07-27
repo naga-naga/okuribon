@@ -1,0 +1,54 @@
+{
+  "permissions": {
+    "defaultMode": "acceptEdits",
+
+    "allow": [
+      "Bash(bin/rails:*)",
+      "Bash(bin/rake:*)",
+      "Bash(bin/setup:*)",
+      "Bash(bundle install)",
+      "Bash(bundle add:*)",
+      "Bash(bundle exec rspec:*)",
+      "Bash(bundle exec rubocop:*)",
+      "Bash(rspec:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git switch:*)",
+      "Bash(git branch:*)",
+      "Bash(git stash:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(rg:*)",
+      "Bash(grep:*)",
+      "Bash(find:*)",
+      "Bash(mkdir:*)",
+      "Bash(psql:*)"
+    ],
+
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(gh:*)",
+      "Bash(kamal:*)",
+      "Bash(sudo:*)",
+      "Bash(bin/rails db:drop:*)",
+      "Bash(bin/rails db:reset:*)",
+      "Bash(curl:*)",
+      "Bash(wget:*)"
+    ],
+
+    "deny": [
+      "Bash(rm -rf:*)",
+      "Read(./config/master.key)",
+      "Read(./config/credentials/*.key)",
+      "Read(./.env)",
+      "Read(./.env.*)"
+    ]
+  }
+}

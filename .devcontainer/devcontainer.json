@@ -11,7 +11,9 @@
   },
 
   "mounts": [
-    "source=claude-config-${devcontainerId},target=/home/vscode/.claude,type=volume"
+    "source=claude-config-${devcontainerId},target=/home/vscode/.claude,type=volume",
+    "source=${localEnv:HOME}/.claude/CLAUDE.md,target=/home/vscode/.claude/CLAUDE.md,type=bind",
+    "source=${localEnv:HOME}/.claude/output-styles,target=/home/vscode/.claude/output-styles,type=bind"
   ],
 
   "containerEnv": {

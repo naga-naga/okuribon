@@ -1,0 +1,40 @@
+name: okuribon
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ..:/workspaces/okuribon:cached
+      - bundle:/bundle
+    # devcontainer 側がプロセスを管理するので、居座るだけでよい
+    command: sleep infinity
+    environment:
+      # database.yml の database: が優先されるので、
+      # 接続先だけをここで与えれば開発・テスト両方に効く
+      DATABASE_URL: postgres://postgres:postgres@db:5432
+      # rails server の既定バインドアドレス
+      BINDING: 0.0.0.0
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:17-bookworm
+    restart: unless-stopped
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres:
+  bundle:

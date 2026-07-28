@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "set"
-
 module Matching
   Book = Struct.new(:id, :owner_id, keyword_init: true)
 
@@ -15,13 +13,13 @@ module Matching
 
   # スネークドラフト方式で、誰がどの本を受け取るかを決める。
   #
-  # ActiveRecord に依存しない純粋な処理として書いてある。
+  # レコードに依存せず、識別子だけで完結する処理として書いてある。
   # 呼び出し側でレコードを Book 構造体へ詰め替え、戻り値を保存すること。
   #
   #   Matching::Engine.new(
-  #     participants: %w[alice bob],
-  #     books:        [Matching::Book.new(id: 1, owner_id: "alice")],
-  #     wishes:       { "bob" => [1] },
+  #     participants: ['alice', 'bob'],
+  #     books:        [Matching::Book.new(id: 1, owner_id: 'alice')],
+  #     wishes:       { 'bob' => [1] },
   #     seed:         exchange.random_seed
   #   ).call
   class Engine
@@ -39,9 +37,9 @@ module Matching
     # @return [Result]
     def call
       @rng = Random.new(@seed)
-      @owner_of = @books.to_h { |book| [ book.id, book.owner_id ] }
+      @owner_of = @books.to_h { |book| [book.id, book.owner_id] }
       @quotas = build_quotas
-      @taken = @participants.to_h { |participant| [ participant, 0 ] }
+      @taken = @participants.index_with(0)
       @assigned_book_ids = Set.new
       @assignments = []
 
@@ -56,7 +54,7 @@ module Matching
 
     # 取得枠は登録冊数と同数
     def build_quotas
-      quotas = @participants.to_h { |participant| [ participant, 0 ] }
+      quotas = @participants.index_with(0)
       @books.each { |book| quotas[book.owner_id] = quotas.fetch(book.owner_id, 0) + 1 }
       quotas
     end
@@ -102,7 +100,7 @@ module Matching
     # 希望リストの上位から、まだ残っていて自分の本でないものを1冊
     def pick_for(participant)
       @wishes.fetch(participant, []).find do |book_id|
-        !@assigned_book_ids.include?(book_id) &&
+        @assigned_book_ids.exclude?(book_id) &&
           @owner_of.key?(book_id) &&
           @owner_of[book_id] != participant
       end
@@ -118,7 +116,7 @@ module Matching
       @slot_order = shuffle((0...@slots.size).to_a)
       @slot_to_book = Array.new(@slots.size, nil)
 
-      @remaining.each_index { |book_index| try_assign(book_index, Set.new) }
+      @remaining.each_index { |book_index| try_assign?(book_index, Set.new) }
 
       matched = Set.new
       @slot_to_book.each_with_index do |book_index, slot_index|
@@ -144,14 +142,14 @@ module Matching
 
     # 増加路探索。行き先が塞がっていたら、
     # すでに割り当てた本を別の枠へ押しやれないかを遡って調べる
-    def try_assign(book_index, visited)
+    def try_assign?(book_index, visited)
       @slot_order.each do |slot_index|
         next if @slots[slot_index] == @remaining[book_index].owner_id
         next if visited.include?(slot_index)
 
         visited << slot_index
 
-        if @slot_to_book[slot_index].nil? || try_assign(@slot_to_book[slot_index], visited)
+        if @slot_to_book[slot_index].nil? || try_assign?(@slot_to_book[slot_index], visited)
           @slot_to_book[slot_index] = book_index
           return true
         end

@@ -1,8 +1,64 @@
-# Omakase Ruby styling for Rails
-inherit_gem: { rubocop-rails-omakase: rubocop.yml }
+# RuboCop の標準設定を出発点にする。
+# 好みに合わない cop が出てきたら、その都度ここへ書き足す。
 
-# Overwrite or add rules to create your own house style
-#
-# # Use `[a, [b, c]]` not `[ a, [ b, c ] ]`
-# Layout/SpaceInsideArrayLiteralBrackets:
-#   Enabled: false
+plugins:
+  - rubocop-rails
+  - rubocop-performance
+  - rubocop-rspec
+  - rubocop-rspec_rails
+  - rubocop-factory_bot
+
+AllCops:
+  NewCops: enable
+  Exclude:
+    - "bin/**/*"
+    - "db/schema.rb"
+    - "db/*_schema.rb"
+    - "node_modules/**/*"
+    - "storage/**/*"
+    - "tmp/**/*"
+    - "vendor/**/*"
+
+# --- 記法の好み ---
+
+# %i[] %w[] は使わず、素直に [] で書く
+Style/SymbolArray:
+  EnforcedStyle: brackets
+
+Style/WordArray:
+  EnforcedStyle: brackets
+
+# 複数行のハッシュと配列は末尾要素にもカンマを付ける（差分を小さく保つため）。
+# メソッド引数は対象にしない
+Style/TrailingCommaInHashLiteral:
+  EnforcedStyleForMultiline: consistent_comma
+
+Style/TrailingCommaInArrayLiteral:
+  EnforcedStyleForMultiline: consistent_comma
+
+# 行数や複雑度を数値で機械的に縛らない
+Metrics:
+  Enabled: false
+
+# --- spec の書き方 ---
+
+# spec は日本語で書くため、英語の語順を前提にした cop は使わない
+RSpec/ContextWording:
+  Enabled: false
+
+# ひとつの example で複数の側面を確かめたい場面が多い
+RSpec/MultipleExpectations:
+  Enabled: false
+
+RSpec/ExampleLength:
+  Enabled: false
+
+# クラス以外の振る舞いを describe することがある
+RSpec/DescribeClass:
+  Enabled: false
+
+# --- Rails の慣習 ---
+
+# クラスに説明コメントを必須としない
+Style/Documentation:
+  Enabled: false

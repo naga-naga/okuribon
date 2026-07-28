@@ -28,13 +28,46 @@
       "Bash(grep:*)",
       "Bash(find:*)",
       "Bash(mkdir:*)",
-      "Bash(psql:*)"
+      "Bash(psql:*)",
+
+      "Bash(gh issue list:*)",
+      "Bash(gh issue view:*)",
+      "Bash(gh issue create:*)",
+      "Bash(gh issue edit:*)",
+      "Bash(gh issue comment:*)",
+      "Bash(gh issue close:*)",
+      "Bash(gh issue reopen:*)",
+      "Bash(gh issue status:*)",
+      "Bash(gh label list:*)",
+      "Bash(gh label create:*)",
+      "Bash(gh label edit:*)",
+      "Bash(gh pr create:*)",
+      "Bash(gh pr list:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr diff:*)",
+      "Bash(gh pr checks:*)",
+      "Bash(gh pr status:*)",
+      "Bash(gh pr close:*)",
+      "Bash(gh pr reopen:*)",
+      "Bash(gh repo view:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh run view:*)",
+      "Bash(gh search:*)",
+      "Bash(gh auth status:*)"
     ],
 
     "ask": [
       "Bash(git push:*)",
       "Bash(git reset --hard:*)",
-      "Bash(gh:*)",
+      "Bash(gh pr merge:*)",
+      "Bash(gh repo create:*)",
+      "Bash(gh release:*)",
+      "Bash(gh workflow run:*)",
+      "Bash(gh gist:*)",
+      "Bash(gh api:*)",
+      "Bash(gh auth login:*)",
+      "Bash(gh auth logout:*)",
+      "Bash(gh auth refresh:*)",
       "Bash(kamal:*)",
       "Bash(sudo:*)",
       "Bash(bin/rails db:drop:*)",
@@ -45,10 +78,17 @@
 
     "deny": [
       "Bash(rm -rf:*)",
+      "Bash(gh repo delete:*)",
+      "Bash(gh issue delete:*)",
+      "Bash(gh label delete:*)",
+      "Bash(gh secret:*)",
+      "Bash(gh auth token:*)",
       "Read(./config/master.key)",
       "Read(./config/credentials/*.key)",
       "Read(./.env)",
-      "Read(./.env.*)"
+      "Read(./.env.local)",
+      "Read(./.env.*.local)",
+      "Read(./.devcontainer/.env)"
     ]
   }
 }

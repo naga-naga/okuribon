@@ -7,15 +7,19 @@
 
   "features": {
     "ghcr.io/devcontainers/features/node:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {},
     "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {}
   },
 
   "mounts": [
     "source=claude-config-${devcontainerId},target=/home/vscode/.claude,type=volume",
     "source=${localEnv:HOME}/.claude/CLAUDE.md,target=/home/vscode/.claude/CLAUDE.md,type=bind",
-    "source=${localEnv:HOME}/.claude/output-styles,target=/home/vscode/.claude/output-styles,type=bind"
+    "source=${localEnv:HOME}/.claude/output-styles,target=/home/vscode/.claude/output-styles,type=bind",
+    // コミットの author を引き継ぐために読むだけ。~/.gitconfig には被せない
+    "source=${localEnv:HOME}/.gitconfig,target=/tmp/host-gitconfig,type=bind,readonly"
   ],
 
+  // GH_TOKEN は compose.yaml が .devcontainer/.env から読む
   "containerEnv": {
     "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1"
   },

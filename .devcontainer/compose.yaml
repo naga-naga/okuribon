@@ -16,6 +16,9 @@ services:
       DATABASE_URL: postgres://postgres:postgres@db:5432
       # rails server の既定バインドアドレス
       BINDING: 0.0.0.0
+      # GitHub の fine-grained PAT。同じディレクトリの .env から読む。
+      # 未設定でも起動できるよう既定値を空にしてある
+      GH_TOKEN: ${GH_TOKEN:-}
     depends_on:
       db:
         condition: service_healthy

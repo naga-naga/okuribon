@@ -10,6 +10,9 @@
 # Ignore all environment files.
 /.env*
 
+# devcontainer に渡すトークン類。.env.example のみ追跡する
+/.devcontainer/.env
+
 # Ignore all logfiles and tempfiles.
 /log/*
 /tmp/*

@@ -8,8 +8,18 @@ plugins:
   - rubocop-rspec_rails
   - rubocop-factory_bot
 
+# 自作 cop。plugin gem ではないので require で読む。
+# 置き場所は lib/ ではなく .rubocop/ にしている。lib/ は config.autoload_lib の
+# 対象で、Zeitwerk が RuboCop を Rubocop と読もうとして解決に失敗するため
+require:
+  - ./.rubocop/cop/okuribon/current_time.rb
+
 AllCops:
   NewCops: enable
+  # 隠しディレクトリは既定で走査対象外なので、自作 cop 自身を明示的に含める
+  Include:
+    - "**/*.rb"
+    - ".rubocop/cop/**/*.rb"
   Exclude:
     - "bin/**/*"
     - "db/schema.rb"
@@ -62,3 +72,15 @@ RSpec/DescribeClass:
 # クラスに説明コメントを必須としない
 Style/Documentation:
   Enabled: false
+
+# --- 現在時刻の取得経路 ---
+
+# 現在時刻は Current.time に一本化する（フェーズを日時から導出するため）。
+# 対象はアプリケーションコードだけ。config・spec・マイグレーションは実時刻を直接扱う
+Okuribon/CurrentTime:
+  Enabled: true
+  Include:
+    - "app/**/*.rb"
+    - "lib/**/*.rb"
+  Exclude:
+    - "app/models/current.rb"

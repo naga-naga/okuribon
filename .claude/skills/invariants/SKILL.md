@@ -71,7 +71,6 @@ rg -n 'seed|rand|shuffle|sample' app/ db/ --glob '!**/*_spec.rb'
   あとから変更できないようになっているか
 - マッチングが一度だけ実行され、再実行できないか
 - マッチングの実行が行ロックとトランザクションで包まれているか
-- `app/services/matching/engine.rb` は実装済み・検証済み。issue が明示的に指示しない限り触らない
 
 ## 4. タイムゾーンと期間境界の扱い
 

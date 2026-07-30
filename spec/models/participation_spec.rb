@@ -44,4 +44,35 @@ RSpec.describe Participation do
 
     expect(exchange.participations).to contain_exactly(participation)
   end
+
+  it '消すと登録した本と、その本への希望・割当まで消える' do
+    exchange = create(:exchange)
+    owner = create(:participation, exchange:)
+    other = create(:participation, exchange:)
+    book = create(:book, participation: owner)
+    create(:wish, participation: other, book:)
+    create(:assignment, book:, participation: other)
+
+    owner.destroy
+
+    expect(Book.count).to eq(0)
+    expect(Wish.count).to eq(0)
+    expect(Assignment.count).to eq(0)
+    expect(other.reload).to be_persisted
+  end
+
+  it '消すと自分が出した希望と、自分が受け取る割当も消える' do
+    exchange = create(:exchange)
+    owner = create(:participation, exchange:)
+    recipient = create(:participation, exchange:)
+    book = create(:book, participation: owner)
+    create(:wish, participation: recipient, book:)
+    create(:assignment, book:, participation: recipient)
+
+    recipient.destroy
+
+    expect(Wish.count).to eq(0)
+    expect(Assignment.count).to eq(0)
+    expect(book.reload).to be_persisted
+  end
 end

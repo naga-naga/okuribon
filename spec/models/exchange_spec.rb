@@ -40,6 +40,22 @@ RSpec.describe Exchange do
       .to raise_error(ActiveRecord::RecordNotUnique)
   end
 
+  it '消すと参加・本・希望・割当まで連鎖して消える' do
+    exchange = create(:exchange)
+    owner = create(:participation, exchange:)
+    recipient = create(:participation, exchange:)
+    book = create(:book, participation: owner)
+    create(:wish, participation: recipient, book:)
+    create(:assignment, book:, participation: recipient)
+
+    exchange.destroy
+
+    expect(Participation.count).to eq(0)
+    expect(Book.count).to eq(0)
+    expect(Wish.count).to eq(0)
+    expect(Assignment.count).to eq(0)
+  end
+
   # フェーズは日時から導出する。状態カラムを足すと二重管理になり、
   # 日時とフェーズが食い違う余地が生まれる
   it 'フェーズを表す状態カラムを持たない' do

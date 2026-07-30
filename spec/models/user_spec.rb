@@ -26,4 +26,24 @@ RSpec.describe User do
 
     expect { create(:user, provider: 'google', uid: '1') }.not_to raise_error
   end
+
+  # ユーザーを消したときに交換会ごと消えるのは事故なので、削除を拒む側に倒してある
+  it '主催している交換会があれば消せない' do
+    exchange = create(:exchange)
+    owner = exchange.owner
+
+    expect(owner.destroy).to be(false)
+    expect(owner.errors[:base]).to be_present
+    expect(exchange.reload).to be_persisted
+  end
+
+  it '主催している交換会が無ければ参加ごと消える' do
+    participation = create(:participation)
+    user = participation.user
+
+    user.destroy
+
+    expect(described_class.exists?(user.id)).to be(false)
+    expect(Participation.count).to eq(0)
+  end
 end

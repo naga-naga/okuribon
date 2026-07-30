@@ -41,4 +41,18 @@ RSpec.describe Book do
     expect { build(:book, participation: nil).save(validate: false) }
       .to raise_error(ActiveRecord::NotNullViolation)
   end
+
+  it '消すとその本への希望と割当も消える' do
+    exchange = create(:exchange)
+    book = create(:book, participation: create(:participation, exchange:))
+    recipient = create(:participation, exchange:)
+    create(:wish, participation: recipient, book:)
+    create(:assignment, book:, participation: recipient)
+
+    book.destroy
+
+    expect(Wish.count).to eq(0)
+    expect(Assignment.count).to eq(0)
+    expect(recipient.reload).to be_persisted
+  end
 end

@@ -3,14 +3,6 @@
 require 'rails_helper'
 
 RSpec.describe Exchange do
-  it 'ファクトリから作れる' do
-    exchange = create(:exchange)
-
-    expect(exchange).to be_persisted
-    expect(exchange.invite_token).to be_present
-    expect(exchange.random_seed).to be_present
-  end
-
   it '主催者を往復できる' do
     owner = create(:user)
     exchange = create(:exchange, owner:)

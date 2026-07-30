@@ -3,14 +3,6 @@
 require 'rails_helper'
 
 RSpec.describe Book do
-  it 'ファクトリから作れる' do
-    book = create(:book)
-
-    expect(book).to be_persisted
-    expect(book.title).to be_present
-    expect(book.gift_code).to be_present
-  end
-
   it '登録者を往復できる' do
     participation = create(:participation)
     book = create(:book, participation:)

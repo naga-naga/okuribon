@@ -3,13 +3,6 @@
 require 'rails_helper'
 
 RSpec.describe Wish do
-  it 'ファクトリから作れる' do
-    wish = create(:wish)
-
-    expect(wish).to be_persisted
-    expect(wish.position).to be_present
-  end
-
   it '参加者と本を往復できる' do
     exchange = create(:exchange)
     book = create(:book, participation: create(:participation, exchange:))

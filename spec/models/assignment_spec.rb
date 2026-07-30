@@ -3,11 +3,8 @@
 require 'rails_helper'
 
 RSpec.describe Assignment do
-  it 'ファクトリから作れる' do
-    assignment = create(:assignment)
-
-    expect(assignment).to be_persisted
-    expect(assignment.returned).to be(false)
+  it '返却フラグは既定で false' do
+    expect(described_class.new.returned).to be(false)
   end
 
   it '本と受取人を往復できる' do

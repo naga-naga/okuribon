@@ -3,10 +3,6 @@
 require 'rails_helper'
 
 RSpec.describe Participation do
-  it 'ファクトリから作れる' do
-    expect(create(:participation)).to be_persisted
-  end
-
   it '交換会と参加者を往復できる' do
     exchange = create(:exchange)
     user = create(:user)

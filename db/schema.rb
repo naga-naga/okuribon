@@ -10,9 +10,21 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_30_125607) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_30_125704) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "books", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.text "gift_code", null: false
+    t.bigint "participation_id", null: false
+    t.text "recommendation"
+    t.text "summary"
+    t.string "title", null: false
+    t.datetime "updated_at", null: false
+    t.string "url"
+    t.index ["participation_id"], name: "index_books_on_participation_id"
+  end
 
   create_table "exchanges", force: :cascade do |t|
     t.datetime "created_at", null: false
@@ -52,6 +64,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_30_125607) do
     t.index ["provider", "uid"], name: "index_users_on_provider_and_uid", unique: true
   end
 
+  add_foreign_key "books", "participations"
   add_foreign_key "exchanges", "users", column: "owner_id"
   add_foreign_key "participations", "exchanges"
   add_foreign_key "participations", "users"

@@ -36,4 +36,9 @@ RSpec.describe Book do
     expect { create(:book, title: nil) }.to raise_error(ActiveRecord::NotNullViolation)
     expect { create(:book, gift_code: nil) }.to raise_error(ActiveRecord::NotNullViolation)
   end
+
+  it '登録者のいない本は保存できない' do
+    expect { build(:book, participation: nil).save(validate: false) }
+      .to raise_error(ActiveRecord::NotNullViolation)
+  end
 end

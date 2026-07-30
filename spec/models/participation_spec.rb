@@ -3,6 +3,15 @@
 require 'rails_helper'
 
 RSpec.describe Participation do
+  # 交換会も参加者も belongs_to の既定で必須になるが、
+  # ここで確かめたいのは DB 側の制約なのでバリデーションを飛ばす
+  it '交換会と参加者のどちらが欠けても保存できない' do
+    expect { build(:participation, exchange: nil).save(validate: false) }
+      .to raise_error(ActiveRecord::NotNullViolation)
+    expect { build(:participation, user: nil).save(validate: false) }
+      .to raise_error(ActiveRecord::NotNullViolation)
+  end
+
   it '交換会と参加者を往復できる' do
     exchange = create(:exchange)
     user = create(:user)

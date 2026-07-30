@@ -7,6 +7,13 @@ RSpec.describe Assignment do
     expect(described_class.new.returned).to be(false)
   end
 
+  it '本と受取人のどちらが欠けても保存できない' do
+    expect { build(:assignment, book: nil).save(validate: false) }
+      .to raise_error(ActiveRecord::NotNullViolation)
+    expect { build(:assignment, participation: nil).save(validate: false) }
+      .to raise_error(ActiveRecord::NotNullViolation)
+  end
+
   it '本と受取人を往復できる' do
     exchange = create(:exchange)
     book = create(:book, participation: create(:participation, exchange:))

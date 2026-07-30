@@ -3,6 +3,28 @@
 require 'rails_helper'
 
 RSpec.describe Exchange do
+  it '必須のカラムに nil を保存できない' do
+    columns = [
+      :name, :registration_starts_at, :registration_ends_at,
+      :wish_starts_at, :wish_ends_at, :invite_token, :random_seed,
+    ]
+
+    columns.each do |column|
+      expect { create(:exchange, column => nil) }
+        .to raise_error(ActiveRecord::NotNullViolation), "#{column} が NOT NULL になっていない"
+    end
+  end
+
+  it '主催者のいない交換会は保存できない' do
+    expect { build(:exchange, owner: nil).save(validate: false) }
+      .to raise_error(ActiveRecord::NotNullViolation)
+  end
+
+  it '概要・マッチング実行日時・Webhook URL は無くてもよい' do
+    expect { create(:exchange, description: nil, matched_at: nil, webhook_url: nil) }
+      .not_to raise_error
+  end
+
   it '主催者を往復できる' do
     owner = create(:user)
     exchange = create(:exchange, owner:)

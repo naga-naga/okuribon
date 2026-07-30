@@ -3,6 +3,17 @@
 require 'rails_helper'
 
 RSpec.describe Wish do
+  it '順位に nil を保存できない' do
+    expect { create(:wish, position: nil) }.to raise_error(ActiveRecord::NotNullViolation)
+  end
+
+  it '参加者と本のどちらが欠けても保存できない' do
+    expect { build(:wish, participation: nil).save(validate: false) }
+      .to raise_error(ActiveRecord::NotNullViolation)
+    expect { build(:wish, book: nil).save(validate: false) }
+      .to raise_error(ActiveRecord::NotNullViolation)
+  end
+
   it '参加者と本を往復できる' do
     exchange = create(:exchange)
     book = create(:book, participation: create(:participation, exchange:))

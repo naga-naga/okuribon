@@ -6,4 +6,5 @@ class Participation < ApplicationRecord
 
   has_many :books, dependent: :destroy
   has_many :wishes, dependent: :destroy
+  has_many :assignments, dependent: :destroy
 end

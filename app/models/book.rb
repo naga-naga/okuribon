@@ -5,4 +5,5 @@ class Book < ApplicationRecord
   has_one :exchange, through: :participation
 
   has_many :wishes, dependent: :destroy
+  has_one :assignment, dependent: :destroy
 end

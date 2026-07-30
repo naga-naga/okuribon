@@ -4,7 +4,7 @@ FactoryBot.define do
   factory :user do
     provider { 'github' }
     sequence(:uid, &:to_s)
-    name { Faker::Name.name }
+    display_name { Faker::Name.name }
     avatar_url { Faker::Internet.url }
   end
 end

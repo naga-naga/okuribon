@@ -13,7 +13,7 @@ RSpec.describe Exchange do
 
   it '主催者を往復できる' do
     owner = create(:user)
-    exchange = create(:exchange, owner: owner)
+    exchange = create(:exchange, owner:)
 
     expect(exchange.owner).to eq(owner)
     expect(owner.owned_exchanges).to contain_exactly(exchange)

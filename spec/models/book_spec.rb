@@ -13,7 +13,7 @@ RSpec.describe Book do
 
   it '登録者を往復できる' do
     participation = create(:participation)
-    book = create(:book, participation: participation)
+    book = create(:book, participation:)
 
     expect(book.participation).to eq(participation)
     expect(participation.books).to contain_exactly(book)
@@ -29,7 +29,7 @@ RSpec.describe Book do
   it 'ひとりで何冊でも登録できる' do
     participation = create(:participation)
 
-    books = create_list(:book, 3, participation: participation)
+    books = create_list(:book, 3, participation:)
 
     expect(participation.books).to match_array(books)
   end

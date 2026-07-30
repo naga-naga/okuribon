@@ -12,10 +12,10 @@ RSpec.describe Wish do
 
   it '参加者と本を往復できる' do
     exchange = create(:exchange)
-    book = create(:book, participation: create(:participation, exchange: exchange))
-    participation = create(:participation, exchange: exchange)
+    book = create(:book, participation: create(:participation, exchange:))
+    participation = create(:participation, exchange:)
 
-    wish = create(:wish, participation: participation, book: book)
+    wish = create(:wish, participation:, book:)
 
     expect(wish.participation).to eq(participation)
     expect(wish.book).to eq(book)

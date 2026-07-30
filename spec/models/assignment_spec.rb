@@ -12,10 +12,10 @@ RSpec.describe Assignment do
 
   it '本と受取人を往復できる' do
     exchange = create(:exchange)
-    book = create(:book, participation: create(:participation, exchange: exchange))
-    recipient = create(:participation, exchange: exchange)
+    book = create(:book, participation: create(:participation, exchange:))
+    recipient = create(:participation, exchange:)
 
-    assignment = create(:assignment, book: book, participation: recipient)
+    assignment = create(:assignment, book:, participation: recipient)
 
     expect(assignment.book).to eq(book)
     expect(assignment.participation).to eq(recipient)
@@ -42,7 +42,7 @@ RSpec.describe Assignment do
   it '返却された本は登録者自身への割当になる' do
     book = create(:book)
 
-    assignment = create(:assignment, book: book, participation: book.participation, round: nil, returned: true)
+    assignment = create(:assignment, book:, participation: book.participation, round: nil, returned: true)
 
     expect(assignment.returned).to be(true)
     expect(assignment.participation).to eq(book.participation)

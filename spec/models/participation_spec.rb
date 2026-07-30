@@ -10,7 +10,7 @@ RSpec.describe Participation do
   it '交換会と参加者を往復できる' do
     exchange = create(:exchange)
     user = create(:user)
-    participation = create(:participation, exchange: exchange, user: user)
+    participation = create(:participation, exchange:, user:)
 
     expect(participation.exchange).to eq(exchange)
     expect(participation.user).to eq(user)
@@ -27,15 +27,15 @@ RSpec.describe Participation do
 
   it '同じ参加者が別の交換会には参加できる' do
     user = create(:user)
-    create(:participation, user: user)
+    create(:participation, user:)
 
-    expect { create(:participation, user: user) }.not_to raise_error
+    expect { create(:participation, user:) }.not_to raise_error
   end
 
   it '主催者は自分の交換会に参加者として加われる' do
     exchange = create(:exchange)
 
-    participation = create(:participation, exchange: exchange, user: exchange.owner)
+    participation = create(:participation, exchange:, user: exchange.owner)
 
     expect(exchange.participations).to contain_exactly(participation)
   end

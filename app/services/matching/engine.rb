@@ -47,7 +47,7 @@ module Matching
       run_draft(draft_order)
       assign_leftovers
 
-      Result.new(assignments: @assignments, quotas: @quotas, draft_order: draft_order)
+      Result.new(assignments: @assignments, quotas: @quotas, draft_order:)
     end
 
     private
@@ -88,7 +88,7 @@ module Matching
           @assigned_book_ids << pick
           @taken[participant] += 1
           @assignments << Assignment.new(
-            book_id: pick, participant_id: participant, round: round, returned: false
+            book_id: pick, participant_id: participant, round:, returned: false
           )
           progressed = true
         end

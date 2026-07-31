@@ -5,8 +5,16 @@ updates:
   schedule:
     interval: weekly
   open-pull-requests-limit: 10
+  # 公開直後の版を掴まないよう寝かせる。
+  # cooldown は version update にのみ効き、security update は素通しになる
+  cooldown:
+    default-days: 7
+    semver-major-days: 30
 - package-ecosystem: github-actions
   directory: "/"
   schedule:
     interval: weekly
   open-pull-requests-limit: 10
+  cooldown:
+    default-days: 7
+    semver-major-days: 30

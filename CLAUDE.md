@@ -10,8 +10,8 @@
 
 ### フェーズ
 
-交換会は「準備中 / 登録期間 / 希望提出期間 / マッチング実行待ち / 結果公開」の
-5つのフェーズを持つ。フェーズは日時カラムから導出する。**状態カラムは持たない。**
+交換会は「準備中 / 登録期間 / 希望提出期間 / マッチング実行待ち / 結果公開」の5つのフェーズを持つ。
+フェーズは日時カラムから導出する。**状態カラムは持たない。**
 
 書き込み系の操作は、必ずサーバー側でフェーズを検証すること。
 クライアント側の時刻計算に依存しない。
@@ -60,21 +60,22 @@
 - `bin/rubocop` — スタイル。`-a` で自動修正できる
 - `bin/ci` — rubocop、bundler-audit、importmap audit、brakeman を順に通す
 
-実行は binstub（`bin/`）に揃える。`bin/rubocop` は `.rubocop.yml` を明示的に渡すため
-`bundle exec rubocop` と挙動が異なる。`bin/rspec` は `bundle exec rspec` と実質同じだが、
-呼び分けを増やさないために揃える。
+実行は binstub（`bin/`）に揃える。
+`bin/rubocop` は `.rubocop.yml` を明示的に渡すため `bundle exec rubocop` と挙動が異なる。
+`bin/rspec` は `bundle exec rspec` と実質同じだが、呼び分けを増やさないために揃える。
 
 `bin/ci` にテストは含まれていないので、`bin/rspec` は別に実行する。
 
-DB を伴う rake タスクは `RAILS_ENV` を明示する。`DATABASE_URL` は現在の環境の設定にしか
-マージされないため、`RAILS_ENV=test` を付けないと test の接続先が解決されない。
+DB を伴う rake タスクは `RAILS_ENV` を明示する。
+`DATABASE_URL` は現在の環境の設定にしかマージされないため、`RAILS_ENV=test` を付けないと test の接続先が解決されない。
 
 ## issue とブランチ
 
 タスクは GitHub issue で管理する。ラベルは2種類。
 
-- `type:epic` — マイルストーンのトラッキング issue。task issue を sub-issues として持ち、
-  進捗は GitHub が自動で集計する。本文は「目的 / 完了の定義 / 前提 / 参考」の4節
+- `type:epic` — マイルストーンのトラッキング issue。
+  task issue を sub-issues として持ち、進捗は GitHub が自動で集計する。
+  本文は「目的 / 完了の定義 / 前提 / 参考」の4節
 - `type:task` — 1 PR に収まる実装タスク。本文の「完了条件」がそのまま受け入れ基準になる
 
 **Epic 間の依存は Epic 本文の「前提」にしか書かれていない。** task issue だけを読んで着手しない。
@@ -84,8 +85,8 @@ main は保護されている。直接コミットせず、ブランチを切っ
 
 - ブランチ名は `<issue番号>-<英小文字ケバブの要約>`（例：`12-omniauth`）
 - 実装タスクは必ず issue を立ててから着手する。PR 本文に `closes #<issue番号>` を書く
-- 環境整備や雑務など issue に紐づかない作業は、番号なしの
-  `<英小文字ケバブの要約>` でブランチを切ってよい。この場合 `closes` は書かない
+- 環境整備や雑務など issue に紐づかない作業は、番号なしの `<英小文字ケバブの要約>` でブランチを切ってよい。
+  この場合 `closes` は書かない
 - PR のタイトルと本文は日本語で書く
 - PR は merge commit でマージする。squash しない
 

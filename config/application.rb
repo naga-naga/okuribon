@@ -41,6 +41,9 @@ module Okuribon
     config.time_zone = 'Tokyo'
     config.active_record.default_timezone = :utc
 
+    # 画面もエラーメッセージも日本語だけを出す。ロケールの切り替えは持たない
+    config.i18n.default_locale = :ja
+
     # Don't generate system test files.
     config.generators.system_tests = nil
 

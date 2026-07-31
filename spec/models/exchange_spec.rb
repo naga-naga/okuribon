@@ -3,7 +3,8 @@
 require 'rails_helper'
 
 RSpec.describe Exchange do
-  it '必須のカラムに nil を保存できない' do
+  # DB の例外にする前にバリデーションで捕まえる。フォームに戻せるのはこちらだけ
+  it '必須のカラムに nil を入れるとバリデーションで落ちる' do
     columns = [
       :name, :registration_starts_at, :registration_ends_at,
       :wish_starts_at, :wish_ends_at, :invite_token, :random_seed,
@@ -11,6 +12,19 @@ RSpec.describe Exchange do
 
     columns.each do |column|
       expect { create(:exchange, column => nil) }
+        .to raise_error(ActiveRecord::RecordInvalid), "#{column} に presence バリデーションが無い"
+    end
+  end
+
+  # バリデーションを外れた経路でも空で入らないよう、DB 側の制約も残す
+  it '必須のカラムはバリデーションを迂回しても保存できない' do
+    columns = [
+      :name, :registration_starts_at, :registration_ends_at,
+      :wish_starts_at, :wish_ends_at, :invite_token, :random_seed,
+    ]
+
+    columns.each do |column|
+      expect { build(:exchange, column => nil).save(validate: false) }
         .to raise_error(ActiveRecord::NotNullViolation), "#{column} が NOT NULL になっていない"
     end
   end

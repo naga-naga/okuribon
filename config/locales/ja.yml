@@ -2,6 +2,9 @@ ja:
   activerecord:
     attributes:
       exchange:
+        name: 交換会名
+        invite_token: 招待トークン
+        random_seed: 乱数シード
         registration_starts_at: 登録期間の開始日時
         registration_ends_at: 登録期間の終了日時
         wish_starts_at: 希望提出期間の開始日時

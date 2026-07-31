@@ -11,7 +11,6 @@ RUN apt-get update -o Acquire::Retries=3 \
         # Rails
         postgresql-client \
         libpq-dev \
-        libvips \
         # あると便利
         jq \
         less \

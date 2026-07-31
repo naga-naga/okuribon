@@ -76,4 +76,115 @@ RSpec.describe Exchange do
     expect(described_class.column_names)
       .not_to include('phase', 'state', 'status', 'aasm_state')
   end
+
+  describe '期間の整合性' do
+    it '登録期間のあとに希望提出期間が並んでいれば有効になる' do
+      exchange = build(
+        :exchange,
+        registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
+        registration_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
+        wish_starts_at: '2026-08-10T00:00:00+09:00'.in_time_zone,
+        wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone
+      )
+
+      expect(exchange).to be_valid
+    end
+
+    # 各期間は開始時刻を含み終了時刻を含まないため、境界が一致していても重ならない
+    it '登録期間の終了と希望提出期間の開始が同時刻でも有効になる' do
+      exchange = build(
+        :exchange,
+        registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
+        registration_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
+        wish_starts_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
+        wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone
+      )
+
+      expect(exchange).to be_valid
+    end
+
+    it '登録期間の終了が開始より前だと無効になる' do
+      exchange = build(
+        :exchange,
+        registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
+        registration_ends_at: '2026-07-31T00:00:00+09:00'.in_time_zone,
+        wish_starts_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
+        wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone
+      )
+
+      expect(exchange).not_to be_valid
+      expect(exchange.errors.full_messages)
+        .to contain_exactly('登録期間の終了日時は開始日時より後にしてください')
+    end
+
+    it '登録期間の開始と終了が同時刻だと無効になる' do
+      exchange = build(
+        :exchange,
+        registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
+        registration_ends_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
+        wish_starts_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
+        wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone
+      )
+
+      expect(exchange).not_to be_valid
+      expect(exchange.errors.full_messages)
+        .to contain_exactly('登録期間の終了日時は開始日時より後にしてください')
+    end
+
+    it '希望提出期間の終了が開始より前だと無効になる' do
+      exchange = build(
+        :exchange,
+        registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
+        registration_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
+        wish_starts_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
+        wish_ends_at: '2026-08-07T00:00:00+09:00'.in_time_zone
+      )
+
+      expect(exchange).not_to be_valid
+      expect(exchange.errors.full_messages)
+        .to contain_exactly('希望提出期間の終了日時は開始日時より後にしてください')
+    end
+
+    it '希望提出期間の開始と終了が同時刻だと無効になる' do
+      exchange = build(
+        :exchange,
+        registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
+        registration_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
+        wish_starts_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
+        wish_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone
+      )
+
+      expect(exchange).not_to be_valid
+      expect(exchange.errors.full_messages)
+        .to contain_exactly('希望提出期間の終了日時は開始日時より後にしてください')
+    end
+
+    it '希望提出期間の開始が登録期間の終了より前だと無効になる' do
+      exchange = build(
+        :exchange,
+        registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
+        registration_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
+        wish_starts_at: '2026-08-07T00:00:00+09:00'.in_time_zone,
+        wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone
+      )
+
+      expect(exchange).not_to be_valid
+      expect(exchange.errors.full_messages)
+        .to contain_exactly('希望提出期間の開始日時は登録期間の終了日時以降にしてください')
+    end
+
+    it '日時が欠けていても順序のエラーは足さない' do
+      exchange = build(
+        :exchange,
+        registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
+        registration_ends_at: nil,
+        wish_starts_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
+        wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone
+      )
+
+      expect(exchange).not_to be_valid
+      expect(exchange.errors.full_messages)
+        .to contain_exactly('登録期間の終了日時を入力してください')
+    end
+  end
 end

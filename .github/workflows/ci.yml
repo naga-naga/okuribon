@@ -5,6 +5,11 @@ on:
   push:
     branches: [ main ]
 
+# CI はチェックアウトと検査しかしない。
+# action が乗っ取られても書き込めるものが無い状態にしておく
+permissions:
+  contents: read
+
 jobs:
   scan_ruby:
     runs-on: ubuntu-latest

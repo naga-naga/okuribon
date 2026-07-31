@@ -15,6 +15,6 @@ updates:
   schedule:
     interval: weekly
   open-pull-requests-limit: 10
+  # github-actions は default-days のみ対応で、SemVer 系のキーは効かない
   cooldown:
     default-days: 7
-    semver-major-days: 30

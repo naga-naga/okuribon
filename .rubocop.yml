@@ -36,6 +36,10 @@ Style/TrailingCommaInHashLiteral:
 Style/TrailingCommaInArrayLiteral:
   EnforcedStyleForMultiline: consistent_comma
 
+# 値の名前とキーが同じなら短縮形で書く（name: name ではなく name:）
+Style/HashSyntax:
+  EnforcedShorthandSyntax: always
+
 # 行数や複雑度を数値で機械的に縛らない
 Metrics:
   Enabled: false
@@ -56,6 +60,14 @@ RSpec/ExampleLength:
 # クラス以外の振る舞いを describe することがある
 RSpec/DescribeClass:
   Enabled: false
+
+# let は最初に参照された example でだけ評価されるため、
+# どこで作られたのかが読めなくなる。即時評価の let! に揃える
+# この cop は既定で無効なので明示的に有効化する
+RSpec/Dialect:
+  Enabled: true
+  PreferredMethods:
+    let: let!
 
 # --- Rails の慣習 ---
 

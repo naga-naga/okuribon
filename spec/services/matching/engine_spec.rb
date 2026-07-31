@@ -12,7 +12,7 @@ RSpec.describe Matching::Engine do
 
   def run_matching(participants:, books:, wishes:, seed:)
     described_class.new(
-      participants: participants, books: books, wishes: wishes, seed: seed
+      participants:, books:, wishes:, seed:
     ).call
   end
 
@@ -57,9 +57,9 @@ RSpec.describe Matching::Engine do
 
   # ------------------------------------------------------------------
   context '標準的な構成（4人・各2冊・希望はばらける）' do
-    let(:participants) { ['A', 'B', 'C', 'D'] }
-    let(:books) { build_books('A' => 2, 'B' => 2, 'C' => 2, 'D' => 2) }
-    let(:wishes) do
+    let!(:participants) { ['A', 'B', 'C', 'D'] }
+    let!(:books) { build_books('A' => 2, 'B' => 2, 'C' => 2, 'D' => 2) }
+    let!(:wishes) do
       {
         'A' => ['B1', 'C1', 'D1', 'B2', 'C2', 'D2'],
         'B' => ['C1', 'D1', 'A1', 'C2', 'D2', 'A2'],
@@ -67,7 +67,7 @@ RSpec.describe Matching::Engine do
         'D' => ['A1', 'B1', 'C1', 'A2', 'B2', 'C2'],
       }
     end
-    let(:result) { run_matching(participants: participants, books: books, wishes: wishes, seed: 12_345) }
+    let!(:result) { run_matching(participants:, books:, wishes:, seed: 12_345) }
 
     it_behaves_like 'マッチングの不変条件を満たす'
 
@@ -82,10 +82,10 @@ RSpec.describe Matching::Engine do
 
   # ------------------------------------------------------------------
   context '冊数が偏り、受け取り手のない本が出る（A=5冊・B=1冊）' do
-    let(:participants) { ['A', 'B'] }
-    let(:books) { build_books('A' => 5, 'B' => 1) }
-    let(:wishes) { { 'A' => ['B1'], 'B' => ['A1', 'A2', 'A3', 'A4', 'A5'] } }
-    let(:result) { run_matching(participants: participants, books: books, wishes: wishes, seed: 777) }
+    let!(:participants) { ['A', 'B'] }
+    let!(:books) { build_books('A' => 5, 'B' => 1) }
+    let!(:wishes) { { 'A' => ['B1'], 'B' => ['A1', 'A2', 'A3', 'A4', 'A5'] } }
+    let!(:result) { run_matching(participants:, books:, wishes:, seed: 777) }
 
     it_behaves_like 'マッチングの不変条件を満たす'
 
@@ -104,10 +104,10 @@ RSpec.describe Matching::Engine do
 
   # ------------------------------------------------------------------
   context '全員の希望が同じ本に集中し、すぐ枯渇する' do
-    let(:participants) { ['A', 'B', 'C', 'D'] }
-    let(:books) { build_books('A' => 1, 'B' => 1, 'C' => 1, 'D' => 1) }
-    let(:wishes) { { 'A' => ['B1'], 'B' => ['A1'], 'C' => ['A1'], 'D' => ['A1'] } }
-    let(:result) { run_matching(participants: participants, books: books, wishes: wishes, seed: 42) }
+    let!(:participants) { ['A', 'B', 'C', 'D'] }
+    let!(:books) { build_books('A' => 1, 'B' => 1, 'C' => 1, 'D' => 1) }
+    let!(:wishes) { { 'A' => ['B1'], 'B' => ['A1'], 'C' => ['A1'], 'D' => ['A1'] } }
+    let!(:result) { run_matching(participants:, books:, wishes:, seed: 42) }
 
     it_behaves_like 'マッチングの不変条件を満たす'
 
@@ -118,10 +118,10 @@ RSpec.describe Matching::Engine do
 
   # ------------------------------------------------------------------
   context '希望を一切出さなかった参加者がいる' do
-    let(:participants) { ['A', 'B', 'C'] }
-    let(:books) { build_books('A' => 2, 'B' => 2, 'C' => 2) }
-    let(:wishes) { { 'A' => ['B1', 'C1', 'B2', 'C2'], 'B' => ['A1', 'C1', 'A2', 'C2'] } }
-    let(:result) { run_matching(participants: participants, books: books, wishes: wishes, seed: 999) }
+    let!(:participants) { ['A', 'B', 'C'] }
+    let!(:books) { build_books('A' => 2, 'B' => 2, 'C' => 2) }
+    let!(:wishes) { { 'A' => ['B1', 'C1', 'B2', 'C2'], 'B' => ['A1', 'C1', 'A2', 'C2'] } }
+    let!(:result) { run_matching(participants:, books:, wishes:, seed: 999) }
 
     it_behaves_like 'マッチングの不変条件を満たす'
 
@@ -140,10 +140,10 @@ RSpec.describe Matching::Engine do
 
   # ------------------------------------------------------------------
   context '参加者が1人しかいない' do
-    let(:participants) { ['A'] }
-    let(:books) { build_books('A' => 3) }
-    let(:wishes) { { 'A' => ['A1', 'A2', 'A3'] } }
-    let(:result) { run_matching(participants: participants, books: books, wishes: wishes, seed: 5) }
+    let!(:participants) { ['A'] }
+    let!(:books) { build_books('A' => 3) }
+    let!(:wishes) { { 'A' => ['A1', 'A2', 'A3'] } }
+    let!(:result) { run_matching(participants:, books:, wishes:, seed: 5) }
 
     it_behaves_like 'マッチングの不変条件を満たす'
 
@@ -157,10 +157,10 @@ RSpec.describe Matching::Engine do
   context '貪欲に割り当てると詰むが、増加路探索なら解ける配置' do
     # 余り物の段階で A=2枠 / B=1枠、残った本が A1・A2・B1。
     # B1 を先に B 以外へ渡さないと、A1 と A2 の行き先が無くなる
-    let(:participants) { ['A', 'B'] }
-    let(:books) { build_books('A' => 2, 'B' => 1) }
-    let(:wishes) { {} }
-    let(:result) { run_matching(participants: participants, books: books, wishes: wishes, seed: 31_337) }
+    let!(:participants) { ['A', 'B'] }
+    let!(:books) { build_books('A' => 2, 'B' => 1) }
+    let!(:wishes) { {} }
+    let!(:result) { run_matching(participants:, books:, wishes:, seed: 31_337) }
 
     it_behaves_like 'マッチングの不変条件を満たす'
 
@@ -174,9 +174,9 @@ RSpec.describe Matching::Engine do
 
   # ------------------------------------------------------------------
   describe '再現性' do
-    let(:participants) { ['A', 'B', 'C', 'D'] }
-    let(:books) { build_books('A' => 2, 'B' => 3, 'C' => 1, 'D' => 2) }
-    let(:wishes) do
+    let!(:participants) { ['A', 'B', 'C', 'D'] }
+    let!(:books) { build_books('A' => 2, 'B' => 3, 'C' => 1, 'D' => 2) }
+    let!(:wishes) do
       {
         'A' => ['B1', 'B2', 'C1', 'D1', 'D2', 'B3'],
         'B' => ['A1', 'C1', 'D1', 'A2', 'D2'],
@@ -186,7 +186,7 @@ RSpec.describe Matching::Engine do
     end
 
     def assignments_for(seed)
-      run_matching(participants: participants, books: books, wishes: wishes, seed: seed)
+      run_matching(participants:, books:, wishes:, seed:)
         .assignments.map(&:to_a)
     end
 
@@ -214,7 +214,7 @@ RSpec.describe Matching::Engine do
         wishes = participants.index_with { |_p| book_ids.select { rand < 0.6 }.shuffle }
 
         result = run_matching(
-          participants: participants, books: books, wishes: wishes, seed: rand(1_000_000_000)
+          participants:, books:, wishes:, seed: rand(1_000_000_000)
         )
 
         owner_of = books.to_h { |book| [book.id, book.owner_id] }

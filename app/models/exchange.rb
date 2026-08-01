@@ -20,14 +20,19 @@ class Exchange < ApplicationRecord
 
   # NOT NULL のカラムは presence でも弾く。DB の例外ではなくフォームのエラーとして返すため
   validates :name, :invite_token, :random_seed,
-            :registration_starts_at, :registration_ends_at, :wish_starts_at, :wish_ends_at,
+            :registration_starts_at, :registration_ends_at, :wish_ends_at,
             presence: true
 
   validate :registration_period_order
   validate :wish_period_order
-  validate :wish_period_follows_registration
 
   after_initialize :assign_generated_attributes, if: :new_record?
+
+  # 希望提出期間は登録期間の終了と同時に始まる。
+  # カラムに分けると等値をバリデーションでしか守れず二重管理になるため、導出する
+  def wish_starts_at
+    registration_ends_at
+  end
 
   # 基準時刻をキーワード引数で受け取り、境界の spec を時刻ちょうどで書けるようにする。
   # 各期間は開始時刻を含み、終了時刻を含まない。
@@ -68,15 +73,5 @@ class Exchange < ApplicationRecord
     return if wish_starts_at < wish_ends_at
 
     errors.add(:wish_ends_at, :before_start)
-  end
-
-  # 登録期間の終了と希望提出期間の開始は同時刻でなければならない。
-  # 開始時刻を含み終了時刻を含まないため同時刻でも重ならず、
-  # かつ間を空けるとどのフェーズにも属さない時間ができてしまう
-  def wish_period_follows_registration
-    return if registration_ends_at.blank? || wish_starts_at.blank?
-    return if registration_ends_at == wish_starts_at
-
-    errors.add(:wish_starts_at, :not_registration_end)
   end
 end

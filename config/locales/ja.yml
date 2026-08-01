@@ -14,7 +14,6 @@ ja:
         random_seed: 乱数シード
         registration_starts_at: 登録期間の開始日時
         registration_ends_at: 登録期間の終了日時
-        wish_starts_at: 希望提出期間の開始日時
         wish_ends_at: 希望提出期間の終了日時
     errors:
       models:
@@ -24,5 +23,3 @@ ja:
               before_start: は開始日時より後にしてください
             wish_ends_at:
               before_start: は開始日時より後にしてください
-            wish_starts_at:
-              not_registration_end: は登録期間の終了日時と同じにしてください

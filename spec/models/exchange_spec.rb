@@ -167,7 +167,6 @@ RSpec.describe Exchange do
   end
 
   describe 'フェーズ' do
-    # 境界ちょうどの時刻の帰属は #9 で詰める。ここでは各フェーズの内側で導出を確かめる
     let!(:exchange) do
       build(
         :exchange,
@@ -218,6 +217,51 @@ RSpec.describe Exchange do
         )
 
         expect(exchange.phase).to eq(:wish)
+      end
+    end
+
+    # 締切ちょうどの扱いが曖昧だと、締切直前の操作の可否が実装ごとにぶれる。
+    # 各期間は開始時刻を含み、終了時刻を含まない。締切ちょうどはその期間の外になる
+    describe '境界' do
+      it '登録期間の開始ちょうどから登録期間になる' do
+        boundary = '2026-08-01T00:00:00+09:00'.in_time_zone
+
+        expect(exchange.phase(at: boundary - 1.second)).to eq(:preparing)
+        expect(exchange.phase(at: boundary)).to eq(:registration)
+        expect(exchange.phase(at: boundary + 1.second)).to eq(:registration)
+      end
+
+      # 登録期間の終了と希望提出期間の開始は同時刻なので、この1点で両者が入れ替わる。
+      # 締切ちょうどにはもう本を登録できず、希望リストの編集が始まる
+      it '登録の締切ちょうどから希望提出期間になる' do
+        boundary = '2026-08-08T00:00:00+09:00'.in_time_zone
+
+        expect(exchange.phase(at: boundary - 1.second)).to eq(:registration)
+        expect(exchange.phase(at: boundary)).to eq(:wish)
+        expect(exchange.phase(at: boundary + 1.second)).to eq(:wish)
+      end
+
+      it '希望提出の締切ちょうどからマッチング実行待ちになる' do
+        boundary = '2026-08-15T00:00:00+09:00'.in_time_zone
+
+        expect(exchange.phase(at: boundary - 1.second)).to eq(:wish)
+        expect(exchange.phase(at: boundary)).to eq(:awaiting_matching)
+        expect(exchange.phase(at: boundary + 1.second)).to eq(:awaiting_matching)
+      end
+
+      # 締切は JST の 8/8 0:00。UTC では 8/7 15:00 にあたる。
+      # UTC の日付で見ると 8/7 のうちに締切を過ぎることになり、判定が9時間ずれる
+      it '同じ瞬間なら UTC 表記で渡しても同じフェーズになる' do
+        expect(exchange.phase(at: '2026-08-07T14:59:59Z'.in_time_zone)).to eq(:registration)
+        expect(exchange.phase(at: '2026-08-07T15:00:00Z'.in_time_zone)).to eq(:wish)
+      end
+
+      # フォームから来る日時にはタイムゾーンが付かない。UTC として読むと9時間ずれる
+      it 'タイムゾーンの付かない文字列は JST として解釈される' do
+        exchange = build(:exchange, registration_ends_at: '2026-08-08 00:00:00')
+
+        expect(exchange.registration_ends_at).to eq('2026-08-08T00:00:00+09:00'.in_time_zone)
+        expect(exchange.phase(at: '2026-08-07T15:00:00Z'.in_time_zone)).to eq(:wish)
       end
     end
 

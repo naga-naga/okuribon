@@ -7,9 +7,12 @@ class SessionsController < ApplicationController
 
   # OAuth のコールバック。認証情報は OmniAuth のミドルウェアが env に載せる
   def create
+    # log_in がセッションを作り直すので、戻り先はその前に取り出す
+    destination = pop_return_to
+
     log_in(User.from_omniauth(request.env['omniauth.auth']))
 
-    redirect_to root_path
+    redirect_to destination
   end
 
   def destroy

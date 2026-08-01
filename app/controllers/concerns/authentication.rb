@@ -35,4 +35,24 @@ module Authentication
     reset_session
     @current_user = nil
   end
+
+  # 保護された画面のコントローラで before_action に指定する
+  def require_login
+    return if logged_in?
+
+    store_return_to
+    redirect_to login_path
+  end
+
+  # 覚えるのはサーバーが見た URL だけ。パラメータや Referer からは受け取らない。
+  # 戻り先を外から渡せると、ログインを踏ませるだけで外部サイトへ飛ばせる。
+  # 書き込みは覚えない。ログインしただけで送信をやり直させてしまう
+  def store_return_to
+    session[:return_to] = request.fullpath if request.get?
+  end
+
+  # 一度使ったら消す。残すと、次のログインで関係のない画面へ飛ぶ
+  def pop_return_to
+    session.delete(:return_to) || root_path
+  end
 end

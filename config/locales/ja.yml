@@ -1,4 +1,11 @@
 ja:
+  exchange:
+    phases:
+      preparing: 準備中
+      registration: 登録期間
+      wish: 希望提出期間
+      awaiting_matching: マッチング実行待ち
+      published: 結果公開
   activerecord:
     attributes:
       exchange:

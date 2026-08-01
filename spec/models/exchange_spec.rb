@@ -246,6 +246,25 @@ RSpec.describe Exchange do
       expect(at_list.map { |at| exchange.phase(at: at.in_time_zone) })
         .to all(be_in(Exchange::PHASES))
     end
+
+    describe '表示名' do
+      it '基準時刻のフェーズの表示名を日本語で返す' do
+        expect(exchange.phase_name(at: '2026-07-25T00:00:00+09:00'.in_time_zone)).to eq('準備中')
+        expect(exchange.phase_name(at: '2026-08-04T00:00:00+09:00'.in_time_zone)).to eq('登録期間')
+        expect(exchange.phase_name(at: '2026-08-11T00:00:00+09:00'.in_time_zone)).to eq('希望提出期間')
+        expect(exchange.phase_name(at: '2026-08-20T00:00:00+09:00'.in_time_zone)).to eq('マッチング実行待ち')
+      end
+
+      it 'マッチング実行日時が入っていれば結果公開になる' do
+        exchange.matched_at = '2026-08-16T00:00:00+09:00'.in_time_zone
+
+        expect(exchange.phase_name(at: '2026-08-20T00:00:00+09:00'.in_time_zone)).to eq('結果公開')
+      end
+
+      it '基準時刻を省略すると現在時刻で判定する' do
+        expect(build(:exchange).phase_name).to eq('登録期間')
+      end
+    end
   end
 
   describe '招待トークン' do

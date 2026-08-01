@@ -43,6 +43,10 @@ class Exchange < ApplicationRecord
     :awaiting_matching
   end
 
+  def phase_name(at: Time.current)
+    I18n.t(phase(at:), scope: 'exchange.phases')
+  end
+
   private
 
   # 招待トークンと乱数シードは交換会の作成時に発行する。

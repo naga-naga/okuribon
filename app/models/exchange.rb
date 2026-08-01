@@ -34,7 +34,7 @@ class Exchange < ApplicationRecord
   # 登録期間の終了と希望提出期間の開始は同時刻なので、両者の境目は1点になる
   def phase(at: Time.current)
     # 実行後に主催者が期間の日時を戻しても、公開済みであることは変わらない
-    return :published if matched_at?
+    return :published if matched_at.present?
 
     return :preparing if at < registration_starts_at
     return :registration if at < registration_ends_at

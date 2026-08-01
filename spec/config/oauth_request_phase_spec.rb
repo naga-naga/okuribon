@@ -3,13 +3,16 @@
 require 'rails_helper'
 
 # 認証の開始を GET で踏めると、外部サイトに置いた画像やリンクだけで認証をやり直させられる。
-# POST に限り、かつ CSRF トークンを要求する
-RSpec.describe 'OAuth の認証開始' do
+# POST に限り、かつ CSRF トークンを要求する。
+#
+# 固定しているのは OmniAuth のミドルウェアの設定で、アプリのコードは通らない。
+# spec/config なので type は推論されない。HTTP の口を叩くため明示する
+RSpec.describe 'OAuth の認証開始', type: :request do
   let!(:auth) do
     OmniAuth::AuthHash.new(
       provider: 'google_oauth2',
       uid: '100000000000000000001',
-      info: { name: '送本 太郎', image: 'https://example.com/a.png' }
+      info: { name: '贈本 太郎', image: 'https://example.com/a.png' }
     )
   end
 

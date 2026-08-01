@@ -28,15 +28,16 @@ RSpec.describe SessionsController do
       expect(response.body).to include('method="post"')
     end
 
-    # デザインの「01 ログイン」には Google / GitHub / Discord の3つが並ぶが、
-    # docs/spec.md 11 はプロバイダを Google のみと定めている。
-    # デザインに引きずられて増やさないよう、認証開始の口の数を固定する
-    it '認証開始は Google の1つだけ' do
+    # デザインの「01 ログイン」には3つのプロバイダが並ぶが、実装があるのは
+    # docs/spec.md 11 が定める Google だけ。デザインに引きずられて、
+    # 押しても認証できないボタンが混ざらないようにする。
+    # プロバイダを増やすときは、omniauth.rb に足したうえでここにも並べる
+    it '実装のあるプロバイダの分だけ認証開始の口を置く' do
       get '/login'
 
-      expect(response.body.scan('/auth/').size).to eq(1)
-      expect(response.body).not_to include('GitHub')
-      expect(response.body).not_to include('Discord')
+      providers = response.body.scan(%r{action="/auth/([^"]+)"}).flatten
+
+      expect(providers).to contain_exactly('google_oauth2')
     end
 
     # レイアウトを持つ画面がまだログインだけなので、ここで押さえる。

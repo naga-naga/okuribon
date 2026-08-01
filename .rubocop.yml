@@ -59,9 +59,31 @@ RSpec/MultipleExpectations:
 RSpec/ExampleLength:
   Enabled: false
 
-# クラス以外の振る舞いを describe することがある
+# request spec には対応するコントローラか concern があるので、describe に定数を求める。
+# 既定では spec/requests と type: request の両方が除外されているため、どちらも外す。
+# spec/config は設定そのものを固定する spec で、渡せる定数が無いので除外に残す
 RSpec/DescribeClass:
-  Enabled: false
+  Exclude:
+    - "**/spec/config/**/*"
+    - "**/spec/features/**/*"
+    - "**/spec/routing/**/*"
+    - "**/spec/system/**/*"
+    - "**/spec/views/**/*"
+  IgnoredMetadata:
+    type:
+      - channel
+      - controller
+      - helper
+      - job
+      - mailer
+      - model
+      - routing
+      - view
+      - feature
+      - system
+      - mailbox
+      - aruba
+      - task
 
 # let は最初に参照された example でだけ評価されるため、
 # どこで作られたのかが読めなくなる。即時評価の let! に揃える

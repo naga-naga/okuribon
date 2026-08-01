@@ -1,23 +1,42 @@
 <% content_for :title, 'ログイン' %>
 
-<div class="w-full max-w-sm mx-auto">
-  <h1 class="text-2xl font-bold">okuribon</h1>
-  <p class="mt-2 text-sm text-gray-600">読書交換会ツール</p>
-
-  <% if logged_in? %>
-    <div class="mt-8 flex items-center gap-3">
-      <% if current_user.avatar_url.present? %>
-        <%= image_tag current_user.avatar_url, alt: '', class: 'w-10 h-10 rounded-full' %>
-      <% end %>
-      <span class="font-medium"><%= current_user.display_name %></span>
+<div class="flex min-h-dvh items-center justify-center px-4 py-10">
+  <div class="flex w-full max-w-[480px] flex-col gap-8 p-6 sm:p-10">
+    <div class="flex flex-col gap-2.5">
+      <div class="h-[22px] w-[22px] rounded-[2px] bg-accent" aria-hidden="true"></div>
+      <h1 class="text-[26px] font-bold leading-[1.45] text-ink">読書交換会</h1>
+      <p class="text-[13.5px] leading-[1.9] text-ink-muted">
+        顔見知りで集まって、電子書籍を持ちよって交換するためのツールです。招待された交換会にだけ参加できます。
+      </p>
     </div>
 
-    <%= button_to 'ログアウト', logout_path, method: :delete,
-                  class: 'mt-6 w-full rounded border border-gray-300 px-4 py-2' %>
-  <% else %>
-    <%# 認証開始は POST に限る。GET で踏めると、外部サイトに置いた
-        画像やリンクだけで認証をやり直させられる %>
-    <%= button_to 'Google でログイン', '/auth/google_oauth2', method: :post,
-                  class: 'mt-8 w-full rounded bg-gray-900 px-4 py-2 text-white' %>
-  <% end %>
+    <% if logged_in? %>
+      <div class="flex flex-col gap-2.5">
+        <div class="flex items-center gap-3 rounded-[5px] border border-line bg-paper px-5 py-4">
+          <% if current_user.avatar_url.present? %>
+            <%= image_tag current_user.avatar_url, alt: '',
+                          class: 'h-10 w-10 rounded-full border border-line bg-fill' %>
+          <% end %>
+          <span class="text-[14.5px] font-medium text-ink"><%= current_user.display_name %></span>
+        </div>
+
+        <%= button_to 'ログアウト', logout_path, method: :delete,
+                      form_class: 'w-full',
+                      class: 'w-full cursor-pointer rounded-[5px] border border-line-strong bg-paper ' \
+                             'px-5 py-3.5 text-left text-[14.5px] font-medium text-ink hover:bg-paper-hover' %>
+      </div>
+    <% else %>
+      <%# デザインには Google / GitHub / Discord が並ぶが、docs/spec.md 11 により Google だけにする %>
+      <%# 認証開始は POST に限る。GET で踏めると、外部サイトに置いた
+          画像やリンクだけで認証をやり直させられる %>
+      <%= button_to 'Google でログイン', '/auth/google_oauth2', method: :post,
+                    form_class: 'w-full',
+                    class: 'w-full cursor-pointer rounded-[5px] border border-line-strong bg-paper ' \
+                           'px-5 py-3.5 text-left text-[14.5px] font-medium text-ink hover:bg-paper-hover' %>
+
+      <p class="border-t border-line pt-5 text-[12px] leading-[1.85] text-ink-subtle">
+        受け取るのは表示名とアイコンだけです。メールアドレスは保存しません。
+      </p>
+    <% end %>
+  </div>
 </div>

@@ -28,6 +28,17 @@ RSpec.describe SessionsController do
       expect(response.body).to include('method="post"')
     end
 
+    # デザインの「01 ログイン」には Google / GitHub / Discord の3つが並ぶが、
+    # docs/spec.md 11 はプロバイダを Google のみと定めている。
+    # デザインに引きずられて増やさないよう、認証開始の口の数を固定する
+    it '認証開始は Google の1つだけ' do
+      get '/login'
+
+      expect(response.body.scan('/auth/').size).to eq(1)
+      expect(response.body).not_to include('GitHub')
+      expect(response.body).not_to include('Discord')
+    end
+
     # レイアウトを持つ画面がまだログインだけなので、ここで押さえる。
     # 他の画面が入ったら、共通の置き場へ移す
     context 'レイアウト' do

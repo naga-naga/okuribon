@@ -15,6 +15,12 @@ Rails.application.routes.draw do
   # 認証開始（POST /auth/google_oauth2）は OmniAuth のミドルウェアが横取りするので、ここには書かない
   get '/auth/google_oauth2/callback' => 'sessions#create', as: :oauth_callback
 
-  # Defines the root path route ("/")
-  # root "posts#index"
+  get '/login' => 'sessions#new', as: :login
+
+  # 副作用のある操作なので GET では受けない。
+  # 外部サイトに置いたリンクや画像だけでログアウトさせられてしまう
+  delete '/logout' => 'sessions#destroy', as: :logout
+
+  # 交換会一覧（#18）が入るまでの暫定でログイン画面を置く
+  root 'sessions#new'
 end

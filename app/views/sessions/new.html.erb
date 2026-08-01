@@ -1,0 +1,23 @@
+<% content_for :title, 'ログイン' %>
+
+<div class="w-full max-w-sm mx-auto">
+  <h1 class="text-2xl font-bold">okuribon</h1>
+  <p class="mt-2 text-sm text-gray-600">読書交換会ツール</p>
+
+  <% if logged_in? %>
+    <div class="mt-8 flex items-center gap-3">
+      <% if current_user.avatar_url.present? %>
+        <%= image_tag current_user.avatar_url, alt: '', class: 'w-10 h-10 rounded-full' %>
+      <% end %>
+      <span class="font-medium"><%= current_user.display_name %></span>
+    </div>
+
+    <%= button_to 'ログアウト', logout_path, method: :delete,
+                  class: 'mt-6 w-full rounded border border-gray-300 px-4 py-2' %>
+  <% else %>
+    <%# 認証開始は POST に限る。GET で踏めると、外部サイトに置いた
+        画像やリンクだけで認証をやり直させられる %>
+    <%= button_to 'Google でログイン', '/auth/google_oauth2', method: :post,
+                  class: 'mt-8 w-full rounded bg-gray-900 px-4 py-2 text-white' %>
+  <% end %>
+</div>

@@ -1,0 +1,8 @@
+{
+  "name": "okuribon-devcontainer-tools",
+  "private": true,
+  "description": "コンテナ内の開発ツール。アプリは importmap なので、実行時の依存はここに入れない",
+  "devDependencies": {
+    "@playwright/mcp": "0.0.78"
+  }
+}

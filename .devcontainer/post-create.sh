@@ -39,6 +39,16 @@ if [ -f "$host_gitconfig" ]; then
     fi
 fi
 
+# ブラウザで画面を確認するための Playwright MCP（.mcp.json から起動する）。
+#
+# chromium は @playwright/mcp が抱える playwright-core と同じリビジョンでないと
+# 「Executable doesn't exist」で落ちる。グローバルの npx playwright ではなく、
+# ここで入れたものの CLI を使ってリビジョンを合わせる。
+# --with-deps は共有ライブラリを apt で入れるため sudo が要る
+echo "==> 開発ツール（Playwright MCP）"
+npm --prefix .devcontainer ci
+.devcontainer/node_modules/.bin/playwright install --with-deps chromium
+
 if [ -f Gemfile ]; then
     echo "==> bundle install"
     bundle install

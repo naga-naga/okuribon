@@ -11,6 +11,12 @@
 
     <%= yield :head %>
 
+    <%# 書体は Zen Kaku Gothic New の1つで通す。太さ 400/500/700 だけを使う %>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+
     <%# Enable PWA manifest for installable apps (make sure to enable in config/routes.rb too!) %>
     <%#= tag.link rel: "manifest", href: pwa_manifest_path(format: :json) %>
 
@@ -23,8 +29,9 @@
     <%= javascript_importmap_tags %>
   </head>
 
-  <body>
-    <main class="container mx-auto mt-28 px-5 flex">
+  <%# 画面の枠組みは各ビューが決める。ヘッダは交換会一覧（#18）が入るときに置く %>
+  <body class="min-h-dvh bg-surface font-sans text-ink antialiased">
+    <main>
       <%= yield %>
     </main>
   </body>

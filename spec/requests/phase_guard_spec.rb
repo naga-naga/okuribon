@@ -43,7 +43,7 @@ RSpec.describe 'フェーズによる書き込み制御' do
 
         # 基準時刻を2回読ませ、リクエストの中で動かないことを見るためのアクション
         define_method(:show) do
-          render plain: [request_time.iso8601(9), request_time.iso8601(9)].join("\n")
+          render plain: [requested_at.iso8601(9), requested_at.iso8601(9)].join("\n")
         end
 
         private
@@ -60,7 +60,7 @@ RSpec.describe 'フェーズによる書き込み制御' do
       scope '/phase_guard_test/exchanges/:exchange_id' do
         post '/books' => 'books_guard_test#create'
         get '/books' => 'books_guard_test#index'
-        get '/books/request_time' => 'books_guard_test#show'
+        get '/books/requested_at' => 'books_guard_test#show'
         post '/wishes' => 'wishes_guard_test#create'
       end
     end
@@ -161,7 +161,7 @@ RSpec.describe 'フェーズによる書き込み制御' do
     # 読むたびに現在時刻が進むと、締切をまたいだ瞬間に、
     # 拒否の判定とメッセージに出るフェーズが1つずれる
     it 'リクエストの中では動かない' do
-      get "/phase_guard_test/exchanges/#{exchange.id}/books/request_time"
+      get "/phase_guard_test/exchanges/#{exchange.id}/books/requested_at"
 
       first_read, second_read = response.body.split("\n")
 

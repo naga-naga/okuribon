@@ -20,7 +20,7 @@ module PhaseGuard
   # 時刻は読まない。クライアントの時計を信用すると、締切を過ぎた書き込みが通る。
   # 判定とメッセージで同じ時刻を使い、境界ちょうどで両者がずれないようにする
   def verify_writable_phase(operation)
-    at = request_time
+    at = requested_at
     return if current_exchange.writable?(operation, at:)
 
     raise Exchange::PhaseViolation.new(current_exchange, operation, at:)

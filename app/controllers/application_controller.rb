@@ -10,15 +10,19 @@ class ApplicationController < ActionController::Base
   # フェーズによる拒否の応答はここだけで組み立てる。書き込み口ごとに書かない
   rescue_from Exchange::PhaseViolation, with: :deny_by_phase
 
-  helper_method :request_time
+  # コールバックの先頭で確定させる。遅延させると、実際に読むのは
+  # 途中の before_action の中になり、名前が指す時刻とずれる
+  before_action :requested_at
+
+  helper_method :requested_at
 
   private
 
   # フェーズ判定の基準時刻。リクエストを受けた時刻を1回だけ読み、以降は回す。
   # 読むたびに現在時刻を取ると、締切をまたいだ瞬間に、同じ画面の中で
   # ヘッダーと本文のフェーズが食い違う
-  def request_time
-    @request_time ||= Time.current
+  def requested_at
+    @requested_at ||= Time.current
   end
 
   # 403 ではなく 409 を返す。リクエストの形も認可も正しく、

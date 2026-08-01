@@ -93,6 +93,16 @@ RSpec.describe 'ログインの要求' do
       expect(response).to redirect_to(root_path)
     end
 
+    # HEAD は GET と同じ経路に流れるのに request.get? は false になる。
+    # 読み取りとして扱わないと、同じ URL でも戻り先が覚えられたり覚えられなかったりする
+    it 'HEAD も戻り先として覚える' do
+      head '/require_login_test/protected'
+
+      get '/auth/google_oauth2/callback'
+
+      expect(response).to redirect_to('/require_login_test/protected')
+    end
+
     # 書き込みを戻り先にすると、ログインしただけで送信をやり直させてしまう
     it '書き込みの経路は戻り先にしない' do
       post '/require_login_test/protected'

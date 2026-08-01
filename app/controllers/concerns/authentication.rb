@@ -46,9 +46,10 @@ module Authentication
 
   # 覚えるのはサーバーが見た URL だけ。パラメータや Referer からは受け取らない。
   # 戻り先を外から渡せると、ログインを踏ませるだけで外部サイトへ飛ばせる。
-  # 書き込みは覚えない。ログインしただけで送信をやり直させてしまう
+  # 書き込みは覚えない。ログインしただけで送信をやり直させてしまう。
+  # HEAD は GET と同じ経路に流れるのに request.get? が false になるため明示する
   def store_return_to
-    session[:return_to] = request.fullpath if request.get?
+    session[:return_to] = request.fullpath if request.get? || request.head?
   end
 
   # 一度使ったら消す。残すと、次のログインで関係のない画面へ飛ぶ。

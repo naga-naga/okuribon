@@ -28,13 +28,15 @@ Style/SymbolArray:
 Style/WordArray:
   EnforcedStyle: brackets
 
-# 複数行のハッシュと配列は末尾要素にもカンマを付ける（差分を小さく保つため）。
+# 複数行のハッシュと配列で、末尾要素の後に改行が来るならカンマを付ける
+# （要素を足したときの差分を1行に収めるため）。閉じかっこが末尾要素と
+# 同じ行に来るならカンマは付けない。そこに要素を足しても差分は増えない。
 # メソッド引数は対象にしない
 Style/TrailingCommaInHashLiteral:
-  EnforcedStyleForMultiline: consistent_comma
+  EnforcedStyleForMultiline: diff_comma
 
 Style/TrailingCommaInArrayLiteral:
-  EnforcedStyleForMultiline: consistent_comma
+  EnforcedStyleForMultiline: diff_comma
 
 # 値の名前とキーが同じなら短縮形で書く（name: name ではなく name:）
 Style/HashSyntax:

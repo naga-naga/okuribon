@@ -133,7 +133,7 @@ RSpec.describe 'ログインの要求' do
 
     # 保存の側が緩んでも外へ出さない。判定は取り出す1か所に置く
     ['https://evil.example.com', 'http://evil.example.com/x', '//evil.example.com',
-     '/\\evil.example.com', 'javascript:alert(1)',].each do |hostile|
+     '/\\evil.example.com', 'javascript:alert(1)'].each do |hostile|
       it "戻り先が #{hostile} でも root へ戻す" do
         post '/require_login_test/return_to', params: { to: hostile }
 

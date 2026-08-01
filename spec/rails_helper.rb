@@ -67,9 +67,9 @@ RSpec.configure do |config|
   # ディレクトリ名から type を推論する（spec/models なら type: :model）
   config.infer_spec_type_from_file_location!
 
-  # freeze_time / travel_to を使えるようにする。
-  # 時刻で結果が変わるメソッドは基準時刻を引数で受け取るため、原則として引数で渡す。
-  # 使うのは「引数を省略したとき現在時刻になる」ことを確かめる場面に限る
+  # travel_to を使えるようにする。
+  # 時刻で結果が変わるメソッドは基準時刻を必須の引数で受け取るため、原則として引数で渡す。
+  # 使うのはサーバー側の現在時刻そのものを動かす場面、つまりリクエストの spec に限る
   config.include ActiveSupport::Testing::TimeHelpers
 
   # Filter lines from Rails gems in backtraces.

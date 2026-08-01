@@ -206,9 +206,19 @@ RSpec.describe Exchange do
       expect(exchange.phase(at: '2026-08-04T00:00:00+09:00'.in_time_zone)).to eq(:published)
     end
 
+    # 現在時刻を登録の締切ちょうどに固定する。既定値が Time.current から少しでも
+    # ずれていれば登録期間が返るため、「だいたい今」では通らない
     it '基準時刻を省略すると現在時刻で判定する' do
-      # ファクトリの既定は現在時刻が登録期間の内側に入るようになっている
-      expect(build(:exchange).phase).to eq(:registration)
+      freeze_time do
+        exchange = build(
+          :exchange,
+          registration_starts_at: 1.day.ago,
+          registration_ends_at: Time.current,
+          wish_ends_at: 1.day.from_now
+        )
+
+        expect(exchange.phase).to eq(:wish)
+      end
     end
 
     it '5つのフェーズ以外の値は返さない' do
@@ -236,7 +246,16 @@ RSpec.describe Exchange do
       end
 
       it '基準時刻を省略すると現在時刻で判定する' do
-        expect(build(:exchange).phase_name).to eq('登録期間')
+        freeze_time do
+          exchange = build(
+            :exchange,
+            registration_starts_at: 1.day.ago,
+            registration_ends_at: Time.current,
+            wish_ends_at: 1.day.from_now
+          )
+
+          expect(exchange.phase_name).to eq('希望提出期間')
+        end
       end
     end
   end

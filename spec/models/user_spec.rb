@@ -53,9 +53,16 @@ RSpec.describe User do
       expect(user).to have_attributes(
         provider: 'google_oauth2',
         uid: '100000000000000000001',
-        display_name: '送本 太郎',
         avatar_url: 'https://example.com/a.png'
       )
+    end
+
+    # 表示名は本人が入力するもの。名前欄を空で出しても埋めようがないので、
+    # 初回に限りプロバイダの名前を初期値として借りる
+    it '初回はプロバイダの名前を表示名の初期値にする' do
+      user = described_class.from_omniauth(auth_hash)
+
+      expect(user.display_name).to eq('送本 太郎')
     end
 
     # 同じ人が再ログインするたびに増えていくと、参加も本も分かれてしまう
@@ -67,16 +74,23 @@ RSpec.describe User do
       expect(described_class.count).to eq(1)
     end
 
-    # プロバイダ側で改名やアイコン変更があったら、こちらも追従する
-    it '2回目以降は表示名とアバターを更新する' do
+    # 本人が変えた表示名をログインのたびに巻き戻してしまう
+    it '2回目以降は表示名を上書きしない' do
+      user = described_class.from_omniauth(auth_hash)
+      user.update!(display_name: 'おくり本の人')
+
+      described_class.from_omniauth(auth_hash(name: '送本 花子'))
+
+      expect(user.reload.display_name).to eq('おくり本の人')
+    end
+
+    # アバターは仕様上プロバイダが返す URL をそのまま持つ。本人の持ち物ではない
+    it '2回目以降もアバターはプロバイダに追従する' do
       user = described_class.from_omniauth(auth_hash)
 
-      described_class.from_omniauth(auth_hash(name: '送本 花子', image: 'https://example.com/b.png'))
+      described_class.from_omniauth(auth_hash(image: 'https://example.com/b.png'))
 
-      expect(user.reload).to have_attributes(
-        display_name: '送本 花子',
-        avatar_url: 'https://example.com/b.png'
-      )
+      expect(user.reload.avatar_url).to eq('https://example.com/b.png')
     end
 
     it 'uid が違えば別の利用者になる' do

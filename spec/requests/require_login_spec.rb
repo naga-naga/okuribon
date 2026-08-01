@@ -9,7 +9,7 @@ RSpec.describe 'ログインの要求' do
     OmniAuth::AuthHash.new(
       provider: 'google_oauth2',
       uid: '100000000000000000001',
-      info: { name: '送本 太郎', image: 'https://example.com/a.png' }
+      info: { name: '贈本 太郎', image: 'https://example.com/a.png' }
     )
   end
 

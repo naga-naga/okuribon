@@ -7,7 +7,7 @@ RSpec.describe 'OAuth のコールバック' do
     OmniAuth::AuthHash.new(
       provider: 'google_oauth2',
       uid: '100000000000000000001',
-      info: { name: '送本 太郎', image: 'https://example.com/a.png' }
+      info: { name: '贈本 太郎', image: 'https://example.com/a.png' }
     )
   end
 
@@ -19,7 +19,7 @@ RSpec.describe 'OAuth のコールバック' do
     expect(User.last).to have_attributes(
       provider: 'google_oauth2',
       uid: '100000000000000000001',
-      display_name: '送本 太郎',
+      display_name: '贈本 太郎',
       avatar_url: 'https://example.com/a.png'
     )
   end

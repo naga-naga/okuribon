@@ -38,7 +38,7 @@ RSpec.describe User do
   end
 
   describe '.from_omniauth' do
-    def auth_hash(uid: '100000000000000000001', name: '送本 太郎', image: 'https://example.com/a.png')
+    def auth_hash(uid: '100000000000000000001', name: '贈本 太郎', image: 'https://example.com/a.png')
       OmniAuth::AuthHash.new(
         provider: 'google_oauth2',
         uid:,
@@ -62,7 +62,7 @@ RSpec.describe User do
     it '初回はプロバイダの名前を表示名の初期値にする' do
       user = described_class.from_omniauth(auth_hash)
 
-      expect(user.display_name).to eq('送本 太郎')
+      expect(user.display_name).to eq('贈本 太郎')
     end
 
     # 同じ人が再ログインするたびに増えていくと、参加も本も分かれてしまう
@@ -79,7 +79,7 @@ RSpec.describe User do
       user = described_class.from_omniauth(auth_hash)
       user.update!(display_name: 'おくり本の人')
 
-      described_class.from_omniauth(auth_hash(name: '送本 花子'))
+      described_class.from_omniauth(auth_hash(name: '贈本 花子'))
 
       expect(user.reload.display_name).to eq('おくり本の人')
     end

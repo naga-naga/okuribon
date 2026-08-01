@@ -41,6 +41,11 @@ RSpec.describe 'フェーズによる書き込み制御' do
           head :ok
         end
 
+        # 基準時刻を2回読ませ、リクエストの中で動かないことを見るためのアクション
+        define_method(:show) do
+          render plain: [request_time.iso8601(9), request_time.iso8601(9)].join("\n")
+        end
+
         private
 
         define_method(:current_exchange) do
@@ -55,6 +60,7 @@ RSpec.describe 'フェーズによる書き込み制御' do
       scope '/phase_guard_test/exchanges/:exchange_id' do
         post '/books' => 'books_guard_test#create'
         get '/books' => 'books_guard_test#index'
+        get '/books/request_time' => 'books_guard_test#show'
         post '/wishes' => 'wishes_guard_test#create'
       end
     end
@@ -152,6 +158,16 @@ RSpec.describe 'フェーズによる書き込み制御' do
   end
 
   describe '基準時刻' do
+    # 読むたびに現在時刻が進むと、締切をまたいだ瞬間に、
+    # 拒否の判定とメッセージに出るフェーズが1つずれる
+    it 'リクエストの中では動かない' do
+      get "/phase_guard_test/exchanges/#{exchange.id}/books/request_time"
+
+      first_read, second_read = response.body.split("\n")
+
+      expect(first_read).to eq(second_read)
+    end
+
     # クライアントの時計や送られてきた値ではなく、サーバーの現在時刻で判定する
     it 'サーバーの現在時刻が締切を越えると、通っていた書き込みが拒否に変わる' do
       boundary = '2026-08-08T00:00:00+09:00'.in_time_zone

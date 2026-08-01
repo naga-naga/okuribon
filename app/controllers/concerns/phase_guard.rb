@@ -16,13 +16,14 @@ module PhaseGuard
 
   private
 
-  # 基準時刻は Exchange#phase の既定（サーバーの Time.current）に任せる。
-  # リクエストから来たフェーズや時刻は読まない。クライアントの時計を信用すると、
-  # 締切を過ぎた書き込みが通ってしまう
+  # 基準時刻はサーバーがリクエストを受けた時刻。リクエストから来たフェーズや
+  # 時刻は読まない。クライアントの時計を信用すると、締切を過ぎた書き込みが通る。
+  # 判定とメッセージで同じ時刻を使い、境界ちょうどで両者がずれないようにする
   def verify_writable_phase(operation)
-    return if current_exchange.writable?(operation)
+    at = request_time
+    return if current_exchange.writable?(operation, at:)
 
-    raise Exchange::PhaseViolation.new(current_exchange, operation)
+    raise Exchange::PhaseViolation.new(current_exchange, operation, at:)
   end
 
   # 対象の交換会は各コントローラが返す。

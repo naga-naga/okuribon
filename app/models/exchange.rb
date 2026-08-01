@@ -21,9 +21,9 @@ class Exchange < ApplicationRecord
   # フェーズが許さない書き込みを拒否するときに投げる。
   # 応答の組み立ては ApplicationController の rescue_from に集約する
   class PhaseViolation < StandardError
-    def initialize(exchange, operation)
+    def initialize(exchange, operation, at:)
       super(I18n.t('exchange.phase_violation',
-                   phase: exchange.phase_name,
+                   phase: exchange.phase_name(at:),
                    operation: I18n.t(operation, scope: 'exchange.operations')))
     end
   end
@@ -53,10 +53,11 @@ class Exchange < ApplicationRecord
     registration_ends_at
   end
 
-  # 基準時刻をキーワード引数で受け取り、境界の spec を時刻ちょうどで書けるようにする。
+  # 基準時刻は必須にする。既定値を置くと呼ぶたびに現在時刻が進み、締切をまたいだ
+  # 瞬間に1つの画面の中でフェーズが食い違う。現在時刻は入口で1回だけ読んで回す。
   # 各期間は開始時刻を含み、終了時刻を含まない。
   # 登録期間の終了と希望提出期間の開始は同時刻なので、両者の境目は1点になる
-  def phase(at: Time.current)
+  def phase(at:)
     # 実行後に主催者が期間の日時を戻しても、公開済みであることは変わらない
     return :published if matched_at.present?
 
@@ -67,14 +68,14 @@ class Exchange < ApplicationRecord
     :awaiting_matching
   end
 
-  def phase_name(at: Time.current)
+  def phase_name(at:)
     I18n.t(phase(at:), scope: 'exchange.phases')
   end
 
   # 書き込みを許すかどうかの判定はここだけに置く。
   # 各コントローラがフェーズを直接見て条件を手書きすると、口ごとに食い違うため。
   # 表に無い操作名は fetch が落とす。綴り間違いを黙って可否に化けさせない
-  def writable?(operation, at: Time.current)
+  def writable?(operation, at:)
     WRITABLE_PHASES.fetch(operation).include?(phase(at:))
   end
 

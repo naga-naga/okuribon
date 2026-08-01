@@ -205,19 +205,10 @@ RSpec.describe Exchange do
       expect(exchange.phase(at: '2026-08-04T00:00:00+09:00'.in_time_zone)).to eq(:published)
     end
 
-    # 現在時刻を登録の締切ちょうどに固定する。既定値が Time.current から少しでも
-    # ずれていれば登録期間が返るため、「だいたい今」では通らない
-    it '基準時刻を省略すると現在時刻で判定する' do
-      freeze_time do
-        exchange = build(
-          :exchange,
-          registration_starts_at: 1.day.ago,
-          registration_ends_at: Time.current,
-          wish_ends_at: 1.day.from_now
-        )
-
-        expect(exchange.phase).to eq(:wish)
-      end
+    # 既定値を置くと呼ぶたびに現在時刻が進み、締切をまたいだ瞬間に
+    # 1つの画面の中でフェーズが食い違う。基準時刻は入口で1回読んで回す
+    it '基準時刻を省略すると呼べない' do
+      expect { exchange.phase }.to raise_error(ArgumentError)
     end
 
     # 締切ちょうどの扱いが曖昧だと、締切直前の操作の可否が実装ごとにぶれる。
@@ -289,17 +280,8 @@ RSpec.describe Exchange do
         expect(exchange.phase_name(at: '2026-08-20T00:00:00+09:00'.in_time_zone)).to eq('結果公開')
       end
 
-      it '基準時刻を省略すると現在時刻で判定する' do
-        freeze_time do
-          exchange = build(
-            :exchange,
-            registration_starts_at: 1.day.ago,
-            registration_ends_at: Time.current,
-            wish_ends_at: 1.day.from_now
-          )
-
-          expect(exchange.phase_name).to eq('希望提出期間')
-        end
+      it '基準時刻を省略すると呼べない' do
+        expect { exchange.phase_name }.to raise_error(ArgumentError)
       end
     end
   end
@@ -385,18 +367,8 @@ RSpec.describe Exchange do
       expect(exchange.writable?(:participation, at: boundary)).to be(false)
     end
 
-    it '基準時刻を省略すると現在時刻で判定する' do
-      freeze_time do
-        exchange = build(
-          :exchange,
-          registration_starts_at: 1.day.ago,
-          registration_ends_at: Time.current,
-          wish_ends_at: 1.day.from_now
-        )
-
-        expect(exchange.writable?(:wish)).to be(true)
-        expect(exchange.writable?(:book)).to be(false)
-      end
+    it '基準時刻を省略すると呼べない' do
+      expect { exchange.writable?(:wish) }.to raise_error(ArgumentError)
     end
 
     # 表に無い操作名を false で受けると綴り間違いが「書けない」に化けて気付けず、
@@ -421,8 +393,10 @@ RSpec.describe Exchange do
     # 操作を足したときに翻訳を足し忘れると、拒否の画面が
     # translation missing のまま利用者に出てしまう
     it 'すべての操作について、翻訳の抜けていないメッセージになる' do
+      at = '2026-08-11T00:00:00+09:00'.in_time_zone
+
       messages = Exchange::WRITABLE_PHASES.keys.map do |operation|
-        described_class::PhaseViolation.new(exchange, operation).message
+        described_class::PhaseViolation.new(exchange, operation, at:).message
       end
 
       expect(messages.join("\n")).not_to include('translation missing')

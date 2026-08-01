@@ -10,7 +10,16 @@ class ApplicationController < ActionController::Base
   # フェーズによる拒否の応答はここだけで組み立てる。書き込み口ごとに書かない
   rescue_from Exchange::PhaseViolation, with: :deny_by_phase
 
+  helper_method :request_time
+
   private
+
+  # フェーズ判定の基準時刻。リクエストを受けた時刻を1回だけ読み、以降は回す。
+  # 読むたびに現在時刻を取ると、締切をまたいだ瞬間に、同じ画面の中で
+  # ヘッダーと本文のフェーズが食い違う
+  def request_time
+    @request_time ||= Time.current
+  end
 
   # 403 ではなく 409 を返す。リクエストの形も認可も正しく、
   # 交換会の現在のフェーズだけが操作を許していないため。

@@ -13,6 +13,12 @@
 # devcontainer に渡すトークン類。.env.example のみ追跡する
 /.devcontainer/.env
 
+# 開発ツールの実体。package.json と package-lock.json だけ追跡する
+/.devcontainer/node_modules
+
+# Playwright MCP がスナップショットとスクリーンショットを吐く場所
+/.playwright-mcp
+
 # Ignore all logfiles and tempfiles.
 /log/*
 /tmp/*

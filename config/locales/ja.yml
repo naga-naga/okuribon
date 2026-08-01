@@ -6,6 +6,13 @@ ja:
       wish: 希望提出期間
       awaiting_matching: マッチング実行待ち
       published: 結果公開
+    # フェーズによる書き込み制御の対象になる操作
+    operations:
+      participation: 参加の変更
+      book: 本の登録・編集
+      wish: 希望リストの変更
+      matching: マッチングの実行
+    phase_violation: 現在は%{phase}のため、%{operation}はできません
   activerecord:
     attributes:
       exchange:

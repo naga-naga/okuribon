@@ -408,6 +408,28 @@ RSpec.describe Exchange do
     end
   end
 
+  describe 'フェーズ違反の例外' do
+    let!(:exchange) do
+      build(
+        :exchange,
+        registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
+        registration_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
+        wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone
+      )
+    end
+
+    # 操作を足したときに翻訳を足し忘れると、拒否の画面が
+    # translation missing のまま利用者に出てしまう
+    it 'すべての操作について、翻訳の抜けていないメッセージになる' do
+      messages = Exchange::WRITABLE_PHASES.keys.map do |operation|
+        described_class::PhaseViolation.new(exchange, operation).message
+      end
+
+      expect(messages.join("\n")).not_to include('translation missing')
+      expect(messages.uniq.size).to eq(Exchange::WRITABLE_PHASES.size)
+    end
+  end
+
   describe '招待トークン' do
     it '作成時に自動で入る' do
       exchange = create(:exchange)

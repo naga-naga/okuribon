@@ -18,6 +18,16 @@ class Exchange < ApplicationRecord
     matching: [:awaiting_matching],
   }.freeze
 
+  # フェーズが許さない書き込みを拒否するときに投げる。
+  # 応答の組み立ては ApplicationController の rescue_from に集約する
+  class PhaseViolation < StandardError
+    def initialize(exchange, operation)
+      super(I18n.t('exchange.phase_violation',
+                   phase: exchange.phase_name,
+                   operation: I18n.t(operation, scope: 'exchange.operations')))
+    end
+  end
+
   belongs_to :owner, class_name: 'User', inverse_of: :owned_exchanges
 
   has_many :participations, dependent: :destroy

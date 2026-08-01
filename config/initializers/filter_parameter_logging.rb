@@ -7,6 +7,7 @@
 # See the ActiveSupport::ParameterFilter documentation for supported notations and behaviors.
 Rails.application.config.filter_parameters += [
   :passw, :email, :secret, :token, :_key, :crypt, :salt, :certificate, :otp, :ssn, :cvv, :cvc,
-  # ギフトコードは既定のパターンに引っかからないため明示する
-  :gift_code,
+  # ギフトコードと OAuth の認可コードは既定のパターンに引っかからないため明示する。
+  # :code は部分一致なので gift_code も兼ねるが、意図が読めるよう両方を残す
+  :gift_code, :code,
 ]

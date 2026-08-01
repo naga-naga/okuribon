@@ -11,6 +11,10 @@ Rails.application.routes.draw do
   # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
   # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
 
+  # OAuth のコールバック。プロバイダからのリダイレクトで来るため GET で受ける。
+  # 認証開始（POST /auth/google_oauth2）は OmniAuth のミドルウェアが横取りするので、ここには書かない
+  get '/auth/google_oauth2/callback' => 'sessions#create', as: :oauth_callback
+
   # Defines the root path route ("/")
   # root "posts#index"
 end

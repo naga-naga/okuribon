@@ -18,4 +18,12 @@ RSpec.describe 'ログのパラメータフィルタ' do
 
     expect(filtered['invite_token']).not_to eq('secret-token')
   end
+
+  # OAuth のコールバックは認可コードをクエリ文字列で受け取る。
+  # 短命で1回しか使えないが、アクセストークンと交換できる資格情報には違いない
+  it 'OAuth の認可コードをログに残さない' do
+    filtered = filter.filter('code' => '4/0AeanS0abcdef')
+
+    expect(filtered['code']).not_to eq('4/0AeanS0abcdef')
+  end
 end

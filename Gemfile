@@ -42,6 +42,12 @@ gem 'thruster', require: false
 # Rails 標準のメッセージと日付書式の日本語訳
 gem 'rails-i18n'
 
+# 認証は OAuth のみ。パスワードは持たない。
+# omniauth-rails_csrf_protection は認証開始のリクエストを POST に限定する
+gem 'omniauth', '~> 2.1'
+gem 'omniauth-google-oauth2', '~> 1.2'
+gem 'omniauth-rails_csrf_protection', '~> 2.0'
+
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
   gem 'debug', platforms: [:mri, :windows], require: 'debug/prelude'

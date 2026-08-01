@@ -18,4 +18,4 @@ ja:
             wish_ends_at:
               before_start: は開始日時より後にしてください
             wish_starts_at:
-              overlaps_registration: は登録期間の終了日時以降にしてください
+              not_registration_end: は登録期間の終了日時と同じにしてください

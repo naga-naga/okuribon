@@ -22,7 +22,7 @@ class Exchange < ApplicationRecord
 
   validate :registration_period_order
   validate :wish_period_order
-  validate :periods_do_not_overlap
+  validate :wish_period_follows_registration
 
   after_initialize :assign_generated_attributes, if: :new_record?
 
@@ -49,11 +49,13 @@ class Exchange < ApplicationRecord
     errors.add(:wish_ends_at, :before_start)
   end
 
-  # 各期間は開始時刻を含み終了時刻を含まないため、境界が同時刻でも重ならない
-  def periods_do_not_overlap
+  # 登録期間の終了と希望提出期間の開始は同時刻でなければならない。
+  # 開始時刻を含み終了時刻を含まないため同時刻でも重ならず、
+  # かつ間を空けるとどのフェーズにも属さない時間ができてしまう
+  def wish_period_follows_registration
     return if registration_ends_at.blank? || wish_starts_at.blank?
-    return if registration_ends_at <= wish_starts_at
+    return if registration_ends_at == wish_starts_at
 
-    errors.add(:wish_starts_at, :overlaps_registration)
+    errors.add(:wish_starts_at, :not_registration_end)
   end
 end

@@ -78,7 +78,8 @@ RSpec.describe Exchange do
   end
 
   describe '期間の整合性' do
-    it '登録期間のあとに希望提出期間が並んでいれば有効になる' do
+    # 空けるとどのフェーズにも属さない時間ができる。5フェーズで時間軸を覆いきるため隙間を許さない
+    it '登録期間の終了と希望提出期間の開始のあいだが空いていると無効になる' do
       exchange = build(
         :exchange,
         registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
@@ -87,11 +88,13 @@ RSpec.describe Exchange do
         wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone
       )
 
-      expect(exchange).to be_valid
+      expect(exchange).not_to be_valid
+      expect(exchange.errors.full_messages)
+        .to contain_exactly('希望提出期間の開始日時は登録期間の終了日時と同じにしてください')
     end
 
     # 各期間は開始時刻を含み終了時刻を含まないため、境界が一致していても重ならない
-    it '登録期間の終了と希望提出期間の開始が同時刻でも有効になる' do
+    it '登録期間の終了と希望提出期間の開始が同時刻なら有効になる' do
       exchange = build(
         :exchange,
         registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
@@ -108,7 +111,7 @@ RSpec.describe Exchange do
         :exchange,
         registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
         registration_ends_at: '2026-07-31T00:00:00+09:00'.in_time_zone,
-        wish_starts_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
+        wish_starts_at: '2026-07-31T00:00:00+09:00'.in_time_zone,
         wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone
       )
 
@@ -122,7 +125,7 @@ RSpec.describe Exchange do
         :exchange,
         registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
         registration_ends_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
-        wish_starts_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
+        wish_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
         wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone
       )
 
@@ -170,7 +173,7 @@ RSpec.describe Exchange do
 
       expect(exchange).not_to be_valid
       expect(exchange.errors.full_messages)
-        .to contain_exactly('希望提出期間の開始日時は登録期間の終了日時以降にしてください')
+        .to contain_exactly('希望提出期間の開始日時は登録期間の終了日時と同じにしてください')
     end
 
     it '日時が欠けていても順序のエラーは足さない' do

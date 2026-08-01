@@ -191,6 +191,63 @@ RSpec.describe Exchange do
     end
   end
 
+  describe 'フェーズ' do
+    # 境界ちょうどの時刻の帰属は #9 で詰める。ここでは各フェーズの内側で導出を確かめる
+    let!(:exchange) do
+      build(
+        :exchange,
+        registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
+        registration_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
+        wish_starts_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
+        wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone
+      )
+    end
+
+    it '登録期間の開始前は準備中になる' do
+      expect(exchange.phase(at: '2026-07-25T00:00:00+09:00'.in_time_zone)).to eq(:preparing)
+    end
+
+    it '登録期間中は登録期間になる' do
+      expect(exchange.phase(at: '2026-08-04T00:00:00+09:00'.in_time_zone)).to eq(:registration)
+    end
+
+    it '希望提出期間中は希望提出期間になる' do
+      expect(exchange.phase(at: '2026-08-11T00:00:00+09:00'.in_time_zone)).to eq(:wish)
+    end
+
+    it '希望提出期間の終了後はマッチング実行待ちになる' do
+      expect(exchange.phase(at: '2026-08-20T00:00:00+09:00'.in_time_zone)).to eq(:awaiting_matching)
+    end
+
+    it 'マッチング実行日時が入っていれば結果公開になる' do
+      exchange.matched_at = '2026-08-16T00:00:00+09:00'.in_time_zone
+
+      expect(exchange.phase(at: '2026-08-20T00:00:00+09:00'.in_time_zone)).to eq(:published)
+    end
+
+    # 実行後に主催者が期間の日時を戻しても、結果が公開済みであることは変わらない
+    it 'マッチング実行日時が入っていれば、登録期間中の時刻でも結果公開になる' do
+      exchange.matched_at = '2026-08-16T00:00:00+09:00'.in_time_zone
+
+      expect(exchange.phase(at: '2026-08-04T00:00:00+09:00'.in_time_zone)).to eq(:published)
+    end
+
+    it '基準時刻を省略すると現在時刻で判定する' do
+      # ファクトリの既定は現在時刻が登録期間の内側に入るようになっている
+      expect(build(:exchange).phase).to eq(:registration)
+    end
+
+    it '5つのフェーズ以外の値は返さない' do
+      at_list = [
+        '2026-07-25T00:00:00+09:00', '2026-08-04T00:00:00+09:00',
+        '2026-08-11T00:00:00+09:00', '2026-08-20T00:00:00+09:00',
+      ]
+
+      expect(at_list.map { |at| exchange.phase(at: at.in_time_zone) })
+        .to all(be_in(Exchange::PHASES))
+    end
+  end
+
   describe '招待トークン' do
     it '作成時に自動で入る' do
       exchange = create(:exchange)

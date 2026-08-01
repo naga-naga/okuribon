@@ -28,6 +28,15 @@ RSpec.describe 'ログインの要求' do
       end
     end)
 
+    # 戻り先の検証は pop_return_to に閉じている。
+    # そこへ辿り着く値を直に置くために、session へ書くだけの経路を立てる
+    stub_const('ReturnToSeedTestController', Class.new(ApplicationController) do
+      def create
+        session[:return_to] = params[:to]
+        head :created
+      end
+    end)
+
     # ログイン画面とコールバックは実物を通すため、消さずに足す。
     # 経路は遅延読み込みなので、先に読ませてから追記しないと実物ごと消える
     Rails.application.reload_routes_unless_loaded
@@ -35,6 +44,7 @@ RSpec.describe 'ログインの要求' do
     Rails.application.routes.draw do
       get '/require_login_test/protected' => 'protected_test#show'
       post '/require_login_test/protected' => 'protected_test#create'
+      post '/require_login_test/return_to' => 'return_to_seed_test#create'
     end
   end
 
@@ -90,6 +100,45 @@ RSpec.describe 'ログインの要求' do
       get '/auth/google_oauth2/callback'
 
       expect(response).to redirect_to(root_path)
+    end
+  end
+
+  # 戻り先を外部サイトにできると、本物のログイン画面を経由した
+  # もっともらしいリンクで、認証直後に偽サイトへ落とせる
+  describe '戻り先の限定' do
+    # OmniAuth は ?origin= と Referer から omniauth.origin を組み立てる。
+    # どちらも攻撃者が仕込めるため、戻り先としては読まない
+    it 'origin パラメータでは外部サイトへ飛ばない' do
+      get '/auth/google_oauth2/callback?origin=https://evil.example.com'
+
+      expect(response).to redirect_to(root_path)
+    end
+
+    it 'Referer では外部サイトへ飛ばない' do
+      get '/auth/google_oauth2/callback',
+          headers: { 'HTTP_REFERER' => 'https://evil.example.com/login' }
+
+      expect(response).to redirect_to(root_path)
+    end
+
+    # 保存の側が緩んでも外へ出さない。判定は取り出す1か所に置く
+    ['https://evil.example.com', 'http://evil.example.com/x', '//evil.example.com',
+     '/\\evil.example.com', 'javascript:alert(1)',].each do |hostile|
+      it "戻り先が #{hostile} でも root へ戻す" do
+        post '/require_login_test/return_to', params: { to: hostile }
+
+        get '/auth/google_oauth2/callback'
+
+        expect(response).to redirect_to(root_path)
+      end
+    end
+
+    it '自サイト内のパスはそのまま使う' do
+      post '/require_login_test/return_to', params: { to: '/exchanges/1?tab=books' }
+
+      get '/auth/google_oauth2/callback'
+
+      expect(response).to redirect_to('/exchanges/1?tab=books')
     end
   end
 

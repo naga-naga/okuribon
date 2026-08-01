@@ -51,8 +51,19 @@ module Authentication
     session[:return_to] = request.fullpath if request.get?
   end
 
-  # 一度使ったら消す。残すと、次のログインで関係のない画面へ飛ぶ
+  # 一度使ったら消す。残すと、次のログインで関係のない画面へ飛ぶ。
+  # 判定はここ1か所に置く。保存の側が緩んでも外部サイトへは出さない
   def pop_return_to
-    session.delete(:return_to) || root_path
+    path = session.delete(:return_to)
+
+    same_origin_path?(path) ? path : root_path
+  end
+
+  # 使えるのは自サイト内のパスだけ。redirect_to も他ホストを弾くが、
+  # そちらは例外なので 500 になる。ここで root へ落として画面を壊さない。
+  # //evil.example.com はプロトコル相対 URL、/\evil.example.com は
+  # ブラウザが // と同じに解釈するため、どちらも外部へ出る
+  def same_origin_path?(path)
+    path.is_a?(String) && path.start_with?('/') && !path.match?(%r{\A/[/\\]})
   end
 end

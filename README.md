@@ -53,3 +53,13 @@ MCP には `--browser=chromium` を渡している。既定は branded Chrome �
 コンテナには入っていないため起動に失敗する。
 
 出力は `.playwright-mcp/` に落ちる。追跡しない。
+
+## デザイン
+
+配色と書体は Claude Design の「本の交換会ツールビジュアルガイド」の
+DIRECTION 2a「見通しを紙の色で」に従う。トークンは
+`app/assets/tailwind/application.css` の `@theme` にあり、ビューからは
+`bg-surface` `text-ink` `border-line` のような Tailwind のクラスで参照する。
+
+色には意味の担当を1つずつ持たせる。朱（`accent`）は押すものと締切、
+松葉（`success`）は成立と完了、それ以外は生成りの濃淡で階層を作る。影は使わない。

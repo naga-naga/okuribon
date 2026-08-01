@@ -1,1 +1,51 @@
 @import "tailwindcss";
+
+/*
+ * ビジュアルガイドの DIRECTION 2a「見通しを紙の色で」から起こしたトークン。
+ * 色には意味の担当を1つずつ持たせる。朱＝押すもの・締切、松葉＝成立・完了、
+ * それ以外は生成りの濃淡で階層を作る。階層は文字の大きさ・太さ・整列で表し、影は使わない。
+ *
+ * 名前は英語の意味名で持ち、和名は対応が追えるようコメントに残す。
+ */
+@theme {
+  --color-surface: #f4f0e8; /* 生成り。ページとカードの地 */
+  --color-surface-sunken: #f7f3ea; /* 一段沈めた面。準備中など、待つだけの状態 */
+  --color-paper: #fbf8f2; /* 紙。地の上に置く面 */
+  --color-paper-hover: #f2ece0; /* 紙の面を押せるときのホバー */
+  --color-fill: #ede6d8; /* 中立のチップとアバターの下地 */
+
+  --color-ink: #26211c; /* 墨。見出しと本文 */
+  --color-ink-muted: #6b6259; /* 薄墨。補助的な説明 */
+  --color-ink-subtle: #8a8074; /* さらに弱い注記とラベル */
+
+  --color-accent: #8c3a2b; /* 朱。押すものと締切 */
+  --color-accent-hover: #75301f;
+  --color-accent-soft: #f5e3de; /* 朱の面。順位チップなど */
+
+  --color-success: #4a6152; /* 松葉。成立と完了 */
+  --color-success-hover: #3c5044;
+
+  --color-line: #ded6c8; /* 境界線 */
+  --color-line-strong: #c9bfad; /* 押せるものの輪郭 */
+
+  /* 単一書体で通し、階層は太さで作る。読み込みは layouts/application.html.erb */
+  --font-sans: "Zen Kaku Gothic New", ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  /* リンクは朱。下線を残して、面で押させるボタンと役割を分ける */
+  a {
+    color: var(--color-accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  a:hover {
+    opacity: 0.7;
+  }
+
+  /* 残り時間や冊数を等幅で並べる。桁が変わっても数字がずれない */
+  .tabular {
+    font-feature-settings: "tnum";
+  }
+}

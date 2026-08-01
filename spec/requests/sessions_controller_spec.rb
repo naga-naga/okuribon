@@ -28,6 +28,23 @@ RSpec.describe SessionsController do
       expect(response.body).to include('method="post"')
     end
 
+    # レイアウトを持つ画面がまだログインだけなので、ここで押さえる。
+    # 他の画面が入ったら、共通の置き場へ移す
+    context 'レイアウト' do
+      it '書体を読み込む' do
+        get '/login'
+
+        expect(response.body).to include('Zen+Kaku+Gothic+New')
+      end
+
+      it '地の色と書体を body に当てる' do
+        get '/login'
+
+        expect(response.body).to include('bg-surface')
+        expect(response.body).to include('font-sans')
+      end
+    end
+
     it 'ログイン済みなら表示名とログアウトを出す' do
       get '/auth/google_oauth2/callback'
 

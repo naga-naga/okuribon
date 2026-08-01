@@ -20,14 +20,6 @@ RSpec.describe 'フェーズによる書き込み制御' do
   # 拒否がアクションの手前で効いているかを見るため、走ったアクションを記録する
   let!(:performed) { [] }
 
-  def books_path
-    "/phase_guard_test/exchanges/#{exchange.id}/books"
-  end
-
-  def wishes_path
-    "/phase_guard_test/exchanges/#{exchange.id}/wishes"
-  end
-
   # 操作名だけが違う2つのコントローラを立てる。
   # 拒否の応答が口を問わず同じ形になることを確かめるため
   before do
@@ -71,28 +63,36 @@ RSpec.describe 'フェーズによる書き込み制御' do
   after { Rails.application.reload_routes! }
 
   it '許可されたフェーズなら書き込める' do
-    travel_to(registration_period) { post books_path }
+    travel_to(registration_period) do
+      post "/phase_guard_test/exchanges/#{exchange.id}/books"
+    end
 
     expect(response).to have_http_status(:created)
     expect(performed).to eq([:book])
   end
 
   it '許可されていないフェーズの書き込みは拒否される' do
-    travel_to(wish_period) { post books_path }
+    travel_to(wish_period) do
+      post "/phase_guard_test/exchanges/#{exchange.id}/books"
+    end
 
     expect(response).to have_http_status(:conflict)
   end
 
   # before_action で止めないと、拒否の応答を返しながら書き込みだけ通ってしまう
   it '拒否されたときアクションは走らない' do
-    travel_to(wish_period) { post books_path }
+    travel_to(wish_period) do
+      post "/phase_guard_test/exchanges/#{exchange.id}/books"
+    end
 
     expect(performed).to be_empty
   end
 
   # 読み取りは全フェーズで開いている。書き込みだけを止める
   it '対象に指定していないアクションは止めない' do
-    travel_to(wish_period) { get books_path }
+    travel_to(wish_period) do
+      get "/phase_guard_test/exchanges/#{exchange.id}/books"
+    end
 
     expect(response).to have_http_status(:ok)
     expect(performed).to eq([:book_index])
@@ -119,10 +119,14 @@ RSpec.describe 'フェーズによる書き込み制御' do
 
   describe '拒否の応答' do
     it 'コントローラが違っても同じステータスになる' do
-      travel_to(wish_period) { post books_path }
+      travel_to(wish_period) do
+        post "/phase_guard_test/exchanges/#{exchange.id}/books"
+      end
       books_status = response.status
 
-      travel_to(registration_period) { post wishes_path }
+      travel_to(registration_period) do
+        post "/phase_guard_test/exchanges/#{exchange.id}/wishes"
+      end
 
       expect(response.status).to eq(books_status)
       expect(response).to have_http_status(:conflict)
@@ -131,13 +135,17 @@ RSpec.describe 'フェーズによる書き込み制御' do
     # 待てば書けるのか、そもそも権限が無いのかが利用者に分かる必要がある。
     # 現在のフェーズと、できなかった操作の両方を出す
     it '現在のフェーズと操作をメッセージに含む' do
-      travel_to(wish_period) { post books_path }
+      travel_to(wish_period) do
+        post "/phase_guard_test/exchanges/#{exchange.id}/books"
+      end
 
       expect(response.body).to include('現在は希望提出期間のため、本の登録・編集はできません')
     end
 
     it 'コントローラごとに操作名が入れ替わる' do
-      travel_to(registration_period) { post wishes_path }
+      travel_to(registration_period) do
+        post "/phase_guard_test/exchanges/#{exchange.id}/wishes"
+      end
 
       expect(response.body).to include('現在は登録期間のため、希望リストの変更はできません')
     end
@@ -148,15 +156,22 @@ RSpec.describe 'フェーズによる書き込み制御' do
     it 'サーバーの現在時刻が締切を越えると、通っていた書き込みが拒否に変わる' do
       boundary = '2026-08-08T00:00:00+09:00'.in_time_zone
 
-      travel_to(boundary - 1.second) { post books_path }
+      travel_to(boundary - 1.second) do
+        post "/phase_guard_test/exchanges/#{exchange.id}/books"
+      end
       expect(response).to have_http_status(:created)
 
-      travel_to(boundary) { post books_path }
+      travel_to(boundary) do
+        post "/phase_guard_test/exchanges/#{exchange.id}/books"
+      end
       expect(response).to have_http_status(:conflict)
     end
 
     it 'パラメータで許可されたフェーズを送っても拒否される' do
-      travel_to(wish_period) { post books_path, params: { phase: 'registration' } }
+      travel_to(wish_period) do
+        post "/phase_guard_test/exchanges/#{exchange.id}/books",
+             params: { phase: 'registration' }
+      end
 
       expect(response).to have_http_status(:conflict)
       expect(performed).to be_empty
@@ -164,7 +179,8 @@ RSpec.describe 'フェーズによる書き込み制御' do
 
     it 'パラメータで期間内の時刻を送っても拒否される' do
       travel_to(wish_period) do
-        post books_path, params: { at: registration_period.iso8601 }
+        post "/phase_guard_test/exchanges/#{exchange.id}/books",
+             params: { at: registration_period.iso8601 }
       end
 
       expect(response).to have_http_status(:conflict)

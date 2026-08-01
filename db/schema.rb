@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_30_125905) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_01_070444) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -50,7 +50,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_30_125905) do
     t.datetime "updated_at", null: false
     t.string "webhook_url"
     t.datetime "wish_ends_at", null: false
-    t.datetime "wish_starts_at", null: false
     t.index ["invite_token"], name: "index_exchanges_on_invite_token", unique: true
     t.index ["owner_id"], name: "index_exchanges_on_owner_id"
   end

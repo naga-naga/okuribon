@@ -7,7 +7,7 @@ RSpec.describe Exchange do
   it '必須のカラムに nil を入れるとバリデーションで落ちる' do
     columns = [
       :name, :registration_starts_at, :registration_ends_at,
-      :wish_starts_at, :wish_ends_at, :invite_token, :random_seed,
+      :wish_ends_at, :invite_token, :random_seed,
     ]
 
     columns.each do |column|
@@ -20,7 +20,7 @@ RSpec.describe Exchange do
   it '必須のカラムはバリデーションを迂回しても保存できない' do
     columns = [
       :name, :registration_starts_at, :registration_ends_at,
-      :wish_starts_at, :wish_ends_at, :invite_token, :random_seed,
+      :wish_ends_at, :invite_token, :random_seed,
     ]
 
     columns.each do |column|
@@ -77,38 +77,34 @@ RSpec.describe Exchange do
       .not_to include('phase', 'state', 'status', 'aasm_state')
   end
 
+  # 空きを許すとどのフェーズにも属さない時間ができるため、両者は同時刻でなければならない。
+  # カラムに分けて等値を検証するのではなく、導出して二重管理をなくす
+  describe '希望提出期間の開始' do
+    it '登録期間の終了と同じ時刻になる' do
+      exchange = build(:exchange, registration_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone)
+
+      expect(exchange.wish_starts_at).to eq('2026-08-08T00:00:00+09:00'.in_time_zone)
+    end
+
+    it '登録期間の終了を動かすと追随する' do
+      exchange = build(:exchange)
+      exchange.registration_ends_at = '2026-09-01T00:00:00+09:00'.in_time_zone
+
+      expect(exchange.wish_starts_at).to eq('2026-09-01T00:00:00+09:00'.in_time_zone)
+    end
+
+    # カラムとして残っていると、直接 SQL や update_column で登録期間の終了とずれる
+    it 'カラムとしては持たない' do
+      expect(described_class.column_names).not_to include('wish_starts_at')
+    end
+  end
+
   describe '期間の整合性' do
-    it '登録期間のあとに希望提出期間が並んでいれば有効になる' do
-      exchange = build(
-        :exchange,
-        registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
-        registration_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
-        wish_starts_at: '2026-08-10T00:00:00+09:00'.in_time_zone,
-        wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone
-      )
-
-      expect(exchange).to be_valid
-    end
-
-    # 各期間は開始時刻を含み終了時刻を含まないため、境界が一致していても重ならない
-    it '登録期間の終了と希望提出期間の開始が同時刻でも有効になる' do
-      exchange = build(
-        :exchange,
-        registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
-        registration_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
-        wish_starts_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
-        wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone
-      )
-
-      expect(exchange).to be_valid
-    end
-
     it '登録期間の終了が開始より前だと無効になる' do
       exchange = build(
         :exchange,
         registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
         registration_ends_at: '2026-07-31T00:00:00+09:00'.in_time_zone,
-        wish_starts_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
         wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone
       )
 
@@ -122,7 +118,6 @@ RSpec.describe Exchange do
         :exchange,
         registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
         registration_ends_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
-        wish_starts_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
         wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone
       )
 
@@ -136,7 +131,6 @@ RSpec.describe Exchange do
         :exchange,
         registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
         registration_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
-        wish_starts_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
         wish_ends_at: '2026-08-07T00:00:00+09:00'.in_time_zone
       )
 
@@ -150,7 +144,6 @@ RSpec.describe Exchange do
         :exchange,
         registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
         registration_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
-        wish_starts_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
         wish_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone
       )
 
@@ -159,32 +152,155 @@ RSpec.describe Exchange do
         .to contain_exactly('希望提出期間の終了日時は開始日時より後にしてください')
     end
 
-    it '希望提出期間の開始が登録期間の終了より前だと無効になる' do
-      exchange = build(
-        :exchange,
-        registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
-        registration_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
-        wish_starts_at: '2026-08-07T00:00:00+09:00'.in_time_zone,
-        wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone
-      )
-
-      expect(exchange).not_to be_valid
-      expect(exchange.errors.full_messages)
-        .to contain_exactly('希望提出期間の開始日時は登録期間の終了日時以降にしてください')
-    end
-
     it '日時が欠けていても順序のエラーは足さない' do
       exchange = build(
         :exchange,
         registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
         registration_ends_at: nil,
-        wish_starts_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
         wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone
       )
 
       expect(exchange).not_to be_valid
       expect(exchange.errors.full_messages)
         .to contain_exactly('登録期間の終了日時を入力してください')
+    end
+  end
+
+  describe 'フェーズ' do
+    let!(:exchange) do
+      build(
+        :exchange,
+        registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
+        registration_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
+        wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone
+      )
+    end
+
+    it '登録期間の開始前は準備中になる' do
+      expect(exchange.phase(at: '2026-07-25T00:00:00+09:00'.in_time_zone)).to eq(:preparing)
+    end
+
+    it '登録期間中は登録期間になる' do
+      expect(exchange.phase(at: '2026-08-04T00:00:00+09:00'.in_time_zone)).to eq(:registration)
+    end
+
+    it '希望提出期間中は希望提出期間になる' do
+      expect(exchange.phase(at: '2026-08-11T00:00:00+09:00'.in_time_zone)).to eq(:wish)
+    end
+
+    it '希望提出期間の終了後はマッチング実行待ちになる' do
+      expect(exchange.phase(at: '2026-08-20T00:00:00+09:00'.in_time_zone)).to eq(:awaiting_matching)
+    end
+
+    it 'マッチング実行日時が入っていれば結果公開になる' do
+      exchange.matched_at = '2026-08-16T00:00:00+09:00'.in_time_zone
+
+      expect(exchange.phase(at: '2026-08-20T00:00:00+09:00'.in_time_zone)).to eq(:published)
+    end
+
+    # 実行後に主催者が期間の日時を戻しても、結果が公開済みであることは変わらない
+    it 'マッチング実行日時が入っていれば、登録期間中の時刻でも結果公開になる' do
+      exchange.matched_at = '2026-08-16T00:00:00+09:00'.in_time_zone
+
+      expect(exchange.phase(at: '2026-08-04T00:00:00+09:00'.in_time_zone)).to eq(:published)
+    end
+
+    # 現在時刻を登録の締切ちょうどに固定する。既定値が Time.current から少しでも
+    # ずれていれば登録期間が返るため、「だいたい今」では通らない
+    it '基準時刻を省略すると現在時刻で判定する' do
+      freeze_time do
+        exchange = build(
+          :exchange,
+          registration_starts_at: 1.day.ago,
+          registration_ends_at: Time.current,
+          wish_ends_at: 1.day.from_now
+        )
+
+        expect(exchange.phase).to eq(:wish)
+      end
+    end
+
+    # 締切ちょうどの扱いが曖昧だと、締切直前の操作の可否が実装ごとにぶれる。
+    # 各期間は開始時刻を含み、終了時刻を含まない。締切ちょうどはその期間の外になる
+    describe '境界' do
+      it '登録期間の開始ちょうどから登録期間になる' do
+        boundary = '2026-08-01T00:00:00+09:00'.in_time_zone
+
+        expect(exchange.phase(at: boundary - 1.second)).to eq(:preparing)
+        expect(exchange.phase(at: boundary)).to eq(:registration)
+        expect(exchange.phase(at: boundary + 1.second)).to eq(:registration)
+      end
+
+      # 登録期間の終了と希望提出期間の開始は同時刻なので、この1点で両者が入れ替わる。
+      # 締切ちょうどにはもう本を登録できず、希望リストの編集が始まる
+      it '登録の締切ちょうどから希望提出期間になる' do
+        boundary = '2026-08-08T00:00:00+09:00'.in_time_zone
+
+        expect(exchange.phase(at: boundary - 1.second)).to eq(:registration)
+        expect(exchange.phase(at: boundary)).to eq(:wish)
+        expect(exchange.phase(at: boundary + 1.second)).to eq(:wish)
+      end
+
+      it '希望提出の締切ちょうどからマッチング実行待ちになる' do
+        boundary = '2026-08-15T00:00:00+09:00'.in_time_zone
+
+        expect(exchange.phase(at: boundary - 1.second)).to eq(:wish)
+        expect(exchange.phase(at: boundary)).to eq(:awaiting_matching)
+        expect(exchange.phase(at: boundary + 1.second)).to eq(:awaiting_matching)
+      end
+
+      # 締切は JST の 8/8 0:00。UTC では 8/7 15:00 にあたる。
+      # UTC の日付で見ると 8/7 のうちに締切を過ぎることになり、判定が9時間ずれる
+      it '同じ瞬間なら UTC 表記で渡しても同じフェーズになる' do
+        expect(exchange.phase(at: '2026-08-07T14:59:59Z'.in_time_zone)).to eq(:registration)
+        expect(exchange.phase(at: '2026-08-07T15:00:00Z'.in_time_zone)).to eq(:wish)
+      end
+
+      # フォームから来る日時にはタイムゾーンが付かない。UTC として読むと9時間ずれる
+      it 'タイムゾーンの付かない文字列は JST として解釈される' do
+        exchange = build(:exchange, registration_ends_at: '2026-08-08 00:00:00')
+
+        expect(exchange.registration_ends_at).to eq('2026-08-08T00:00:00+09:00'.in_time_zone)
+        expect(exchange.phase(at: '2026-08-07T15:00:00Z'.in_time_zone)).to eq(:wish)
+      end
+    end
+
+    it '5つのフェーズ以外の値は返さない' do
+      at_list = [
+        '2026-07-25T00:00:00+09:00', '2026-08-04T00:00:00+09:00',
+        '2026-08-11T00:00:00+09:00', '2026-08-20T00:00:00+09:00',
+      ]
+
+      expect(at_list.map { |at| exchange.phase(at: at.in_time_zone) })
+        .to all(be_in(Exchange::PHASES))
+    end
+
+    describe '表示名' do
+      it '基準時刻のフェーズの表示名を日本語で返す' do
+        expect(exchange.phase_name(at: '2026-07-25T00:00:00+09:00'.in_time_zone)).to eq('準備中')
+        expect(exchange.phase_name(at: '2026-08-04T00:00:00+09:00'.in_time_zone)).to eq('登録期間')
+        expect(exchange.phase_name(at: '2026-08-11T00:00:00+09:00'.in_time_zone)).to eq('希望提出期間')
+        expect(exchange.phase_name(at: '2026-08-20T00:00:00+09:00'.in_time_zone)).to eq('マッチング実行待ち')
+      end
+
+      it 'マッチング実行日時が入っていれば結果公開になる' do
+        exchange.matched_at = '2026-08-16T00:00:00+09:00'.in_time_zone
+
+        expect(exchange.phase_name(at: '2026-08-20T00:00:00+09:00'.in_time_zone)).to eq('結果公開')
+      end
+
+      it '基準時刻を省略すると現在時刻で判定する' do
+        freeze_time do
+          exchange = build(
+            :exchange,
+            registration_starts_at: 1.day.ago,
+            registration_ends_at: Time.current,
+            wish_ends_at: 1.day.from_now
+          )
+
+          expect(exchange.phase_name).to eq('希望提出期間')
+        end
+      end
     end
   end
 

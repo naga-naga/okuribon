@@ -4,7 +4,7 @@ require 'rails_helper'
 
 # 保護された画面はまだ1つも無いため、仕組み単体で確かめる。
 # require_login を載せた最小のコントローラを立てて回す
-RSpec.describe 'ログインの要求' do
+RSpec.describe Authentication do
   let!(:auth) do
     OmniAuth::AuthHash.new(
       provider: 'google_oauth2',

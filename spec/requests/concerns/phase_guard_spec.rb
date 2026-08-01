@@ -4,7 +4,7 @@ require 'rails_helper'
 
 # 書き込み口ごとの手書きにしないための仕組みを、仕組み単体で確かめる。
 # 実際のコントローラは #12 以降で入るため、ここでは concern を載せた最小のものを立てて回す
-RSpec.describe 'フェーズによる書き込み制御' do
+RSpec.describe PhaseGuard do
   let!(:registration_period) { '2026-08-04T00:00:00+09:00'.in_time_zone }
   let!(:wish_period) { '2026-08-11T00:00:00+09:00'.in_time_zone }
 

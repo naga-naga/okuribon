@@ -304,6 +304,110 @@ RSpec.describe Exchange do
     end
   end
 
+  # 「登録期間中のみ本を登録できる」といった判定を、書き込み口ごとの手書きにしない。
+  # 許可されるフェーズは spec.md 4. フェーズの表と補足に対応する
+  describe '書き込みの可否' do
+    let!(:exchange) do
+      build(
+        :exchange,
+        registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
+        registration_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
+        wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone
+      )
+    end
+
+    # フェーズごとに全操作の可否を並べる。許可されるものだけを確かめると、
+    # 表から漏れた操作が既定で通っていても気付けない
+    it '準備中は参加だけできる' do
+      at = '2026-07-25T00:00:00+09:00'.in_time_zone
+
+      expect(exchange.writable?(:participation, at:)).to be(true)
+      expect(exchange.writable?(:book, at:)).to be(false)
+      expect(exchange.writable?(:wish, at:)).to be(false)
+      expect(exchange.writable?(:matching, at:)).to be(false)
+    end
+
+    it '登録期間は参加と本の登録ができる' do
+      at = '2026-08-04T00:00:00+09:00'.in_time_zone
+
+      expect(exchange.writable?(:participation, at:)).to be(true)
+      expect(exchange.writable?(:book, at:)).to be(true)
+      expect(exchange.writable?(:wish, at:)).to be(false)
+      expect(exchange.writable?(:matching, at:)).to be(false)
+    end
+
+    it '希望提出期間は希望リストの変更だけできる' do
+      at = '2026-08-11T00:00:00+09:00'.in_time_zone
+
+      expect(exchange.writable?(:participation, at:)).to be(false)
+      expect(exchange.writable?(:book, at:)).to be(false)
+      expect(exchange.writable?(:wish, at:)).to be(true)
+      expect(exchange.writable?(:matching, at:)).to be(false)
+    end
+
+    it 'マッチング実行待ちはマッチングの実行だけできる' do
+      at = '2026-08-20T00:00:00+09:00'.in_time_zone
+
+      expect(exchange.writable?(:participation, at:)).to be(false)
+      expect(exchange.writable?(:book, at:)).to be(false)
+      expect(exchange.writable?(:wish, at:)).to be(false)
+      expect(exchange.writable?(:matching, at:)).to be(true)
+    end
+
+    # マッチングを再実行できると結果を引き直せてしまう。
+    # 実行済みなら以降どのフェーズの時刻で見ても書き込みは通らない
+    it '結果公開ではどれも書けない' do
+      exchange.matched_at = '2026-08-16T00:00:00+09:00'.in_time_zone
+      at = '2026-08-20T00:00:00+09:00'.in_time_zone
+
+      expect(exchange.writable?(:participation, at:)).to be(false)
+      expect(exchange.writable?(:book, at:)).to be(false)
+      expect(exchange.writable?(:wish, at:)).to be(false)
+      expect(exchange.writable?(:matching, at:)).to be(false)
+    end
+
+    # 締切ちょうどはその期間の外になる。登録期間の終了と希望提出期間の開始は
+    # 同時刻なので、この1点で書ける対象が入れ替わる
+    it '登録の締切ちょうどで、本の登録から希望リストの変更に入れ替わる' do
+      boundary = '2026-08-08T00:00:00+09:00'.in_time_zone
+
+      expect(exchange.writable?(:book, at: boundary - 1.second)).to be(true)
+      expect(exchange.writable?(:book, at: boundary)).to be(false)
+      expect(exchange.writable?(:wish, at: boundary - 1.second)).to be(false)
+      expect(exchange.writable?(:wish, at: boundary)).to be(true)
+    end
+
+    # 希望提出期間に入ってから抜けられると、取得枠の計算が壊れる
+    it '登録の締切ちょうどから参加できなくなる' do
+      boundary = '2026-08-08T00:00:00+09:00'.in_time_zone
+
+      expect(exchange.writable?(:participation, at: boundary - 1.second)).to be(true)
+      expect(exchange.writable?(:participation, at: boundary)).to be(false)
+    end
+
+    it '基準時刻を省略すると現在時刻で判定する' do
+      freeze_time do
+        exchange = build(
+          :exchange,
+          registration_starts_at: 1.day.ago,
+          registration_ends_at: Time.current,
+          wish_ends_at: 1.day.from_now
+        )
+
+        expect(exchange.writable?(:wish)).to be(true)
+        expect(exchange.writable?(:book)).to be(false)
+      end
+    end
+
+    # 表に無い操作名を false で受けると綴り間違いが「書けない」に化けて気付けず、
+    # true で受ければ素通りする。どちらも危ないので落とす
+    it '表に無い操作名を渡すと例外になる' do
+      at = '2026-08-04T00:00:00+09:00'.in_time_zone
+
+      expect { exchange.writable?(:unknown, at:) }.to raise_error(KeyError)
+    end
+  end
+
   describe '招待トークン' do
     it '作成時に自動で入る' do
       exchange = create(:exchange)

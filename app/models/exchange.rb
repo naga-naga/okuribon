@@ -9,6 +9,15 @@ class Exchange < ApplicationRecord
   # フェーズは日時から導出する。状態カラムは持たない
   PHASES = [:preparing, :registration, :wish, :awaiting_matching, :published].freeze
 
+  # 操作ごとに書き込みを許すフェーズ。spec.md 4. フェーズの表と補足に対応する。
+  # 結果公開はどの操作も許さないため、値のどこにも現れない
+  WRITABLE_PHASES = {
+    participation: [:preparing, :registration],
+    book: [:registration],
+    wish: [:wish],
+    matching: [:awaiting_matching],
+  }.freeze
+
   belongs_to :owner, class_name: 'User', inverse_of: :owned_exchanges
 
   has_many :participations, dependent: :destroy
@@ -50,6 +59,13 @@ class Exchange < ApplicationRecord
 
   def phase_name(at: Time.current)
     I18n.t(phase(at:), scope: 'exchange.phases')
+  end
+
+  # 書き込みを許すかどうかの判定はここだけに置く。
+  # 各コントローラがフェーズを直接見て条件を手書きすると、口ごとに食い違うため。
+  # 表に無い操作名は fetch が落とす。綴り間違いを黙って可否に化けさせない
+  def writable?(operation, at: Time.current)
+    WRITABLE_PHASES.fetch(operation).include?(phase(at:))
   end
 
   private

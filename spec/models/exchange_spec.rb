@@ -187,4 +187,105 @@ RSpec.describe Exchange do
         .to contain_exactly('登録期間の終了日時を入力してください')
     end
   end
+
+  describe '招待トークン' do
+    it '作成時に自動で入る' do
+      exchange = create(:exchange)
+
+      expect(exchange.invite_token).to be_present
+    end
+
+    # URL に載るため、総当たりで引ける長さにしない
+    it '推測困難な長さを持つ' do
+      exchange = create(:exchange)
+
+      expect(exchange.invite_token.length).to be >= 22
+    end
+
+    it '交換会ごとに異なる' do
+      tokens = Array.new(20) { create(:exchange).invite_token }
+
+      expect(tokens.uniq.size).to eq(20)
+    end
+
+    it '明示的に渡した値は上書きしない' do
+      exchange = create(:exchange, invite_token: 'given-token')
+
+      expect(exchange.invite_token).to eq('given-token')
+    end
+
+    # #37 で主催者が再発行できるようにするため、こちらは変更を許す
+    it '作成後に変更できる' do
+      exchange = create(:exchange)
+
+      exchange.update!(invite_token: 'regenerated-token')
+
+      expect(exchange.reload.invite_token).to eq('regenerated-token')
+    end
+  end
+
+  describe '乱数シード' do
+    # 与えたシードでマッチングを回し、結果を比較できる形にして返す
+    def matching_result_for(seed)
+      Matching::Engine.new(
+        participants: ['alice', 'bob', 'carol'],
+        books: [
+          Matching::Book.new(id: 1, owner_id: 'alice'),
+          Matching::Book.new(id: 2, owner_id: 'bob'),
+          Matching::Book.new(id: 3, owner_id: 'carol'),
+        ],
+        wishes: { 'alice' => [2, 3], 'bob' => [3, 1], 'carol' => [1, 2] },
+        seed:
+      ).call.assignments.map { |a| [a.book_id, a.participant_id, a.round, a.returned] }
+    end
+
+    it '作成時に自動で入る' do
+      exchange = create(:exchange)
+
+      expect(exchange.random_seed).to be_present
+    end
+
+    # bigint に収めるため。Random.new_seed は 128bit で入らない
+    it '2^62 未満の非負整数になる' do
+      seeds = Array.new(20) { create(:exchange).random_seed }
+
+      expect(seeds).to all(be_between(0, (2**62) - 1))
+    end
+
+    it '交換会ごとに異なる' do
+      seeds = Array.new(20) { create(:exchange).random_seed }
+
+      expect(seeds.uniq.size).to eq(20)
+    end
+
+    it '明示的に渡した値は上書きしない' do
+      exchange = create(:exchange, random_seed: 12_345)
+
+      expect(exchange.random_seed).to eq(12_345)
+    end
+
+    # 結果を作り直せないようにするため、作成後は動かせない
+    it '作成後に変更しようとすると例外になる' do
+      exchange = create(:exchange)
+
+      expect { exchange.random_seed = 12_345 }
+        .to raise_error(ActiveRecord::ReadonlyAttributeError)
+    end
+
+    it '作成後に update しようとすると例外になる' do
+      exchange = create(:exchange)
+
+      expect { exchange.update!(random_seed: 12_345) }
+        .to raise_error(ActiveRecord::ReadonlyAttributeError)
+    end
+
+    # 発行した直後のシードと、DB から読み直したシードで結果が揃うこと。
+    # bigint への往復で値が化けると、抽選をやり直しても同じ結果にならない
+    it '保存したシードで Matching::Engine の結果が再現できる' do
+      exchange = create(:exchange)
+      generated = matching_result_for(exchange.random_seed)
+
+      expect(matching_result_for(exchange.reload.random_seed)).to eq(generated)
+    end
+  end
 end

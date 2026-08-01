@@ -10,7 +10,6 @@ FactoryBot.define do
     registration_ends_at { 1.week.from_now }
     wish_starts_at { 1.week.from_now }
     wish_ends_at { 3.weeks.from_now }
-    invite_token { SecureRandom.urlsafe_base64(16) }
-    random_seed { SecureRandom.random_number(2**62) }
+    # 招待トークンと乱数シードはモデルが作成時に発行するため、ここでは指定しない
   end
 end

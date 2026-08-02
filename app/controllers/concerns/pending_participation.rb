@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
-# ログインを挟む参加の意図を、セッションに1つだけ預かる。
+# ログインを挟む参加の意図を、セッションに1つだけ保存する。
 #
 # 認証開始は POST に限られ、しかも OmniAuth のミドルウェアが横取りするため、
 # 「ログインして参加する」を押した事実はコントローラからは一度も見えない。
-# 押した時にここへ預け、認証から戻ったところで取り出す。
+# 押した時にここへ保存し、認証から戻ったところで取り出す。
 #
-# 画面を開いた時点では預けない。開いただけで立ち去った人まで、
+# 画面を開いた時点では保存しない。開いただけで立ち去った人まで、
 # 後日どこかでログインした拍子に参加させてしまうため
 module PendingParticipation
   extend ActiveSupport::Concern
@@ -17,7 +17,7 @@ module PendingParticipation
     session[:pending_participation_token] = exchange.invite_token
   end
 
-  # 交換会が消えていれば nil になる。預けたあとに消えても画面は壊さない
+  # 交換会が消えていれば nil になる。保存したあとに消えても画面は壊さない
   def pending_participation
     token = session[:pending_participation_token]
     return if token.blank?

@@ -12,7 +12,7 @@ class SessionsController < ApplicationController
 
   # OAuth のコールバック。認証情報は OmniAuth のミドルウェアが env に載せる
   def create
-    # log_in がセッションを作り直すので、預かったものはその前に取り出す
+    # log_in がセッションを作り直すので、保存したものはその前に取り出す
     destination = pop_return_to
     pending = pop_pending_participation
 
@@ -20,8 +20,8 @@ class SessionsController < ApplicationController
 
     return redirect_to destination if pending.nil?
 
-    # 参加できたかどうかによらず招待画面へ戻す。
-    # 参加できなかった理由は、あの画面がフェーズを見て説明する
+    # 参加できたかどうかによらず招待URLの着地画面へ戻す。
+    # 参加できなかった理由は、着地画面がフェーズを見て説明する
     redirect_to invitation_path(pending.invite_token),
                 notice: (t('participation.flash.joined') if join_pending(pending))
   end

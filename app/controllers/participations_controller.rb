@@ -22,7 +22,7 @@ class ParticipationsController < ApplicationController
   private
 
   # 認証開始は POST に限るため、ここから OAuth へ直接つなぐことはできない。
-  # 押した事実だけを預けてログイン画面へ送り、戻ったところで参加を確定させる
+  # 押した事実だけを保存してログイン画面へ送り、戻ったところで参加を確定させる
   def send_to_login(exchange)
     store_pending_participation(exchange)
 

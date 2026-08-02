@@ -71,7 +71,7 @@ RSpec.describe ParticipationsController do
     end
 
     # 認証開始は POST に限るため、この経路からそのまま OAuth へは渡せない。
-    # 参加の意図だけを預かってログイン画面へ送り、戻ってきたところで参加を確定させる
+    # 参加の意図だけを保存してログイン画面へ送り、戻ってきたところで参加を確定させる
     describe '未ログインのとき' do
       it 'ログイン画面へ送り、まだ参加させない' do
         travel_to(registration) { join }
@@ -111,7 +111,7 @@ RSpec.describe ParticipationsController do
         expect(exchange.participations).to be_empty
       end
 
-      # 預かった意図を残すと、次のログインで身に覚えのない参加が作られる
+      # 保存した意図を残すと、次のログインで身に覚えのない参加が作られる
       it '一度使った参加の意図は残らない' do
         travel_to(registration) do
           join

@@ -79,7 +79,7 @@ RSpec.describe Exchange do
 
   # 空きを許すとどのフェーズにも属さない時間ができるため、両者は同時刻でなければならない。
   # カラムに分けて等値を検証するのではなく、導出して二重管理をなくす
-  describe '希望提出期間の開始' do
+  describe '#wish_starts_at' do
     it '登録期間の終了と同じ時刻になる' do
       exchange = build(:exchange, registration_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone)
 
@@ -166,7 +166,7 @@ RSpec.describe Exchange do
     end
   end
 
-  describe 'フェーズ' do
+  describe '#phase' do
     let!(:exchange) do
       build(
         :exchange,
@@ -265,30 +265,39 @@ RSpec.describe Exchange do
       expect(at_list.map { |at| exchange.phase(at: at.in_time_zone) })
         .to all(be_in(Exchange::PHASES))
     end
+  end
 
-    describe '表示名' do
-      it '基準時刻のフェーズの表示名を日本語で返す' do
-        expect(exchange.phase_name(at: '2026-07-25T00:00:00+09:00'.in_time_zone)).to eq('準備中')
-        expect(exchange.phase_name(at: '2026-08-04T00:00:00+09:00'.in_time_zone)).to eq('登録期間')
-        expect(exchange.phase_name(at: '2026-08-11T00:00:00+09:00'.in_time_zone)).to eq('希望提出期間')
-        expect(exchange.phase_name(at: '2026-08-20T00:00:00+09:00'.in_time_zone)).to eq('マッチング実行待ち')
-      end
+  describe '#phase_name' do
+    let!(:exchange) do
+      build(
+        :exchange,
+        registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
+        registration_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
+        wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone
+      )
+    end
 
-      it 'マッチング実行日時が入っていれば結果公開になる' do
-        exchange.matched_at = '2026-08-16T00:00:00+09:00'.in_time_zone
+    it '基準時刻のフェーズの表示名を日本語で返す' do
+      expect(exchange.phase_name(at: '2026-07-25T00:00:00+09:00'.in_time_zone)).to eq('準備中')
+      expect(exchange.phase_name(at: '2026-08-04T00:00:00+09:00'.in_time_zone)).to eq('登録期間')
+      expect(exchange.phase_name(at: '2026-08-11T00:00:00+09:00'.in_time_zone)).to eq('希望提出期間')
+      expect(exchange.phase_name(at: '2026-08-20T00:00:00+09:00'.in_time_zone)).to eq('マッチング実行待ち')
+    end
 
-        expect(exchange.phase_name(at: '2026-08-20T00:00:00+09:00'.in_time_zone)).to eq('結果公開')
-      end
+    it 'マッチング実行日時が入っていれば結果公開になる' do
+      exchange.matched_at = '2026-08-16T00:00:00+09:00'.in_time_zone
 
-      it '基準時刻を省略すると呼べない' do
-        expect { exchange.phase_name }.to raise_error(ArgumentError)
-      end
+      expect(exchange.phase_name(at: '2026-08-20T00:00:00+09:00'.in_time_zone)).to eq('結果公開')
+    end
+
+    it '基準時刻を省略すると呼べない' do
+      expect { exchange.phase_name }.to raise_error(ArgumentError)
     end
   end
 
   # 「登録期間中のみ本を登録できる」といった判定を、書き込み口ごとの手書きにしない。
   # 許可されるフェーズは spec.md 4. フェーズの表と補足に対応する
-  describe '書き込みの可否' do
+  describe '#writable?' do
     let!(:exchange) do
       build(
         :exchange,
@@ -440,7 +449,7 @@ RSpec.describe Exchange do
     end
   end
 
-  describe '参加しているかどうか' do
+  describe '#participant?' do
     let!(:exchange) { create(:exchange) }
     let!(:user) { create(:user) }
 

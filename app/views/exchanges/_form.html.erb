@@ -1,0 +1,80 @@
+<%= form_with model: exchange, class: 'flex flex-col gap-8' do |f| %>
+  <% if exchange.errors.any? %>
+    <div class="rounded-[5px] border border-accent bg-accent-soft px-5 py-4">
+      <p class="text-[13.5px] font-medium text-accent">入力を確認してください</p>
+      <ul class="mt-2 flex list-disc flex-col gap-1 pl-5 text-[13px] leading-[1.8] text-ink">
+        <% exchange.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="flex flex-col gap-5">
+    <div class="flex flex-col gap-1.5">
+      <%= f.label :name, class: 'text-[13px] font-medium text-ink' %>
+      <%= f.text_field :name, required: true,
+                       class: 'rounded-[5px] border border-line-strong bg-paper px-4 py-3 text-[14.5px] text-ink' %>
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <%= f.label :description, class: 'text-[13px] font-medium text-ink' %>
+      <p class="text-[12px] leading-[1.85] text-ink-subtle">
+        対応するストアや価格帯の目安を書いておくと、参加者が本を選びやすくなります。
+      </p>
+      <%= f.text_area :description, rows: 5,
+                      class: 'rounded-[5px] border border-line-strong bg-paper px-4 py-3 text-[14.5px] text-ink' %>
+    </div>
+  </div>
+
+  <div class="flex flex-col gap-5 border-t border-line pt-8">
+    <div class="flex flex-col gap-1.5">
+      <h2 class="text-[15px] font-bold text-ink">日程</h2>
+      <%# 登録期間の終了と希望提出期間の開始は同時刻なので、入力欄は3つになる。
+          間を空けると、どのフェーズにも属さない時間が生まれてしまう %>
+      <p class="text-[12px] leading-[1.85] text-ink-subtle">
+        登録の締切が、そのまま希望提出期間の始まりになります。あいだは空きません。
+      </p>
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <%= f.label :registration_starts_at, '登録期間の開始', class: 'text-[13px] font-medium text-ink' %>
+      <%= f.datetime_field :registration_starts_at, required: true,
+                           class: 'tabular rounded-[5px] border border-line-strong bg-paper px-4 py-3 ' \
+                                  'text-[14.5px] text-ink' %>
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <%= f.label :registration_ends_at, '登録の締切（＝希望提出期間の開始）',
+                  class: 'text-[13px] font-medium text-ink' %>
+      <%= f.datetime_field :registration_ends_at, required: true,
+                           class: 'tabular rounded-[5px] border border-line-strong bg-paper px-4 py-3 ' \
+                                  'text-[14.5px] text-ink' %>
+      <p class="text-[12px] leading-[1.85] text-ink-subtle">
+        この時刻を過ぎると本の登録はできなくなり、希望リストの提出が始まります。
+      </p>
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <%= f.label :wish_ends_at, '希望提出の締切', class: 'text-[13px] font-medium text-ink' %>
+      <%= f.datetime_field :wish_ends_at, required: true,
+                           class: 'tabular rounded-[5px] border border-line-strong bg-paper px-4 py-3 ' \
+                                  'text-[14.5px] text-ink' %>
+    </div>
+  </div>
+
+  <div class="flex flex-col gap-1.5 border-t border-line pt-8">
+    <%= f.label :webhook_url, class: 'text-[13px] font-medium text-ink' %>
+    <p class="text-[12px] leading-[1.85] text-ink-subtle">
+      Discord または Slack の Webhook URL。フェーズの変わり目と締切前に、チャンネルへお知らせします。
+    </p>
+    <%= f.url_field :webhook_url,
+                    class: 'rounded-[5px] border border-line-strong bg-paper px-4 py-3 text-[14.5px] text-ink' %>
+  </div>
+
+  <div>
+    <%= f.submit submit_label,
+                 class: 'cursor-pointer rounded-[5px] bg-accent px-6 py-3.5 text-[14.5px] ' \
+                        'font-medium text-paper hover:bg-accent-hover' %>
+  </div>
+<% end %>

@@ -31,6 +31,16 @@
 
   <%# 画面の枠組みは各ビューが決める。ヘッダは交換会一覧（#18）が入るときに置く %>
   <body class="min-h-dvh bg-surface font-sans text-ink antialiased">
+    <%# 操作が通ったことを知らせる場所。置き場所を各画面に持たせると、
+        リダイレクト先が変わるたびに描き忘れる %>
+    <% if flash[:notice].present? %>
+      <div class="mx-auto w-full max-w-[640px] px-4 pt-6 sm:px-6">
+        <p class="rounded-[5px] border border-success bg-paper px-5 py-3.5 text-[13.5px] text-ink">
+          <%= flash[:notice] %>
+        </p>
+      </div>
+    <% end %>
+
     <main>
       <%= yield %>
     </main>

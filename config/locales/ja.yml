@@ -13,10 +13,15 @@ ja:
       wish: 希望リストの変更
       matching: マッチングの実行
     phase_violation: 現在は%{phase}のため、%{operation}はできません
+    flash:
+      created: 交換会を作成しました
+      updated: 交換会を更新しました
   activerecord:
     attributes:
       exchange:
         name: 交換会名
+        description: 概要
+        webhook_url: Webhook URL
         invite_token: 招待トークン
         random_seed: 乱数シード
         registration_starts_at: 登録期間の開始日時

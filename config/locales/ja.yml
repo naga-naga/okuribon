@@ -1,4 +1,8 @@
 ja:
+  time:
+    formats:
+      # 日程の表示。rails-i18n の :long は秒まで出るため、分までの書式を別に持つ
+      schedule: "%Y年%-m月%-d日 %H:%M"
   exchange:
     phases:
       preparing: 準備中

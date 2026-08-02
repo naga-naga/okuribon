@@ -68,6 +68,14 @@ class Exchange < ApplicationRecord
     :awaiting_matching
   end
 
+  # 未ログインの人も着地画面を見るため、利用者がいない場合も答える。
+  # 呼ぶ側それぞれに nil の判定を書かせない
+  def participant?(user)
+    return false if user.nil?
+
+    participations.exists?(user:)
+  end
+
   def phase_name(at:)
     I18n.t(phase(at:), scope: 'exchange.phases')
   end

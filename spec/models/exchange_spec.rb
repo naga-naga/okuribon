@@ -440,6 +440,32 @@ RSpec.describe Exchange do
     end
   end
 
+  describe '参加しているかどうか' do
+    let!(:exchange) { create(:exchange) }
+    let!(:user) { create(:user) }
+
+    it '参加していれば true になる' do
+      create(:participation, exchange:, user:)
+
+      expect(exchange.participant?(user)).to be(true)
+    end
+
+    it '参加していなければ false になる' do
+      expect(exchange.participant?(user)).to be(false)
+    end
+
+    it '別の交換会への参加は数えない' do
+      create(:participation, user:)
+
+      expect(exchange.participant?(user)).to be(false)
+    end
+
+    # 未ログインの人は着地画面をそのまま見る。呼ぶ側で nil を弾かせない
+    it '利用者がいなければ false になる' do
+      expect(exchange.participant?(nil)).to be(false)
+    end
+  end
+
   describe '乱数シード' do
     # 与えたシードでマッチングを回し、結果を比較できる形にして返す
     def matching_result_for(seed)

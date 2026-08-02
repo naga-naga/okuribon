@@ -106,6 +106,9 @@ RSpec.describe ExchangesController do
       log_out
 
       expect { post '/exchanges', params: { exchange: attributes } }.not_to change(Exchange, :count)
+
+      expect(response).to have_http_status(:found)
+      expect(response).to redirect_to(login_path)
     end
 
     describe '入力の不備' do
@@ -260,6 +263,20 @@ RSpec.describe ExchangesController do
 
       patch exchange_path(exchange), params: { exchange: { name: '乗っ取り' } }
 
+      expect(response).to have_http_status(:found)
+      expect(response).to redirect_to(login_path)
+      expect(exchange.reload.name).to eq('春の交換会')
+    end
+
+    # 書き込みは戻り先に覚えない。ログインしたとたんに
+    # 乗っ取りの patch がやり直されては困る
+    it '未ログインの更新はログイン後にやり直されない' do
+      log_out
+
+      patch exchange_path(exchange), params: { exchange: { name: '乗っ取り' } }
+      log_in_as(user)
+
+      expect(response).to redirect_to(root_path)
       expect(exchange.reload.name).to eq('春の交換会')
     end
 

@@ -1,0 +1,12 @@
+<% content_for :title, '交換会をつくる' %>
+
+<div class="mx-auto w-full max-w-[640px] px-4 py-10 sm:px-6">
+  <h1 class="text-[26px] font-bold leading-[1.45] text-ink">交換会をつくる</h1>
+  <p class="mt-2 text-[13.5px] leading-[1.9] text-ink-muted">
+    つくった人が主催者になります。日程はあとから変えられます。
+  </p>
+
+  <div class="mt-8">
+    <%= render 'form', exchange: @exchange, submit_label: 'この内容でつくる' %>
+  </div>
+</div>

@@ -21,6 +21,9 @@ Rails.application.routes.draw do
   # 外部サイトに置いたリンクや画像だけでログアウトさせられてしまう
   delete '/logout' => 'sessions#destroy', as: :logout
 
+  # 一覧（#18）・トップ（#19）・招待URL着地（#15）は、それぞれの issue で足す
+  resources :exchanges, only: [:new, :create, :edit, :update]
+
   # 交換会一覧（#18）が入るまでの暫定でログイン画面を置く
   root 'sessions#new'
 end

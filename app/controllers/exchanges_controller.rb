@@ -1,0 +1,49 @@
+# frozen_string_literal: true
+
+class ExchangesController < ApplicationController
+  before_action :require_login
+
+  def new
+    @exchange = Exchange.new
+  end
+
+  def edit
+    @exchange = owned_exchange
+  end
+
+  def create
+    @exchange = current_user.owned_exchanges.build(exchange_params)
+
+    if @exchange.save
+      redirect_to edit_exchange_path(@exchange), notice: t('exchange.flash.created')
+    else
+      render :new, status: :unprocessable_content
+    end
+  end
+
+  def update
+    @exchange = owned_exchange
+
+    if @exchange.update(exchange_params)
+      redirect_to edit_exchange_path(@exchange), notice: t('exchange.flash.updated')
+    else
+      render :edit, status: :unprocessable_content
+    end
+  end
+
+  private
+
+  # 主催者の交換会だけを引く。見つからなければ 404 になり、主催者以外には
+  # 存在そのものを伏せる。403 を返すと、招待されていない交換会の実在が漏れる
+  def owned_exchange
+    current_user.owned_exchanges.find(params.expect(:id))
+  end
+
+  # 主催者はログイン中の利用者から決める。送られてきた owner_id は受け取らない。
+  # 招待トークンと乱数シードもモデルが発行するので、フォームからは触らせない。
+  # 希望提出期間の開始は registration_ends_at から導出する属性で、カラムが無い
+  def exchange_params
+    params.expect(exchange: [:name, :description, :webhook_url,
+                             :registration_starts_at, :registration_ends_at, :wish_ends_at])
+  end
+end

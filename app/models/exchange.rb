@@ -80,6 +80,16 @@ class Exchange < ApplicationRecord
     I18n.t(phase(at:), scope: 'exchange.phases')
   end
 
+  # 参加の入口は、招待画面のフォームと、ログインを終えて戻ってきた経路の2つある。
+  # どちらから来ても同じ検証を通すため、フェーズの判定はコントローラに置かずここへ集める。
+  # 二重参加は一意インデックスに任せる。先に exists? で調べても、
+  # その隙に入られると防げない
+  def join!(user, at:)
+    raise PhaseViolation.new(self, :participation, at:) unless writable?(:participation, at:)
+
+    participations.create_or_find_by!(user:)
+  end
+
   # 書き込みを許すかどうかの判定はここだけに置く。
   # 各コントローラがフェーズを直接見て条件を手書きすると、口ごとに食い違うため。
   # 表に無い操作名は fetch が落とす。綴り間違いを黙って可否に化けさせない

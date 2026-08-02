@@ -1,0 +1,62 @@
+<% content_for :title, "#{@exchange.name}への招待" %>
+
+<div class="mx-auto w-full max-w-[640px] px-4 py-10 sm:px-6">
+  <p class="text-[12px] font-medium tracking-wide text-ink-subtle">読書交換会への招待</p>
+  <h1 class="mt-2 text-[26px] font-bold leading-[1.45] text-ink"><%= @exchange.name %></h1>
+
+  <p class="mt-2 text-[13.5px] leading-[1.9] text-ink-muted">
+    <%= @exchange.owner.display_name %>さんが主催しています。
+    現在<span class="tabular"><%= @exchange.participations.count %>人</span>が参加しています。
+  </p>
+
+  <% if @exchange.description.present? %>
+    <p class="mt-6 whitespace-pre-line text-[14.5px] leading-[1.95] text-ink">
+      <%= @exchange.description %>
+    </p>
+  <% end %>
+
+  <div class="mt-8 border-t border-line pt-8">
+    <h2 class="text-[15px] font-bold text-ink">日程</h2>
+
+    <dl class="mt-4 flex flex-col gap-3">
+      <%# 登録の締切は希望提出期間の開始でもある。片方だけ書くと、締切のあとに
+          何が始まるのかが読み取れない %>
+      <% [['登録期間の開始', @exchange.registration_starts_at],
+          ['登録の締切（＝希望提出期間の開始）', @exchange.registration_ends_at],
+          ['希望提出の締切', @exchange.wish_ends_at]].each do |label, at| %>
+        <div class="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
+          <dt class="text-[13px] text-ink-muted"><%= label %></dt>
+          <dd class="tabular text-[14.5px] font-medium text-ink"><%= l at, format: :schedule %></dd>
+        </div>
+      <% end %>
+    </dl>
+  </div>
+
+  <%# ログイン済みの人が押す参加のボタンは、参加処理そのものと一緒に #16 で足す。
+      言うことが無いときは区切り線ごと出さない %>
+  <% if @exchange.participant?(current_user) %>
+    <div class="mt-8 border-t border-line pt-8">
+      <%# 交換会トップ（#19）が入ったら、この画面に留めずトップへ送る %>
+      <p class="text-[14.5px] font-medium text-success">この交換会にはすでに参加しています。</p>
+    </div>
+  <% elsif !@exchange.writable?(:participation, at: requested_at) %>
+    <div class="mt-8 border-t border-line pt-8">
+      <p class="text-[14.5px] font-medium text-accent">参加を受け付ける期間は終わりました。</p>
+      <p class="mt-2 text-[13px] leading-[1.85] text-ink-muted">
+        登録の締切を過ぎると参加できません。主催者にお問い合わせください。
+      </p>
+    </div>
+  <% elsif !logged_in? %>
+    <div class="mt-8 border-t border-line pt-8">
+      <%# 認証開始は POST に限る。GET で踏めると、外部サイトに置いた
+          画像やリンクだけで認証をやり直させられる %>
+      <%= button_to '参加する', '/auth/google_oauth2', method: :post,
+                    class: 'cursor-pointer rounded-[5px] bg-accent px-6 py-3.5 text-[14.5px] ' \
+                           'font-medium text-paper hover:bg-accent-hover' %>
+
+      <p class="mt-3 text-[12px] leading-[1.85] text-ink-subtle">
+        Google でログインすると参加できます。受け取るのは表示名とアイコンだけです。
+      </p>
+    </div>
+  <% end %>
+</div>

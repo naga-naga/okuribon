@@ -475,6 +475,62 @@ RSpec.describe Exchange do
     end
   end
 
+  describe '#join!' do
+    let!(:exchange) do
+      create(
+        :exchange,
+        registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
+        registration_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
+        wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone
+      )
+    end
+    let!(:user) { create(:user) }
+
+    let!(:registration) { '2026-08-04T00:00:00+09:00'.in_time_zone }
+
+    it '参加を作って返す' do
+      participation = exchange.join!(user, at: registration)
+
+      expect(participation).to be_persisted
+      expect(exchange.participant?(user)).to be(true)
+    end
+
+    it '準備中でも参加できる' do
+      expect { exchange.join!(user, at: '2026-07-25T00:00:00+09:00'.in_time_zone) }
+        .to change { exchange.participations.count }.by(1)
+    end
+
+    # 参加の入口はフォームとログイン後の復帰の2つある。どちらから来ても
+    # ここを通るため、フェーズの判定はコントローラではなくこのメソッドで確かめる
+    it '登録の締切ちょうどからは参加できない' do
+      expect { exchange.join!(user, at: '2026-08-08T00:00:00+09:00'.in_time_zone) }
+        .to raise_error(Exchange::PhaseViolation)
+      expect(exchange.participations).to be_empty
+    end
+
+    it '希望提出期間には参加できない' do
+      expect { exchange.join!(user, at: '2026-08-11T00:00:00+09:00'.in_time_zone) }
+        .to raise_error(Exchange::PhaseViolation)
+    end
+
+    # 二重送信や、同時に届いた2つのリクエストで参加が2つできないこと。
+    # 一意インデックスの違反を拾って既存を引くため、2回目はこの経路をそのまま通る
+    it '二度呼んでも参加は増えず、同じものを返す' do
+      first = exchange.join!(user, at: registration)
+      second = exchange.join!(user, at: registration)
+
+      expect(second).to eq(first)
+      expect(exchange.participations.count).to eq(1)
+    end
+
+    it '別の利用者はそれぞれ参加できる' do
+      exchange.join!(user, at: registration)
+
+      expect { exchange.join!(create(:user), at: registration) }
+        .to change { exchange.participations.count }.by(1)
+    end
+  end
+
   describe '乱数シード' do
     # 与えたシードでマッチングを回し、結果を比較できる形にして返す
     def matching_result_for(seed)

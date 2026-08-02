@@ -57,6 +57,18 @@ RSpec.describe SessionsController do
       end
     end
 
+    # 「ログインして参加する」から送られてきた人に、何のためのログインかを見せる。
+    # 交換会の名前が無いと、押したはずの参加とこの画面が結び付かない
+    it '参加しようとしている交換会の名前を出す' do
+      target = create(:exchange, name: '夏の交換会')
+
+      post invitation_participation_path(target.invite_token)
+      follow_redirect!
+
+      expect(response.body).to include('夏の交換会')
+      expect(response.body).to include('参加するには')
+    end
+
     it 'ログイン済みなら表示名とログアウトを出す' do
       get '/auth/google_oauth2/callback'
 

@@ -32,8 +32,7 @@
     </dl>
   </div>
 
-  <%# ログイン済みの人が押す参加のボタンは、参加処理そのものと一緒に #16 で足す。
-      言うことが無いときは区切り線ごと出さない %>
+  <%# 言うことが無いときは区切り線ごと出さない %>
   <% if @exchange.participant?(current_user) %>
     <div class="mt-8 border-t border-line pt-8">
       <%# 交換会トップ（#19）が入ったら、この画面に留めずトップへ送る %>
@@ -46,17 +45,21 @@
         登録の締切を過ぎると参加できません。主催者にお問い合わせください。
       </p>
     </div>
-  <% elsif !logged_in? %>
+  <% else %>
     <div class="mt-8 border-t border-line pt-8">
-      <%# 認証開始は POST に限る。GET で踏めると、外部サイトに置いた
-          画像やリンクだけで認証をやり直させられる %>
-      <%= button_to '参加する', '/auth/google_oauth2', method: :post,
+      <%# 未ログインでも参加の口へ送る。押した事実がサーバーに残ってはじめて、
+          ログインを終えたあとに参加を確定させられる。
+          押す前に Google へ出ることが分かるよう、ラベルで断っておく %>
+      <%= button_to logged_in? ? '参加する' : 'ログインして参加する',
+                    invitation_participation_path(@exchange.invite_token),
                     class: 'cursor-pointer rounded-[5px] bg-accent px-6 py-3.5 text-[14.5px] ' \
                            'font-medium text-paper hover:bg-accent-hover' %>
 
-      <p class="mt-3 text-[12px] leading-[1.85] text-ink-subtle">
-        Google でログインすると参加できます。受け取るのは表示名とアイコンだけです。
-      </p>
+      <% unless logged_in? %>
+        <p class="mt-3 text-[12px] leading-[1.85] text-ink-subtle">
+          Google でログインすると参加できます。受け取るのは表示名とアイコンだけです。
+        </p>
+      <% end %>
     </div>
   <% end %>
 </div>

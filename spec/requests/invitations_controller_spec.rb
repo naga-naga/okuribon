@@ -54,12 +54,32 @@ RSpec.describe InvitationsController do
       end
     end
 
+    # 参加は必ずこのボタンを押してから。押した事実がサーバーに残らないと、
+    # 招待URLを開いただけで立ち去った人まで、後のログインで参加させてしまう
+    describe 'ログイン済みで未参加のとき' do
+      before do
+        log_in_as(create(:user))
+
+        get invitation_path(exchange.invite_token)
+      end
+
+      it '「参加する」で参加できる' do
+        expect(response.body).to include('参加する')
+        expect(response.body).to include(
+          %(action="#{invitation_participation_path(exchange.invite_token)}")
+        )
+      end
+    end
+
     describe '未ログインのとき' do
       before { get invitation_path(exchange.invite_token) }
 
-      it '「参加する」でログインへ送る' do
-        expect(response.body).to include('参加する')
-        expect(response.body).to include('action="/auth/google_oauth2"')
+      # 押した先が Google なので、押す前にそう分かるようにする
+      it '「ログインして参加する」で参加の意図を伝える' do
+        expect(response.body).to include('ログインして参加する')
+        expect(response.body).to include(
+          %(action="#{invitation_participation_path(exchange.invite_token)}")
+        )
       end
 
       # 戻り先はサーバーが見たパスだけを覚える。パラメータや Referer から

@@ -28,6 +28,10 @@ Rails.application.routes.draw do
   # id で引けると、番号を数えるだけで招待されていない交換会に着地できてしまう
   get '/invitations/:token' => 'invitations#show', as: :invitation
 
+  # 参加も招待トークンで引く。1人が同じ交換会に持てる参加は1つなので単数で置く
+  post '/invitations/:token/participation' => 'participations#create',
+       as: :invitation_participation
+
   # 交換会一覧（#18）が入るまでの暫定でログイン画面を置く
   root 'sessions#new'
 end

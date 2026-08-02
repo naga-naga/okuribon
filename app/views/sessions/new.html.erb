@@ -26,6 +26,12 @@
                              'px-5 py-3.5 text-left text-[14.5px] font-medium text-ink hover:bg-paper-hover' %>
       </div>
     <% else %>
+      <% if @pending_participation.present? %>
+        <p class="rounded-[5px] border border-line bg-paper px-5 py-4 text-[13.5px] leading-[1.9] text-ink">
+          <%= t('participation.login_required', name: @pending_participation.name) %>
+        </p>
+      <% end %>
+
       <%# デザインには Google / GitHub / Discord が並ぶが、docs/spec.md 11 により Google だけにする %>
       <%# 認証開始は POST に限る。GET で踏めると、外部サイトに置いた
           画像やリンクだけで認証をやり直させられる %>

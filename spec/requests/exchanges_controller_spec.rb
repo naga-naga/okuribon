@@ -78,10 +78,13 @@ RSpec.describe ExchangesController do
       expect(Exchange.last.owner).to eq(user)
     end
 
+    # 期待値はオフセット付きの直値で置く。Time.zone.parse で組み立てると
+    # 読み出しと期待値が同じ Time.zone に依存し、設定を UTC に変えても
+    # 両辺が揃って動いて通ってしまう。JST であることを固定できない
     it '日時を JST として受け取る' do
       post '/exchanges', params: { exchange: attributes }
 
-      expect(Exchange.last.registration_starts_at).to eq(Time.zone.parse('2026-08-10 10:00'))
+      expect(Exchange.last.registration_starts_at.rfc3339).to eq('2026-08-10T10:00:00+09:00')
     end
 
     # 交換会トップ（#19）が入るまでの暫定。入ったらそちらへ移す
@@ -143,15 +146,17 @@ RSpec.describe ExchangesController do
   # 状態カラムを持たないので、作った日時がそのままフェーズになる。
   # 送った日時を JST として読み違えると、作った直後から1つずれる
   describe '作成直後のフェーズ' do
-    # 日時は入力欄と同じ形式で送る。境界そのものは spec/models/exchange_spec.rb が持つ
+    # 現在時刻はオフセット付きの直値で置く。travel_to は文字列を Time.zone.parse
+    # に通すので、オフセットを書いておけばゾーン設定に依存しない。
+    # 境界そのものは spec/models/exchange_spec.rb が持つ
     [
-      ['登録期間の開始前なら準備中', '2026-08-09 23:59', :preparing],
-      ['登録期間の開始ちょうどなら登録期間', '2026-08-10 10:00', :registration],
-      ['登録の締切ちょうどなら希望提出期間', '2026-08-24 10:00', :wish],
-      ['希望提出の締切ちょうどならマッチング実行待ち', '2026-09-07 10:00', :awaiting_matching],
+      ['登録期間の開始前なら準備中', '2026-08-09T23:59:00+09:00', :preparing],
+      ['登録期間の開始ちょうどなら登録期間', '2026-08-10T10:00:00+09:00', :registration],
+      ['登録の締切ちょうどなら希望提出期間', '2026-08-24T10:00:00+09:00', :wish],
+      ['希望提出の締切ちょうどならマッチング実行待ち', '2026-09-07T10:00:00+09:00', :awaiting_matching],
     ].each do |description, now, phase|
       it description do
-        travel_to Time.zone.parse(now) do
+        travel_to now do
           post '/exchanges', params: { exchange: attributes }
 
           expect(Exchange.last.phase(at: Time.current)).to eq(phase)
@@ -160,7 +165,7 @@ RSpec.describe ExchangesController do
     end
 
     it '編集画面に現在のフェーズを出す' do
-      travel_to Time.zone.parse('2026-08-15 10:00') do
+      travel_to '2026-08-15T10:00:00+09:00' do
         post '/exchanges', params: { exchange: attributes }
 
         follow_redirect!
@@ -183,9 +188,9 @@ RSpec.describe ExchangesController do
     # UTC で描かれると9時間ずれた値が既定で入り、開くたびに日程が巻き戻る
     it '日時の入力欄に JST の値が入る' do
       dated = create(:exchange, owner: user,
-                                registration_starts_at: Time.zone.parse('2026-08-10 10:00'),
-                                registration_ends_at: Time.zone.parse('2026-08-24 10:00'),
-                                wish_ends_at: Time.zone.parse('2026-09-07 10:00'))
+                                registration_starts_at: '2026-08-10T10:00:00+09:00'.in_time_zone,
+                                registration_ends_at: '2026-08-24T10:00:00+09:00'.in_time_zone,
+                                wish_ends_at: '2026-09-07T10:00:00+09:00'.in_time_zone)
 
       get edit_exchange_path(dated)
 
@@ -223,7 +228,7 @@ RSpec.describe ExchangesController do
     it '日程を変更できる' do
       patch exchange_path(exchange), params: { exchange: { wish_ends_at: '2026-10-01T10:00' } }
 
-      expect(exchange.reload.wish_ends_at).to eq(Time.zone.parse('2026-10-01 10:00'))
+      expect(exchange.reload.wish_ends_at.rfc3339).to eq('2026-10-01T10:00:00+09:00')
     end
 
     it '変更できたことを知らせる' do

@@ -64,6 +64,15 @@ RSpec.describe ExchangesController do
       expect(response.body).not_to include('主催だけの交換会')
     end
 
+    # 並ぶ条件は参加していること。主催者だからといって外れてはいけない
+    it '主催していても参加していれば並ぶ' do
+      registration_exchange(owner: user, name: '主催して参加もした交換会')
+
+      travel_to(now) { get exchanges_path }
+
+      expect(response.body).to include('主催して参加もした交換会')
+    end
+
     it '現在のフェーズが出る' do
       registration_exchange
 

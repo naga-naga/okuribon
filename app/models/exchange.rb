@@ -80,6 +80,24 @@ class Exchange < ApplicationRecord
     I18n.t(phase(at:), scope: 'exchange.phases')
   end
 
+  # 次に来る節目。「いつまでに何をするか」を出すために使う。
+  # マッチング実行待ちが待っているのは主催者の操作で日時では動かず、
+  # 結果公開はもう終わっている。どちらも待つべき日時が無いので nil を返し、
+  # 呼ぶ側に締切を出させない
+  def next_deadline(at:)
+    case phase(at:)
+    when :preparing then registration_starts_at
+    when :registration then registration_ends_at
+    when :wish then wish_ends_at
+    end
+  end
+
+  # 節目の呼び名はフェーズごとに変わる。準備中に待っているのは締切ではなく開始で、
+  # 一律に「締切」と出すと、まだ始まってもいない登録がもう終わるように読める
+  def next_deadline_name(at:)
+    I18n.t(phase(at:), scope: 'exchange.next_deadlines', default: nil)
+  end
+
   # 参加の入口は、招待画面のフォームと、ログインを終えて戻ってきた経路の2つある。
   # どちらから来ても同じ検証を通すため、フェーズの判定はコントローラに置かずここへ集める。
   # 二重参加は一意インデックスに任せる。先に exists? で調べても、

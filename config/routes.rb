@@ -22,7 +22,7 @@ Rails.application.routes.draw do
   delete '/logout' => 'sessions#destroy', as: :logout
 
   # 一覧（#18）・トップ（#19）は、それぞれの issue で足す
-  resources :exchanges, only: [:new, :create, :edit, :update]
+  resources :exchanges, only: [:index, :new, :create, :edit, :update]
 
   # 招待URL。交換会の id ではなく招待トークンで引く。
   # id で引けると、番号を数えるだけで招待されていない交換会に着地できてしまう

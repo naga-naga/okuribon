@@ -295,6 +295,78 @@ RSpec.describe Exchange do
     end
   end
 
+  describe '#next_deadline' do
+    let!(:exchange) do
+      build(
+        :exchange,
+        registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
+        registration_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
+        wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone
+      )
+    end
+
+    it '準備中は登録期間の開始を返す' do
+      expect(exchange.next_deadline(at: '2026-07-25T00:00:00+09:00'.in_time_zone))
+        .to eq(exchange.registration_starts_at)
+    end
+
+    it '登録期間は登録の締切を返す' do
+      expect(exchange.next_deadline(at: '2026-08-04T00:00:00+09:00'.in_time_zone))
+        .to eq(exchange.registration_ends_at)
+    end
+
+    it '希望提出期間は希望提出の締切を返す' do
+      expect(exchange.next_deadline(at: '2026-08-11T00:00:00+09:00'.in_time_zone))
+        .to eq(exchange.wish_ends_at)
+    end
+
+    # 待っているのは主催者の操作で、日時では動かない
+    it 'マッチング実行待ちは返さない' do
+      expect(exchange.next_deadline(at: '2026-08-20T00:00:00+09:00'.in_time_zone)).to be_nil
+    end
+
+    # 終わった交換会に締切を出すと、まだ何かできるように読める
+    it '結果公開は返さない' do
+      exchange.matched_at = '2026-08-16T00:00:00+09:00'.in_time_zone
+
+      expect(exchange.next_deadline(at: '2026-08-20T00:00:00+09:00'.in_time_zone)).to be_nil
+    end
+
+    it '基準時刻を省略すると呼べない' do
+      expect { exchange.next_deadline }.to raise_error(ArgumentError)
+    end
+  end
+
+  describe '#next_deadline_name' do
+    let!(:exchange) do
+      build(
+        :exchange,
+        registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
+        registration_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
+        wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone
+      )
+    end
+
+    # 準備中に待っているのは締切ではなく開始。「締切」と出すと、
+    # まだ始まってもいない登録がもう終わるように読める
+    it '節目の呼び名をフェーズごとに返す' do
+      expect(exchange.next_deadline_name(at: '2026-07-25T00:00:00+09:00'.in_time_zone))
+        .to eq('登録期間の開始')
+      expect(exchange.next_deadline_name(at: '2026-08-04T00:00:00+09:00'.in_time_zone))
+        .to eq('登録の締切')
+      expect(exchange.next_deadline_name(at: '2026-08-11T00:00:00+09:00'.in_time_zone))
+        .to eq('希望提出の締切')
+    end
+
+    it '次の節目が無いフェーズでは返さない' do
+      expect(exchange.next_deadline_name(at: '2026-08-20T00:00:00+09:00'.in_time_zone)).to be_nil
+    end
+
+    it '基準時刻を省略すると呼べない' do
+      expect { exchange.next_deadline_name }.to raise_error(ArgumentError)
+    end
+  end
+
   # 「登録期間中のみ本を登録できる」といった判定を、書き込み口ごとの手書きにしない。
   # 許可されるフェーズは spec.md 4. フェーズの表と補足に対応する
   describe '#writable?' do

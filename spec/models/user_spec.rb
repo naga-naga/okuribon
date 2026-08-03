@@ -37,6 +37,32 @@ RSpec.describe User do
     expect(exchange.reload).to be_persisted
   end
 
+  describe '#exchanges' do
+    it '参加している交換会を引く' do
+      user = create(:user)
+      joined = create(:participation, user:).exchange
+
+      expect(user.exchanges).to contain_exactly(joined)
+    end
+
+    # 招待されていない交換会が一覧に漏れると、名前と日程だけで実在が知れてしまう
+    it '参加していない交換会は引かない' do
+      user = create(:user)
+      create(:exchange)
+
+      expect(user.exchanges).to be_empty
+    end
+
+    # 主催者は参加者を兼ねられるが、兼ねるまでは参加者ではない。
+    # 主催した交換会への導線は主催者管理画面が持つ
+    it '主催していても参加していなければ引かない' do
+      user = create(:user)
+      create(:exchange, owner: user)
+
+      expect(user.exchanges).to be_empty
+    end
+  end
+
   describe '.from_omniauth' do
     def auth_hash(uid: '100000000000000000001', name: '贈本 太郎', image: 'https://example.com/a.png')
       OmniAuth::AuthHash.new(

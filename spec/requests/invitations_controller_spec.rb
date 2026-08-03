@@ -109,6 +109,22 @@ RSpec.describe InvitationsController do
       it '参加のボタンを出さない' do
         expect(response.body).not_to include('参加する')
       end
+
+      # 取り消すと登録した本も消える。押し間違いで戻せなくなるため確認を挟む
+      it '確認つきの辞退ボタンが出る' do
+        expect(response.body).to include('参加を取り消す')
+        expect(response.body).to include('data-turbo-confirm')
+      end
+
+      # 希望提出期間に入ってから抜けられると、取得枠の計算が壊れる。
+      # 押しても拒否されるボタンを見せない
+      it '登録の締切ちょうどからは辞退ボタンを出さない' do
+        travel_to '2026-08-24T10:00:00+09:00' do
+          get invitation_path(exchange.invite_token)
+
+          expect(response.body).not_to include('参加を取り消す')
+        end
+      end
     end
 
     # 参加できるのは登録期間の締切まで。判定はサーバーが受けた時刻で行い、

@@ -531,6 +531,93 @@ RSpec.describe Exchange do
     end
   end
 
+  describe '#withdraw!' do
+    let!(:exchange) do
+      create(
+        :exchange,
+        registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
+        registration_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
+        wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone
+      )
+    end
+    let!(:user) { create(:user) }
+
+    let!(:registration) { '2026-08-04T00:00:00+09:00'.in_time_zone }
+
+    it '参加を取り消す' do
+      exchange.join!(user, at: registration)
+
+      expect { exchange.withdraw!(user, at: registration) }
+        .to change { exchange.participant?(user) }.from(true).to(false)
+    end
+
+    # 抜けた人の本が残ると、誰も受け取れない本として一覧に並び続ける
+    it '登録した本も一緒に取り消される' do
+      participation = exchange.join!(user, at: registration)
+      create(:book, participation:)
+
+      expect { exchange.withdraw!(user, at: registration) }
+        .to change(Book, :count).by(-1)
+    end
+
+    it '準備中でも辞退できる' do
+      exchange.join!(user, at: '2026-07-25T00:00:00+09:00'.in_time_zone)
+
+      expect { exchange.withdraw!(user, at: '2026-07-25T00:00:00+09:00'.in_time_zone) }
+        .to change { exchange.participations.count }.by(-1)
+    end
+
+    # 希望提出期間に入ってから抜けられると、取得枠の計算が壊れる。
+    # 判定は join! と同じ表を引くため、参加を許す期間と必ず一致する
+    it '登録の締切ちょうどからは辞退できない' do
+      exchange.join!(user, at: registration)
+
+      expect { exchange.withdraw!(user, at: '2026-08-08T00:00:00+09:00'.in_time_zone) }
+        .to raise_error(Exchange::PhaseViolation)
+      expect(exchange.participant?(user)).to be(true)
+    end
+
+    it '希望提出期間には辞退できない' do
+      exchange.join!(user, at: registration)
+
+      expect { exchange.withdraw!(user, at: '2026-08-11T00:00:00+09:00'.in_time_zone) }
+        .to raise_error(Exchange::PhaseViolation)
+    end
+
+    # 二重送信や、戻るボタンからの再送信で落ちないこと
+    it '二度呼んでも落ちない' do
+      exchange.join!(user, at: registration)
+      exchange.withdraw!(user, at: registration)
+
+      expect { exchange.withdraw!(user, at: registration) }
+        .not_to(change { exchange.participations.count })
+    end
+
+    it '参加していない利用者を渡しても落ちない' do
+      expect { exchange.withdraw!(user, at: registration) }
+        .not_to(change { exchange.participations.count })
+    end
+
+    it '他の参加者は残る' do
+      exchange.join!(user, at: registration)
+      other = create(:user)
+      exchange.join!(other, at: registration)
+
+      exchange.withdraw!(user, at: registration)
+
+      expect(exchange.participant?(other)).to be(true)
+    end
+
+    # 辞退したあと考え直すことはある。登録期間のうちなら戻れる
+    it '辞退したあとに参加し直せる' do
+      exchange.join!(user, at: registration)
+      exchange.withdraw!(user, at: registration)
+
+      expect { exchange.join!(user, at: registration) }
+        .to change { exchange.participant?(user) }.from(false).to(true)
+    end
+  end
+
   describe '乱数シード' do
     # 与えたシードでマッチングを回し、結果を比較できる形にして返す
     def matching_result_for(seed)

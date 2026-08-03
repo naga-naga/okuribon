@@ -32,6 +32,10 @@ Rails.application.routes.draw do
   post '/invitations/:token/participation' => 'participations#create',
        as: :invitation_participation
 
+  # 辞退。自分の参加を1つ消すだけなので id は要らない。
+  # 副作用のある操作なので GET では受けない
+  delete '/invitations/:token/participation' => 'participations#destroy'
+
   # 交換会一覧（#18）が入るまでの暫定でログイン画面を置く
   root 'sessions#new'
 end

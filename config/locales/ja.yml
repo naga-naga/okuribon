@@ -23,6 +23,7 @@ ja:
   participation:
     flash:
       joined: 交換会に参加しました
+      withdrawn: 交換会への参加を取り消しました
     login_required: "%{name}に参加するには、Google でのログインが必要です"
   activerecord:
     attributes:

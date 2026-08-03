@@ -145,6 +145,16 @@ RSpec.describe ExchangesController do
 
       expect(response).to redirect_to(login_path)
     end
+
+    # ログイン済みの着地はここ。招待URLを除けば、交換会へ入る口はこの一覧しかない
+    it 'root から開ける' do
+      registration_exchange(name: '夏の交換会')
+
+      travel_to(now) { get root_path }
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('夏の交換会')
+    end
   end
 
   describe '#new' do

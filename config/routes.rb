@@ -37,5 +37,7 @@ Rails.application.routes.draw do
   delete '/invitations/:token/participation' => 'participations#destroy'
 
   # 交換会一覧（#18）が入るまでの暫定でログイン画面を置く
-  root 'sessions#new'
+  # ログイン済みの着地は交換会一覧。未ログインなら require_login が
+  # ログイン画面へ送り、認証を終えるとここへ戻ってくる
+  root 'exchanges#index'
 end

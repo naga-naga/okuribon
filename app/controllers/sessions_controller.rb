@@ -3,8 +3,8 @@
 class SessionsController < ApplicationController
   include PendingParticipation
 
-  # ログイン画面。root も兼ねる。
-  # 交換会一覧（#18）が入ったら、ログイン済みの着地はそちらへ移す
+  # ログイン画面。ログイン済みでも開ける。ログアウトの口がここにしかなく、
+  # 追い返すと抜けられなくなる
   def new
     # 参加の途中で送られてきた人には、何のためのログインかを見せる
     @pending_participation = pending_participation

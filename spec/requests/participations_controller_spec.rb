@@ -19,6 +19,10 @@ RSpec.describe ParticipationsController do
     post invitation_participation_path(token)
   end
 
+  def withdraw(token = exchange.invite_token)
+    delete invitation_participation_path(token)
+  end
+
   describe '#create' do
     describe 'ログイン済みのとき' do
       before { log_in_as(user) }
@@ -137,6 +141,113 @@ RSpec.describe ParticipationsController do
           expect(response.body).to include('参加を受け付ける期間は終わりました')
         end
       end
+    end
+  end
+
+  describe '#destroy' do
+    describe 'ログイン済みのとき' do
+      before { log_in_as(user) }
+
+      it '辞退して招待URLへ戻る' do
+        travel_to(registration) do
+          join
+          withdraw
+        end
+
+        expect(exchange.participant?(user)).to be(false)
+        expect(response).to redirect_to(invitation_path(exchange.invite_token))
+      end
+
+      it '辞退したことが伝わる' do
+        travel_to(registration) do
+          join
+          withdraw
+        end
+        follow_redirect!
+
+        expect(response.body).to include('参加を取り消しました')
+      end
+
+      # 抜けた人の本が残ると、誰も受け取れない本として一覧に並び続ける
+      it '登録した本も一緒に取り消される' do
+        travel_to(registration) do
+          participation = exchange.join!(user, at: registration)
+          create(:book, participation:)
+
+          expect { withdraw }.to change(Book, :count).by(-1)
+        end
+      end
+
+      # 可否はサーバーが受けた時刻で判定する。締切ちょうどはもう登録期間の外。
+      # ここで抜けられると取得枠の計算が壊れる
+      it '登録の締切ちょうどからは辞退できない' do
+        travel_to(registration) { join }
+        travel_to('2026-08-08T00:00:00+09:00') { withdraw }
+
+        expect(response).to have_http_status(:conflict)
+        expect(exchange.participant?(user)).to be(true)
+      end
+
+      it '準備中でも辞退できる' do
+        travel_to('2026-07-25T00:00:00+09:00') do
+          join
+          withdraw
+        end
+
+        expect(exchange.participant?(user)).to be(false)
+      end
+
+      # 二重送信や、戻るボタンからの再送信で 500 にしない
+      it '二度送っても落ちない' do
+        travel_to(registration) do
+          join
+          withdraw
+          withdraw
+        end
+
+        expect(response).to redirect_to(invitation_path(exchange.invite_token))
+      end
+
+      # 存在しない交換会と、招待されていない交換会を見分けられないようにする
+      it '無効なトークンでは辞退できない' do
+        travel_to(registration) do
+          join
+          withdraw('deadbeefdeadbeef')
+        end
+
+        expect(response).to have_http_status(:not_found)
+        expect(exchange.participant?(user)).to be(true)
+      end
+
+      # 辞退したあと考え直すことはある。登録期間のうちなら戻れる
+      it '辞退したあとに参加し直せる' do
+        travel_to(registration) do
+          join
+          withdraw
+          join
+        end
+
+        expect(exchange.participant?(user)).to be(true)
+      end
+
+      it '辞退したあと締切を過ぎると参加し直せない' do
+        travel_to(registration) do
+          join
+          withdraw
+        end
+        travel_to('2026-08-08T00:00:00+09:00') { join }
+
+        expect(response).to have_http_status(:conflict)
+        expect(exchange.participant?(user)).to be(false)
+      end
+    end
+
+    # 参加していない人に取り消すものは無い。参加の口と違い、
+    # ログインを挟んで続きをやる意味も無いので、意図は保存しない
+    it '未ログインならログイン画面へ送る' do
+      travel_to(registration) { withdraw }
+
+      expect(response).to redirect_to(login_path)
     end
   end
 end

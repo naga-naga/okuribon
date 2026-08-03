@@ -90,6 +90,16 @@ class Exchange < ApplicationRecord
     participations.create_or_find_by!(user:)
   end
 
+  # 辞退。参加と同じ操作名で表を引くため、抜けられる期間は参加できる期間と必ず一致する。
+  # 別々に書くと、希望提出期間に入ってから抜けられて取得枠の計算が壊れる。
+  # 登録した本は参加にぶら下がっているので、参加を消せば一緒に消える。
+  # 参加が無ければ何もしない。二重送信や再送信で落とすようなことではない
+  def withdraw!(user, at:)
+    raise PhaseViolation.new(self, :participation, at:) unless writable?(:participation, at:)
+
+    participations.find_by(user:)&.destroy!
+  end
+
   # 書き込みを許すかどうかの判定はここだけに置く。
   # 各コントローラがフェーズを直接見て条件を手書きすると、口ごとに食い違うため。
   # 表に無い操作名は fetch が落とす。綴り間違いを黙って可否に化けさせない

@@ -18,6 +18,154 @@ RSpec.describe ExchangesController do
 
   before { log_in_as(user) }
 
+  # フェーズも次の締切も日時から導出されるため、現在時刻を固定してから撒く
+  describe '#index' do
+    let!(:now) { '2026-08-04T00:00:00+09:00' }
+
+    # 一覧に並ぶ条件は参加していること。主催や招待だけでは並ばない
+    def participating(**attributes)
+      exchange = create(:exchange, **attributes)
+      create(:participation, user:, exchange:)
+      exchange
+    end
+
+    def registration_exchange(**attributes)
+      participating(registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
+                    registration_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
+                    wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone,
+                    **attributes)
+    end
+
+    it '参加している交換会が並ぶ' do
+      registration_exchange(name: '夏の交換会')
+
+      travel_to(now) { get exchanges_path }
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('夏の交換会')
+    end
+
+    # 招待されていない交換会が漏れると、名前と日程だけで実在が知れてしまう
+    it '参加していない交換会は並ばない' do
+      create(:exchange, name: 'よその交換会')
+
+      travel_to(now) { get exchanges_path }
+
+      expect(response.body).not_to include('よその交換会')
+    end
+
+    # 主催者は参加者を兼ねられるが、兼ねるまでは参加者ではない。
+    # 主催した交換会への導線は主催者管理画面（#36）が持つ
+    it '主催していても参加していなければ並ばない' do
+      create(:exchange, owner: user, name: '主催だけの交換会')
+
+      travel_to(now) { get exchanges_path }
+
+      expect(response.body).not_to include('主催だけの交換会')
+    end
+
+    # 並ぶ条件は参加していること。主催者だからといって外れてはいけない
+    it '主催していても参加していれば並ぶ' do
+      registration_exchange(owner: user, name: '主催して参加もした交換会')
+
+      travel_to(now) { get exchanges_path }
+
+      expect(response.body).to include('主催して参加もした交換会')
+    end
+
+    it '現在のフェーズが出る' do
+      registration_exchange
+
+      travel_to(now) { get exchanges_path }
+
+      expect(response.body).to include('登録期間')
+    end
+
+    it '次の締切が出る' do
+      registration_exchange
+
+      travel_to(now) { get exchanges_path }
+
+      expect(response.body).to include('登録の締切')
+      expect(response.body).to include('2026年8月8日 00:00')
+    end
+
+    # 準備中に待っているのは締切ではなく開始。「締切」と出すと、
+    # まだ始まってもいない登録がもう終わるように読める
+    it '準備中には登録期間の開始を出す' do
+      participating(registration_starts_at: '2026-08-20T00:00:00+09:00'.in_time_zone,
+                    registration_ends_at: '2026-08-27T00:00:00+09:00'.in_time_zone,
+                    wish_ends_at: '2026-09-03T00:00:00+09:00'.in_time_zone)
+
+      travel_to(now) { get exchanges_path }
+
+      expect(response.body).to include('登録期間の開始')
+      expect(response.body).to include('2026年8月20日 00:00')
+    end
+
+    # 終わった交換会に締切を出すと、まだ何かできるように読める
+    it '結果公開には次の締切を出さない' do
+      registration_exchange(matched_at: '2026-08-03T00:00:00+09:00'.in_time_zone)
+
+      travel_to(now) { get exchanges_path }
+
+      expect(response.body).to include('結果公開')
+      expect(response.body).not_to include('締切')
+      expect(response.body).not_to include('2026年8月8日 00:00')
+    end
+
+    # 待っているのは主催者の操作で、日時では動かない
+    it 'マッチング実行待ちには次の締切を出さない' do
+      participating(registration_starts_at: '2026-07-01T00:00:00+09:00'.in_time_zone,
+                    registration_ends_at: '2026-07-10T00:00:00+09:00'.in_time_zone,
+                    wish_ends_at: '2026-07-20T00:00:00+09:00'.in_time_zone)
+
+      travel_to(now) { get exchanges_path }
+
+      expect(response.body).to include('マッチング実行待ち')
+      expect(response.body).not_to include('締切')
+    end
+
+    # 何も無い画面を白紙で返すと、壊れているのか参加していないのか区別がつかない
+    it '1つも参加していなければその旨を出す' do
+      travel_to(now) { get exchanges_path }
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('まだ参加している交換会はありません')
+    end
+
+    # 並び順を決めないと、開くたびにカードの位置が入れ替わる
+    it '日程の新しいものから並ぶ' do
+      registration_exchange(name: '夏の交換会')
+      participating(name: '秋の交換会',
+                    registration_starts_at: '2026-09-01T00:00:00+09:00'.in_time_zone,
+                    registration_ends_at: '2026-09-08T00:00:00+09:00'.in_time_zone,
+                    wish_ends_at: '2026-09-15T00:00:00+09:00'.in_time_zone)
+
+      travel_to(now) { get exchanges_path }
+
+      expect(response.body.index('秋の交換会')).to be < response.body.index('夏の交換会')
+    end
+
+    it 'ログインしていなければログイン画面へ送る' do
+      log_out
+
+      get exchanges_path
+
+      expect(response).to redirect_to(login_path)
+    end
+
+    # ログイン済みの着地はここ。招待URLを除けば、交換会へ入る口はこの一覧しかない
+    it 'root から開ける' do
+      registration_exchange(name: '夏の交換会')
+
+      travel_to(now) { get root_path }
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('夏の交換会')
+    end
+  end
+
   describe '#new' do
     it '開ける' do
       get '/exchanges/new'

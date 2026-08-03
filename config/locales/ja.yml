@@ -10,6 +10,11 @@ ja:
       wish: 希望提出期間
       awaiting_matching: マッチング実行待ち
       published: 結果公開
+    # 次に来る節目の呼び名。次の節目が無いフェーズは持たない
+    next_deadlines:
+      preparing: 登録期間の開始
+      registration: 登録の締切
+      wish: 希望提出の締切
     # フェーズによる書き込み制御の対象になる操作
     operations:
       participation: 参加の変更

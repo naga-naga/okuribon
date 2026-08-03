@@ -3,6 +3,13 @@
 class ExchangesController < ApplicationController
   before_action :require_login
 
+  # 並ぶのは参加している交換会だけ。主催しているだけのものは含まれない。
+  # 並び順を決めないと開くたびにカードの位置が入れ替わる。参加数は多くても
+  # 十数件なので、フェーズをまたいで凝った順序は作らず、日程の新しい順にする
+  def index
+    @exchanges = current_user.exchanges.order(registration_starts_at: :desc)
+  end
+
   def new
     @exchange = Exchange.new
   end

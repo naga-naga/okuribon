@@ -14,10 +14,18 @@ RSpec.describe SessionsController do
   before { OmniAuth.config.mock_auth[:google_oauth2] = auth }
 
   describe '#new' do
-    it 'root からも開ける' do
-      get '/'
+    it '開ける' do
+      get '/login'
 
       expect(response).to have_http_status(:ok)
+    end
+
+    # root は交換会一覧へ渡した。ログインを促すのは require_login の仕事で、
+    # 未ログインならそこからこの画面へ戻ってくる
+    it '未ログインで root を開くとここへ送られる' do
+      get '/'
+
+      expect(response).to redirect_to(login_path)
     end
 
     # 認証開始は POST に限る。リンクで置くと GET になり、外部サイトから踏ませられる

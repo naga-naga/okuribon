@@ -7,6 +7,10 @@ class User < ApplicationRecord
 
   has_many :participations, dependent: :destroy
 
+  # 一覧に並ぶのは参加した交換会だけ。主催しているだけのものは含まれない。
+  # 主催者は参加者を兼ねられるが、兼ねるまでは参加者ではない
+  has_many :exchanges, through: :participations
+
   # OAuth のコールバックで受け取った認証情報から利用者を引く。
   # 表示名は本人が変えられるため、初回の初期値としてだけプロバイダの名前を借りる。
   # アバターはプロバイダが返す URL をそのまま持つので、ログインのたびに追従する

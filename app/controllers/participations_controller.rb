@@ -16,8 +16,8 @@ class ParticipationsController < ApplicationController
     # 拒否は PhaseViolation になり、応答は ApplicationController が組み立てる
     exchange.join!(current_user, at: requested_at)
 
-    # 交換会トップ（#19）が入ったら、そちらへ送る
-    redirect_to invitation_path(exchange.invite_token), notice: t('participation.flash.joined')
+    # 招待URL着地画面は未参加の人のための画面なので、参加が済んだらトップへ渡す
+    redirect_to exchange_path(exchange), notice: t('participation.flash.joined')
   end
 
   def destroy

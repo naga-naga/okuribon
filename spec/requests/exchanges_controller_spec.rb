@@ -81,6 +81,15 @@ RSpec.describe ExchangesController do
       expect(response.body).to include('登録期間')
     end
 
+    # 交換会へ入る口は、参加したあとはこの一覧しかない
+    it 'カードから交換会トップへ入れる' do
+      exchange = registration_exchange
+
+      travel_to(now) { get exchanges_path }
+
+      expect(response.body).to include(exchange_path(exchange))
+    end
+
     it '次の締切が出る' do
       registration_exchange
 
@@ -382,7 +391,8 @@ RSpec.describe ExchangesController do
       expect(Exchange.last.registration_starts_at.rfc3339).to eq('2026-08-10T10:00:00+09:00')
     end
 
-    # 交換会トップ（#19）が入るまでの暫定。入ったらそちらへ移す
+    # 交換会トップへは送らない。作った時点では主催者はまだ参加者ではなく、
+    # トップは参加者しか開けないため 404 になる
     it '編集画面へ送る' do
       post '/exchanges', params: { exchange: attributes }
 

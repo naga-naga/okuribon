@@ -35,8 +35,11 @@
   <%# 言うことが無いときは区切り線ごと出さない %>
   <% if @exchange.participant?(current_user) %>
     <div class="mt-8 border-t border-line pt-8">
-      <%# 交換会トップ（#19）が入ったら、この画面に留めずトップへ送る %>
       <p class="text-[14.5px] font-medium text-success">この交換会にはすでに参加しています。</p>
+
+      <%# ここは未参加の人のための画面。辞退の口があるので追い返しはしないが、
+          行き先を示さないと、参加したあと何をすればよいのか分からない %>
+      <p class="mt-2 text-[13.5px]"><%= link_to '交換会トップを開く', exchange_path(@exchange) %></p>
 
       <%# 辞退できるのは登録の締切まで。押しても拒否されるボタンは出さない。
           期間の判定はサーバー側の Exchange#withdraw! にもあり、ここは見た目だけ %>

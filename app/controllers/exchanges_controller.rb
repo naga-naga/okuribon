@@ -31,6 +31,8 @@ class ExchangesController < ApplicationController
     @exchange = current_user.owned_exchanges.build(exchange_params)
 
     if @exchange.save
+      # 交換会トップへは送らない。作った時点では主催者はまだ参加者ではなく、
+      # トップは参加者しか開けないため 404 になる
       redirect_to edit_exchange_path(@exchange), notice: t('exchange.flash.created')
     else
       render :new, status: :unprocessable_content

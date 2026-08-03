@@ -20,10 +20,12 @@ class SessionsController < ApplicationController
 
     return redirect_to destination if pending.nil?
 
-    # 参加できたかどうかによらず招待URLの着地画面へ戻す。
-    # 参加できなかった理由は、着地画面がフェーズを見て説明する
-    redirect_to invitation_path(pending.invite_token),
-                notice: (t('participation.flash.joined') if join_pending(pending))
+    # 参加できたなら交換会トップへ渡す。ログインを挟まない経路と着地を揃える。
+    # できなかったときだけ招待URLの着地画面へ戻し、その理由を
+    # 着地画面にフェーズから説明させる
+    return redirect_to invitation_path(pending.invite_token) unless join_pending(pending)
+
+    redirect_to exchange_path(pending), notice: t('participation.flash.joined')
   end
 
   def destroy

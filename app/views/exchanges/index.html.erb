@@ -15,11 +15,15 @@
   <% else %>
     <ul class="mt-6 flex flex-col gap-3">
       <% @exchanges.each do |exchange| %>
-        <%# 交換会トップ（#19）が入ったら、カードからそちらへ送る %>
         <li class="rounded-[5px] border border-line bg-paper px-5 py-5">
           <%# 狭い画面では交換会名とフェーズが縦に折り返る %>
           <div class="flex flex-wrap items-baseline gap-x-3 gap-y-2">
-            <h2 class="text-[17px] font-bold leading-[1.5] text-ink"><%= exchange.name %></h2>
+            <%# 押しどころは交換会名だけにする。カード全体をリンクにすると、
+                中に置いたフェーズや日時まで押せるように見えてしまう。
+                朱と下線はリンクの既定のまま。朱は押すものの担当でもある %>
+            <h2 class="text-[17px] font-bold leading-[1.5]">
+              <%= link_to exchange.name, exchange_path(exchange) %>
+            </h2>
 
             <%# 松葉は成立と完了の担当。終わった交換会だけ色を変える %>
             <span class="rounded-[3px] bg-fill px-2 py-1 text-[12px] font-medium

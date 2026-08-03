@@ -91,7 +91,6 @@ RSpec.describe InvitationsController do
       end
     end
 
-    # 交換会トップ（#19）が入ったら、この画面には留めずトップへ送る
     describe '参加済みのとき' do
       let!(:participant) { create(:user) }
 
@@ -108,6 +107,12 @@ RSpec.describe InvitationsController do
 
       it '参加のボタンを出さない' do
         expect(response.body).not_to include('参加する')
+      end
+
+      # この画面は未参加の人のためのもの。辞退の口があるので追い返しはしないが、
+      # 行き先を示さないと、参加したあと何をすればよいのか分からない
+      it '交換会トップへの導線が出る' do
+        expect(response.body).to include(exchange_path(exchange))
       end
 
       # 取り消すと登録した本も消える。押し間違いで戻せなくなるため確認を挟む

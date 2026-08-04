@@ -27,11 +27,12 @@ RSpec.describe ParticipationsController do
     describe 'ログイン済みのとき' do
       before { log_in_as(user) }
 
-      it '参加して招待URLへ戻る' do
+      # 招待URL着地画面は未参加の人のための画面。参加が済んだらトップへ渡す
+      it '参加して交換会トップへ移る' do
         travel_to(registration) { join }
 
         expect(exchange.participant?(user)).to be(true)
-        expect(response).to redirect_to(invitation_path(exchange.invite_token))
+        expect(response).to redirect_to(exchange_path(exchange))
       end
 
       it '参加したことが伝わる' do
@@ -84,14 +85,16 @@ RSpec.describe ParticipationsController do
         expect(exchange.participations).to be_empty
       end
 
-      it 'ログインを終えると参加が確定し、招待URLへ戻る' do
+      # ログインを挟んでも行き着く先は同じ。経路によって着地が変わると、
+      # 参加できたのかどうかを画面から読み取れない
+      it 'ログインを終えると参加が確定し、交換会トップへ移る' do
         travel_to(registration) do
           join
           log_in_as(user)
         end
 
         expect(exchange.participant?(user)).to be(true)
-        expect(response).to redirect_to(invitation_path(exchange.invite_token))
+        expect(response).to redirect_to(exchange_path(exchange))
       end
 
       it '参加したことが伝わる' do

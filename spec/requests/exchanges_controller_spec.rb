@@ -81,6 +81,15 @@ RSpec.describe ExchangesController do
       expect(response.body).to include('登録期間')
     end
 
+    # 交換会へ入る口は、参加したあとはこの一覧しかない
+    it 'カードから交換会トップへ入れる' do
+      exchange = registration_exchange
+
+      travel_to(now) { get exchanges_path }
+
+      expect(response.body).to include(exchange_path(exchange))
+    end
+
     it '次の締切が出る' do
       registration_exchange
 
@@ -166,6 +175,153 @@ RSpec.describe ExchangesController do
     end
   end
 
+  # フェーズも残り時間も日時から導出されるため、現在時刻を固定してから撒く
+  describe '#show' do
+    let!(:now) { '2026-08-04T00:00:00+09:00' }
+
+    let!(:exchange) do
+      create(:exchange, name: '夏の交換会', description: 'Kindle のみ。1000円前後を目安に。',
+                        registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
+                        registration_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
+                        wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone)
+    end
+
+    let!(:participation) { create(:participation, user:, exchange:) }
+
+    def open_top(at: now)
+      travel_to(at) { get exchange_path(exchange) }
+    end
+
+    it '参加者は開ける' do
+      open_top
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('夏の交換会')
+    end
+
+    # 対応ストアや価格帯の目安が書かれている。本を選ぶ前に読む必要がある
+    it '概要が出る' do
+      open_top
+
+      expect(response.body).to include('Kindle のみ。1000円前後を目安に。')
+    end
+
+    # 403 だと、招待されていない交換会の実在が URL を試すだけで確かめられる
+    it '参加していなければ見つからない' do
+      log_in_as(create(:user))
+
+      open_top
+
+      expect(response).to have_http_status(:not_found)
+    end
+
+    # 主催者は参加者を兼ねられるが、兼ねるまでは参加者ではない。
+    # 主催した交換会への導線は主催者管理画面（#36）が持つ
+    it '主催しているだけでは見つからない' do
+      owned = create(:exchange, owner: user)
+
+      travel_to(now) { get exchange_path(owned) }
+
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it 'ログインしていなければログイン画面へ送る' do
+      log_out
+
+      open_top
+
+      expect(response).to redirect_to(login_path)
+    end
+
+    it '現在のフェーズが出る' do
+      open_top
+
+      expect(response.body).to include('登録期間')
+    end
+
+    it '次の締切が出る' do
+      open_top
+
+      expect(response.body).to include('登録の締切')
+      expect(response.body).to include('2026年8月8日 00:00')
+    end
+
+    # 久しぶりに開く人が最初に知りたいのは、日付そのものより残りの長さ
+    it '次の締切までの残りが出る' do
+      open_top
+
+      expect(response.body).to include('あと4日')
+    end
+
+    # 締切当日に「あと0日」と出ても、今日中なのかどうか読み取れない
+    it '締切まで残り数時間なら時間で出る' do
+      open_top(at: '2026-08-07T19:00:00+09:00')
+
+      expect(response.body).to include('あと5時間')
+    end
+
+    # 待っているのは主催者の操作で、日時では動かない
+    it 'マッチング実行待ちには締切も残りも出さない' do
+      open_top(at: '2026-08-20T00:00:00+09:00')
+
+      expect(response.body).to include('マッチング実行待ち')
+      expect(response.body).not_to include('締切')
+      expect(response.body).not_to include('あと')
+    end
+
+    # 終わった交換会に残りを出すと、まだ何かできるように読める
+    it '結果公開には締切も残りも出さない' do
+      exchange.update!(matched_at: '2026-08-03T00:00:00+09:00'.in_time_zone)
+
+      open_top
+
+      expect(response.body).to include('結果公開')
+      expect(response.body).not_to include('締切')
+      expect(response.body).not_to include('あと')
+    end
+
+    describe '交換会の規模' do
+      before do
+        create_list(:participation, 2, exchange:)
+        create_list(:book, 2, participation:)
+        create(:book, participation: create(:participation, exchange:))
+      end
+
+      it '参加者数が出る' do
+        open_top
+
+        expect(response.body).to include('参加者')
+        expect(response.body).to include('4人')
+      end
+
+      it '本の総数が出る' do
+        open_top
+
+        expect(response.body).to include('3冊')
+      end
+
+      # 登録した冊数がそのまま受け取れる冊数になる。
+      # 全体の冊数と並べないと、自分が何冊登録したのか確かめる先が無い
+      it '自分の取得枠が出る' do
+        open_top
+
+        expect(response.body).to include('取得枠')
+        expect(response.body).to include('2冊')
+      end
+    end
+
+    # 見えるのは登録した本人と、成立後の受取人だけ。トップはどちらの経路でもない
+    it 'ギフトコードが含まれない' do
+      create(:book, participation:, gift_code: 'MYOWNGIFTCODE')
+      create(:book, participation: create(:participation, exchange:), gift_code: 'OTHERGIFTCODE')
+
+      open_top
+
+      expect(response.body).not_to include('MYOWNGIFTCODE')
+      expect(response.body).not_to include('OTHERGIFTCODE')
+    end
+  end
+
   describe '#new' do
     it '開ける' do
       get '/exchanges/new'
@@ -235,7 +391,8 @@ RSpec.describe ExchangesController do
       expect(Exchange.last.registration_starts_at.rfc3339).to eq('2026-08-10T10:00:00+09:00')
     end
 
-    # 交換会トップ（#19）が入るまでの暫定。入ったらそちらへ移す
+    # 交換会トップへは送らない。作った時点では主催者はまだ参加者ではなく、
+    # トップは参加者しか開けないため 404 になる
     it '編集画面へ送る' do
       post '/exchanges', params: { exchange: attributes }
 

@@ -10,6 +10,15 @@ class ExchangesController < ApplicationController
     @exchanges = current_user.exchanges.order(registration_starts_at: :desc)
   end
 
+  # 交換会トップ。参加から引くので、参加していなければ見つからない。
+  # 主催しているだけの人もここには入れない。主催者としての導線は
+  # 主催者管理画面（#36）が持つ。自分の取得枠を出すのに参加そのものが要るため、
+  # 交換会ではなく参加を引いて、権限の判定と取り出しを1回で済ませる
+  def show
+    @participation = current_user.participations.find_by!(exchange_id: params.expect(:id))
+    @exchange = @participation.exchange
+  end
+
   def new
     @exchange = Exchange.new
   end
@@ -22,6 +31,8 @@ class ExchangesController < ApplicationController
     @exchange = current_user.owned_exchanges.build(exchange_params)
 
     if @exchange.save
+      # 交換会トップへは送らない。作った時点では主催者はまだ参加者ではなく、
+      # トップは参加者しか開けないため 404 になる
       redirect_to edit_exchange_path(@exchange), notice: t('exchange.flash.created')
     else
       render :new, status: :unprocessable_content

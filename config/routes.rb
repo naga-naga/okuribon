@@ -21,8 +21,7 @@ Rails.application.routes.draw do
   # 外部サイトに置いたリンクや画像だけでログアウトさせられてしまう
   delete '/logout' => 'sessions#destroy', as: :logout
 
-  # トップ（#19）は、その issue で足す
-  resources :exchanges, only: [:index, :new, :create, :edit, :update]
+  resources :exchanges, only: [:index, :show, :new, :create, :edit, :update]
 
   # 招待URL。交換会の id ではなく招待トークンで引く。
   # id で引けると、番号を数えるだけで招待されていない交換会に着地できてしまう

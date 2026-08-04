@@ -1,0 +1,61 @@
+<% content_for :title, @exchange.name %>
+
+<div class="mx-auto w-full max-w-[640px] px-4 py-10 sm:px-6">
+  <%# 戻り先は交換会一覧だけにする。招待URLは参加していない人のための入口で、
+      参加を終えた人がここから辿るものではない %>
+  <p class="text-[12px]"><%= link_to '交換会一覧', exchanges_path %></p>
+
+  <%# 狭い画面では交換会名とフェーズが縦に折り返る %>
+  <div class="mt-4 flex flex-wrap items-baseline gap-x-3 gap-y-2">
+    <h1 class="text-[26px] font-bold leading-[1.45] text-ink"><%= @exchange.name %></h1>
+
+    <%# 松葉は成立と完了の担当。終わった交換会だけ色を変える %>
+    <span class="rounded-[3px] bg-fill px-2 py-1 text-[12px] font-medium
+                 <%= @exchange.phase(at: requested_at) == :published ? 'text-success' : 'text-ink-muted' %>">
+      <%= @exchange.phase_name(at: requested_at) %>
+    </span>
+  </div>
+
+  <%# 次の節目が無いフェーズでは、枠ごと出さない。
+      マッチング実行待ちが待っているのは主催者の操作で日時では動かず、
+      結果公開はもう終わっている %>
+  <% if (deadline = @exchange.next_deadline(at: requested_at)) %>
+    <div class="mt-6 rounded-[5px] border border-line bg-paper px-5 py-5">
+      <p class="text-[12px] text-ink-subtle"><%= @exchange.next_deadline_name(at: requested_at) %></p>
+
+      <%# 数週間ぶりに開く人がまず知りたいのは、日付そのものより残りの長さ。
+          朱は押すものと締切の担当なので、残りのほうを朱で大きく出す %>
+      <p class="mt-1.5 flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-3">
+        <span class="tabular text-[22px] font-bold leading-[1.4] text-accent">
+          <%= remaining_time_text(deadline, at: requested_at) %>
+        </span>
+        <span class="tabular text-[13px] text-ink-muted"><%= l deadline, format: :schedule %></span>
+      </p>
+    </div>
+  <% end %>
+
+  <% if @exchange.description.present? %>
+    <p class="mt-6 whitespace-pre-line text-[14.5px] leading-[1.95] text-ink">
+      <%= @exchange.description %>
+    </p>
+  <% end %>
+
+  <%# 狭い画面では縦に積み、ラベルと数を左右に振り分ける。
+      3つ横に並べたままだと 320px で数字が折り返る %>
+  <dl class="mt-8 grid grid-cols-1 gap-3 border-t border-line pt-8 sm:grid-cols-3">
+    <%# 登録した冊数がそのまま受け取れる冊数になる。全体の冊数と並べておかないと、
+        自分が何冊登録したのかを確かめる先がどこにも無い %>
+    <% [['参加者', "#{@exchange.participations.count}人"],
+        ['登録された本', "#{@exchange.books.count}冊"],
+        ['あなたが登録した本（＝取得枠）', "#{@participation.books.count}冊"]].each do |label, value| %>
+      <div class="flex items-baseline justify-between gap-2 sm:flex-col sm:items-start sm:gap-1">
+        <dt class="text-[12px] leading-[1.6] text-ink-subtle"><%= label %></dt>
+        <dd class="tabular text-[19px] font-medium text-ink"><%= value %></dd>
+      </div>
+    <% end %>
+  </dl>
+
+  <%# 本の一覧（#22）、結果画面（#32）、主催者管理画面（#36）への導線は、
+      それぞれの画面が入るときにここへ足す。
+      「今なにをすべきか」の文言は #29 で足す %>
+</div>

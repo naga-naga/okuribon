@@ -24,13 +24,43 @@ gh issue list --state all --limit 100 --json number,labels,parent,state \
   --jq '[.[] | select(.labels[].name=="type:task")] | group_by(.parent.number) | .[] | "Epic #\(.[0].parent.number): \([.[] | select(.state=="CLOSED")] | length)/\(length)"'
 ```
 
-**task の番号順が着手順に対応している。** sub-issues も同じ順に並べてあるので、
-Epic 内では番号の小さいものから片付ける。
+**task の番号順が着手順の既定にあたる。** sub-issues も同じ順に並べてあるので、
+原則として Epic 内では番号の小さいものから片付ける。
+
+ただし**番号順を上書きする例外がある。** 次の節で見る依存関係が優先する。
 
 あわせて `git log --oneline -10` を見る。issue が open のままでも、
 実装が先に進んでいることがある。issue の状態だけを信じない。
 
-## 2. 関係する Epic の「前提」を読む
+## 2. 依存関係を見る
+
+**番号順より依存関係が優先する。** 番号は振り直せないため、あとから分かった
+着手順の誤りは GitHub の issue dependencies で表している。
+
+```
+gh api repos/naga-naga/okuribon/issues/<番号>/dependencies/blocked_by \
+  -q '.[] | "#\(.number) \(.state) \(.title)"'
+```
+
+一覧の `blocked_by` の有無だけなら、まとめて取れる。
+
+```
+gh issue list --state open --limit 100 --json number,title,labels \
+  --jq '[.[] | select(.labels[].name=="type:task")] | sort_by(.number) | .[].number' \
+  | while read n; do
+      d=$(gh api repos/naga-naga/okuribon/issues/$n/dependencies/blocked_by \
+            -q '[.[] | select(.state=="open") | "#\(.number)"] | join(" ")' 2>/dev/null)
+      [ -n "$d" ] && echo "#$n ← $d"
+    done
+```
+
+**open な blocked_by が1つでも残っていれば着手できない。** closed なものは無視してよい。
+
+登録されている依存は、番号順から外れるものと、行き先が先に無いと暫定を作ることになる
+ものに絞ってある。**依存が無いことは「今すぐ着手してよい」を意味しない。**
+番号順と Epic の「前提」も引き続き見る。
+
+## 3. 関係する Epic の「前提」を読む
 
 **Epic 間の依存は Epic 本文の「## 前提」にしかない。** task issue には書かれていない。
 
@@ -52,7 +82,11 @@ gh issue view <Epic番号>
 
 3つ目を依存と読み違えると、着手できるものを不当に塞いでしまう。注意する。
 
-## 3. 提示する
+**番号順を上書きする指示も「前提」に書いてある。**「#29 だけは、この Epic の最後ではなく
+5. マッチングと結果の #33 の後に着手する」のように、太字で書かれている。
+issue dependencies にも同じ内容が入っているので、食い違ったら本文を信じる。
+
+## 4. 提示する
 
 着手できるものを**最大3件**に絞る。多く並べても選べない。
 
@@ -63,7 +97,8 @@ gh issue view <Epic番号>
 - **なぜ今着手できるのか**（前提が無い / 依存が closed になっている）
 - 分量の見当（触るファイル、マイグレーションの有無）
 
-続けて、次に控えているものを1〜2件、番号とタイトルだけ挙げる。
+**その先に控えているものは書かない。** 知りたいのは次に手を付けられるものだけで、
+先の予定を並べても選ぶ材料にならない。
 
 着手できないものが気になる場合は、**何の完了を待っているか**を書く。
 「Epic 2 は #5 #8 #10 の完了待ち」のように、待ち対象の issue 番号を示す。
@@ -72,4 +107,5 @@ gh issue view <Epic番号>
 
 - 候補がすべて出揃わないときは、その旨を言う。無理に3件に埋めない
 - Epic の「前提」を読まずに番号順だけで答えない。Epic をまたぐ依存を見落とす
+- **番号が小さいことを理由に、blocked_by が open のものを候補に挙げない**
 - 進捗が sub-issues の集計と食い違っていたら、集計ではなく issue の state を信じる

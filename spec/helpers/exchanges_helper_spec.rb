@@ -51,5 +51,16 @@ RSpec.describe ExchangesHelper do
     it '締切ちょうどでも数えない' do
       expect(text(at)).to eq('まもなく')
     end
+
+    # 「あと-3日」や「あと-4320分」を描くと、誤った呼び出しが画面で
+    # それらしく見えてしまい、気付ける機会がなくなる
+    it '締切を過ぎていても数えない' do
+      expect(text(at - 3.days)).to eq('まもなく')
+    end
+
+    # 単位ごとに符号の扱いが分かれていないこと。日をまたがない過ぎ方でも同じ
+    it '締切を1秒過ぎていても数えない' do
+      expect(text(at - 1.second)).to eq('まもなく')
+    end
   end
 end

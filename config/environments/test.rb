@@ -41,4 +41,10 @@ Rails.application.configure do
 
   # Raise error when a before_action's only/except options reference missing actions.
   config.action_controller.raise_on_missing_callback_actions = true
+
+  # 暗号化の鍵は credentials に置くが、test だけは使い捨ての鍵を直書きする。
+  # CI に RAILS_MASTER_KEY を渡すと復号鍵が Actions の実行環境まで届いてしまう。
+  # テスト DB に守るべきデータは無いので、鍵を秘密にする意味もない
+  config.active_record.encryption.primary_key = 'test-primary-key'
+  config.active_record.encryption.key_derivation_salt = 'test-key-derivation-salt'
 end

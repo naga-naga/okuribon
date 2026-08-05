@@ -132,6 +132,29 @@ RSpec.describe InvitationsController do
       end
     end
 
+    # 主催者はこの経路を通らない。交換会を作る操作がそのまま参加の意思表示にあたる
+    describe '主催者が開いたとき' do
+      before do
+        exchange.join!(owner, at: '2026-08-15T10:00:00+09:00'.in_time_zone)
+        log_in_as(owner)
+
+        get invitation_path(exchange.invite_token)
+      end
+
+      it '参加済みとして扱う' do
+        expect(response.body).to include('すでに参加しています')
+      end
+
+      # 主催者は抜けられない。押しても断られるボタンを見せない
+      it '辞退ボタンを出さない' do
+        expect(response.body).not_to include('参加を取り消す')
+      end
+
+      it '交換会トップへの導線が出る' do
+        expect(response.body).to include(exchange_path(exchange))
+      end
+    end
+
     # 参加できるのは登録期間の締切まで。判定はサーバーが受けた時刻で行い、
     # 可否の条件は Exchange::WRITABLE_PHASES に集約する
     describe '参加を受け付ける期間' do

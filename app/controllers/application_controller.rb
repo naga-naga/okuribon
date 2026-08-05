@@ -9,8 +9,10 @@ class ApplicationController < ActionController::Base
   # Changes to the importmap will invalidate the etag for HTML responses
   stale_when_importmap_changes
 
-  # フェーズによる拒否の応答はここだけで組み立てる。書き込み口ごとに書かない
+  # 書き込みの拒否はここだけで応答に組み立てる。書き込み口ごとに書かない。
+  # 理由でステータスが変わるため、例外は分けたまま受ける
   rescue_from Exchange::PhaseViolation, with: :deny_by_phase
+  rescue_from Exchange::OwnerLocked, with: :deny_by_role
 
   # コールバックの先頭で確定させる。遅延させると、実際に読むのは
   # 途中の before_action の中になり、名前が指す時刻とずれる
@@ -31,6 +33,16 @@ class ApplicationController < ActionController::Base
   # 交換会の現在のフェーズだけが操作を許していないため。
   # Turbo は 4xx の本文を描画するので、画面にもメッセージが出る
   def deny_by_phase(error)
-    render 'errors/phase_violation', status: :conflict, locals: { message: error.message }
+    deny(error, status: :conflict)
+  end
+
+  # こちらは 403。待てば通るフェーズによる拒否と違い、主催者である限り
+  # いつ来ても通らない。同じ 409 にすると、待てば抜けられるように読める
+  def deny_by_role(error)
+    deny(error, status: :forbidden)
+  end
+
+  def deny(error, status:)
+    render 'errors/denied', status:, locals: { message: error.message }
   end
 end

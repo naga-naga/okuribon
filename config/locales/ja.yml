@@ -22,6 +22,7 @@ ja:
       wish: 希望リストの変更
       matching: マッチングの実行
     phase_violation: 現在は%{phase}のため、%{operation}はできません
+    owner_locked: 主催者は交換会から抜けられません
     flash:
       created: 交換会を作成しました
       updated: 交換会を更新しました

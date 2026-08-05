@@ -245,6 +245,28 @@ RSpec.describe ParticipationsController do
       end
     end
 
+    # ボタンを出していなくても、この口を直接叩けば届く。拒否はサーバー側で行う
+    describe '主催者のとき' do
+      before do
+        exchange.join!(exchange.owner, at: registration)
+        log_in_as(exchange.owner)
+      end
+
+      # フェーズも認可も正しく、役割だけが許していない。409 とは別の理由になる
+      it '辞退できない' do
+        travel_to(registration) { withdraw }
+
+        expect(response).to have_http_status(:forbidden)
+        expect(exchange.participant?(exchange.owner)).to be(true)
+      end
+
+      it '理由が分かる' do
+        travel_to(registration) { withdraw }
+
+        expect(response.body).to include('主催者は交換会から抜けられません')
+      end
+    end
+
     # 参加していない人に取り消すものは無い。参加の口と違い、
     # ログインを挟んで続きをやる意味も無いので、意図は保存しない
     it '未ログインならログイン画面へ送る' do

@@ -19,7 +19,7 @@ RSpec.describe Participation do
 
     expect(participation.exchange).to eq(exchange)
     expect(participation.user).to eq(user)
-    expect(exchange.participations).to contain_exactly(participation)
+    expect(exchange.participations).to include(participation)
     expect(user.participations).to contain_exactly(participation)
   end
 
@@ -35,14 +35,6 @@ RSpec.describe Participation do
     create(:participation, user:)
 
     expect { create(:participation, user:) }.not_to raise_error
-  end
-
-  it '主催者は自分の交換会に参加者として加われる' do
-    exchange = create(:exchange)
-
-    participation = create(:participation, exchange:, user: exchange.owner)
-
-    expect(exchange.participations).to contain_exactly(participation)
   end
 
   it '消すと登録した本と、その本への希望・割当まで消える' do

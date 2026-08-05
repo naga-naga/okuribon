@@ -38,12 +38,14 @@ RSpec.describe InvitationsController do
         expect(response.body).to include('主催 太郎')
       end
 
+      # 主催者も参加者に数える。招待された人が見るのは交換会の規模で、
+      # 主催者だけを別枠に置く理由が無い
       it '参加者数が出る' do
         create_list(:participation, 2, exchange:)
 
         get invitation_path(exchange.invite_token)
 
-        expect(response.body).to include('2人')
+        expect(response.body).to include('3人')
       end
 
       # UTC で描かれると9時間ずれた日程が出て、参加を決める判断そのものが狂う
@@ -129,6 +131,29 @@ RSpec.describe InvitationsController do
 
           expect(response.body).not_to include('参加を取り消す')
         end
+      end
+    end
+
+    # 主催者はこの経路を通らない。交換会を作る操作がそのまま参加の意思表示にあたる
+    describe '主催者が開いたとき' do
+      before do
+        exchange.join!(owner, at: '2026-08-15T10:00:00+09:00'.in_time_zone)
+        log_in_as(owner)
+
+        get invitation_path(exchange.invite_token)
+      end
+
+      it '参加済みとして扱う' do
+        expect(response.body).to include('すでに参加しています')
+      end
+
+      # 主催者は抜けられない。押しても断られるボタンを見せない
+      it '辞退ボタンを出さない' do
+        expect(response.body).not_to include('参加を取り消す')
+      end
+
+      it '交換会トップへの導線が出る' do
+        expect(response.body).to include(exchange_path(exchange))
       end
     end
 

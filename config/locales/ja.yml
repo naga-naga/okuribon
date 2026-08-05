@@ -22,6 +22,7 @@ ja:
       wish: 希望リストの変更
       matching: マッチングの実行
     phase_violation: 現在は%{phase}のため、%{operation}はできません
+    owner_locked: 主催者は交換会から抜けられません
     flash:
       created: 交換会を作成しました
       updated: 交換会を更新しました
@@ -47,5 +48,8 @@ ja:
           attributes:
             registration_ends_at:
               before_start: は開始日時より後にしてください
+              # 作成時のみ。主催者は作成と同時に参加者になるため、
+              # 締切を過ぎた日程では交換会そのものを作れない
+              deadline_passed: は現在より後にしてください
             wish_ends_at:
               before_start: は開始日時より後にしてください

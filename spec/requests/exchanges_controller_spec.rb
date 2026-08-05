@@ -22,10 +22,11 @@ RSpec.describe ExchangesController do
   describe '#index' do
     let!(:now) { '2026-08-04T00:00:00+09:00' }
 
-    # 一覧に並ぶ条件は参加していること。主催や招待だけでは並ばない
+    # 一覧に並ぶ条件は参加していること。招待されただけでは並ばない。
+    # 主催者の参加は factory が作るので、自分が主催のときは重ねて作らない
     def participating(**attributes)
       exchange = create(:exchange, **attributes)
-      create(:participation, user:, exchange:)
+      exchange.participations.create_or_find_by!(user:)
       exchange
     end
 
@@ -54,23 +55,14 @@ RSpec.describe ExchangesController do
       expect(response.body).not_to include('よその交換会')
     end
 
-    # 主催者は参加者を兼ねられるが、兼ねるまでは参加者ではない。
-    # 主催した交換会への導線は主催者管理画面（#36）が持つ
-    it '主催していても参加していなければ並ばない' do
-      create(:exchange, owner: user, name: '主催だけの交換会')
+    # 主催者は必ず参加者を兼ねるので、主催した交換会もここに並ぶ。
+    # 並ばないと、作った本人が自分の交換会へ入る口を持てない
+    it '主催した交換会も並ぶ' do
+      registration_exchange(owner: user, name: '主催した交換会')
 
       travel_to(now) { get exchanges_path }
 
-      expect(response.body).not_to include('主催だけの交換会')
-    end
-
-    # 並ぶ条件は参加していること。主催者だからといって外れてはいけない
-    it '主催していても参加していれば並ぶ' do
-      registration_exchange(owner: user, name: '主催して参加もした交換会')
-
-      travel_to(now) { get exchanges_path }
-
-      expect(response.body).to include('主催して参加もした交換会')
+      expect(response.body).to include('主催した交換会')
     end
 
     it '現在のフェーズが出る' do
@@ -215,14 +207,15 @@ RSpec.describe ExchangesController do
       expect(response).to have_http_status(:not_found)
     end
 
-    # 主催者は参加者を兼ねられるが、兼ねるまでは参加者ではない。
-    # 主催した交換会への導線は主催者管理画面（#36）が持つ
-    it '主催しているだけでは見つからない' do
-      owned = create(:exchange, owner: user)
+    # 主催者は必ず参加者を兼ねるので、自分の交換会のトップを開ける。
+    # 主催者管理画面（#36）への導線はこの画面が持つ
+    it '主催者も開ける' do
+      owned = create(:exchange, owner: user, name: '主催した交換会')
 
       travel_to(now) { get exchange_path(owned) }
 
-      expect(response).to have_http_status(:not_found)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('主催した交換会')
     end
 
     it 'ログインしていなければログイン画面へ送る' do
@@ -291,7 +284,7 @@ RSpec.describe ExchangesController do
         open_top
 
         expect(response.body).to include('参加者')
-        expect(response.body).to include('4人')
+        expect(response.body).to include('5人')
       end
 
       it '本の総数が出る' do
@@ -391,12 +384,21 @@ RSpec.describe ExchangesController do
       expect(Exchange.last.registration_starts_at.rfc3339).to eq('2026-08-10T10:00:00+09:00')
     end
 
-    # 交換会トップへは送らない。作った時点では主催者はまだ参加者ではなく、
-    # トップは参加者しか開けないため 404 になる
-    it '編集画面へ送る' do
+    # 参加していない人には交換会が見えない。主催者だけが参加者でないまま残ると、
+    # どの画面も「主催者が来たらどうするか」を個別に答えることになる
+    it '主催者の参加も同時にできる' do
+      expect { post '/exchanges', params: { exchange: attributes } }
+        .to change(Participation, :count).by(1)
+
+      expect(Exchange.last.participant?(user)).to be(true)
+    end
+
+    # 作った本人がそのまま参加者として入れる。編集画面は設定を直す画面で、
+    # 作り終えた人を最初に置く場所ではない
+    it '交換会トップへ送る' do
       post '/exchanges', params: { exchange: attributes }
 
-      expect(response).to redirect_to(edit_exchange_path(Exchange.last))
+      expect(response).to redirect_to(exchange_path(Exchange.last))
     end
 
     it '作成できたことを知らせる' do
@@ -448,6 +450,18 @@ RSpec.describe ExchangesController do
 
         expect(response.body).to include('夏の交換会')
       end
+
+      # 締切を過ぎた日程では主催者の参加を作れない。
+      # 判定はサーバーが受けた時刻で行い、送られてきた値は見ない
+      it '登録の締切が過ぎていると作られない' do
+        travel_to '2026-08-25T00:00:00+09:00' do
+          expect { post '/exchanges', params: { exchange: attributes } }
+            .not_to change(Exchange, :count)
+        end
+
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.body).to include('登録期間の終了日時は現在より後にしてください')
+      end
     end
   end
 
@@ -457,11 +471,11 @@ RSpec.describe ExchangesController do
     # 現在時刻はオフセット付きの直値で置く。travel_to は文字列を Time.zone.parse
     # に通すので、オフセットを書いておけばゾーン設定に依存しない。
     # 境界そのものは spec/models/exchange_spec.rb が持つ
+    # 作れるのは主催者がその場で参加できる2つのフェーズだけ。
+    # 残りの3つで作れないことは #create の「入力の不備」が押さえている
     [
       ['登録期間の開始前なら準備中', '2026-08-09T23:59:00+09:00', :preparing],
       ['登録期間の開始ちょうどなら登録期間', '2026-08-10T10:00:00+09:00', :registration],
-      ['登録の締切ちょうどなら希望提出期間', '2026-08-24T10:00:00+09:00', :wish],
-      ['希望提出の締切ちょうどならマッチング実行待ち', '2026-09-07T10:00:00+09:00', :awaiting_matching],
     ].each do |description, now, phase|
       it description do
         travel_to now do
@@ -472,13 +486,13 @@ RSpec.describe ExchangesController do
       end
     end
 
-    it '編集画面に現在のフェーズを出す' do
+    it '交換会トップに現在のフェーズを出す' do
       travel_to '2026-08-15T10:00:00+09:00' do
         post '/exchanges', params: { exchange: attributes }
 
         follow_redirect!
 
-        expect(response.body).to include('現在は登録期間です')
+        expect(response.body).to include('登録期間')
       end
     end
   end

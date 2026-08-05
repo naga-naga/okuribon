@@ -547,6 +547,64 @@ RSpec.describe Exchange do
     end
   end
 
+  describe '#owner?' do
+    let!(:exchange) { create(:exchange) }
+
+    it '主催者なら true になる' do
+      expect(exchange.owner?(exchange.owner)).to be(true)
+    end
+
+    it '主催者以外なら false になる' do
+      expect(exchange.owner?(create(:user))).to be(false)
+    end
+
+    # 未ログインの人は着地画面をそのまま見る。呼ぶ側で nil を弾かせない
+    it '利用者がいなければ false になる' do
+      expect(exchange.owner?(nil)).to be(false)
+    end
+  end
+
+  describe '#withdrawable?' do
+    let!(:exchange) do
+      create(
+        :exchange,
+        registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
+        registration_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
+        wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone
+      )
+    end
+    let!(:user) { create(:user) }
+
+    let!(:registration) { '2026-08-04T00:00:00+09:00'.in_time_zone }
+
+    it '登録期間中の参加者なら true になる' do
+      exchange.join!(user, at: registration)
+
+      expect(exchange.withdrawable?(user, at: registration)).to be(true)
+    end
+
+    it '参加していなければ false になる' do
+      expect(exchange.withdrawable?(user, at: registration)).to be(false)
+    end
+
+    # 抜けられる期間かどうかによらない
+    it '主催者なら false になる' do
+      exchange.join!(exchange.owner, at: registration)
+
+      expect(exchange.withdrawable?(exchange.owner, at: registration)).to be(false)
+    end
+
+    it '登録の締切を過ぎていれば false になる' do
+      exchange.join!(user, at: registration)
+
+      expect(exchange.withdrawable?(user, at: '2026-08-08T00:00:00+09:00'.in_time_zone)).to be(false)
+    end
+
+    it '利用者がいなければ false になる' do
+      expect(exchange.withdrawable?(nil, at: registration)).to be(false)
+    end
+  end
+
   describe '#join!' do
     let!(:exchange) do
       create(
@@ -577,7 +635,7 @@ RSpec.describe Exchange do
     it '登録の締切ちょうどからは参加できない' do
       expect { exchange.join!(user, at: '2026-08-08T00:00:00+09:00'.in_time_zone) }
         .to raise_error(Exchange::PhaseViolation)
-      expect(exchange.participations).to be_empty
+      expect(exchange.participant?(user)).to be(false)
     end
 
     it '希望提出期間には参加できない' do
@@ -592,7 +650,7 @@ RSpec.describe Exchange do
       second = exchange.join!(user, at: registration)
 
       expect(second).to eq(first)
-      expect(exchange.participations.count).to eq(1)
+      expect(exchange.participations.where(user:).count).to eq(1)
     end
 
     it '別の利用者はそれぞれ参加できる' do
@@ -678,6 +736,25 @@ RSpec.describe Exchange do
       exchange.withdraw!(user, at: registration)
 
       expect(exchange.participant?(other)).to be(true)
+    end
+
+    # 主催者が抜けると、参加者のいない交換会や、主催者だけが入れない
+    # 交換会が残る。フェーズではなく役割による拒否なので、例外を分ける
+    it '主催者は辞退できない' do
+      exchange.join!(exchange.owner, at: registration)
+
+      expect { exchange.withdraw!(exchange.owner, at: registration) }
+        .to raise_error(Exchange::OwnerLocked)
+      expect(exchange.participant?(exchange.owner)).to be(true)
+    end
+
+    # 抜けられる期間かどうかによらない。フェーズを先に見ると、
+    # 締切後に主催者が押したときだけ理由が入れ替わる
+    it '主催者は抜けられない期間でも同じ理由で拒否される' do
+      exchange.join!(exchange.owner, at: registration)
+
+      expect { exchange.withdraw!(exchange.owner, at: '2026-08-11T00:00:00+09:00'.in_time_zone) }
+        .to raise_error(Exchange::OwnerLocked)
     end
 
     # 辞退したあと考え直すことはある。登録期間のうちなら戻れる

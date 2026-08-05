@@ -28,6 +28,15 @@ class Exchange < ApplicationRecord
     end
   end
 
+  # 主催者の参加は動かせない。辞退でも主催者による参加者の除外（#39）でも
+  # 理由は同じ「主催者は必ず参加者を兼ねる」なので、操作ごとに例外を分けない。
+  # 応答の組み立ては ApplicationController の rescue_from に集約する
+  class OwnerLocked < StandardError
+    def initialize(message = I18n.t('exchange.owner_locked'))
+      super
+    end
+  end
+
   belongs_to :owner, class_name: 'User', inverse_of: :owned_exchanges
 
   has_many :participations, dependent: :destroy
@@ -76,6 +85,19 @@ class Exchange < ApplicationRecord
     participations.exists?(user:)
   end
 
+  # 未ログインの人も着地画面を見るため、participant? と同じく nil に答える
+  def owner?(user)
+    return false if user.nil?
+
+    owner_id == user.id
+  end
+
+  # 辞退できるかどうか。着地画面のボタンの出し分けと withdraw! の拒否を
+  # 同じ規則から引く。片方だけを直すと、押しても断られるボタンが残る
+  def withdrawable?(user, at:)
+    participant?(user) && !owner?(user) && writable?(:participation, at:)
+  end
+
   def phase_name(at:)
     I18n.t(phase(at:), scope: 'exchange.phases')
   end
@@ -113,6 +135,9 @@ class Exchange < ApplicationRecord
   # 登録した本は参加にぶら下がっているので、参加を消せば一緒に消える。
   # 参加が無ければ何もしない。二重送信や再送信で落とすようなことではない
   def withdraw!(user, at:)
+    # 役割をフェーズより先に見る。主催者が抜けられないのは期間によらないため、
+    # 順を逆にすると締切後に押したときだけ理由が入れ替わる
+    raise OwnerLocked if owner?(user)
     raise PhaseViolation.new(self, :participation, at:) unless writable?(:participation, at:)
 
     participations.find_by(user:)&.destroy!

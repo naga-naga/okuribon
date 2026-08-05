@@ -3,16 +3,17 @@
 class ExchangesController < ApplicationController
   before_action :require_login
 
-  # 並ぶのは参加している交換会だけ。主催しているだけのものは含まれない。
-  # 並び順を決めないと開くたびにカードの位置が入れ替わる。参加数は多くても
-  # 十数件なので、フェーズをまたいで凝った順序は作らず、日程の新しい順にする
+  # 並ぶのは参加している交換会だけ。主催者は必ず参加者を兼ねるので、
+  # 主催した交換会もここに並ぶ。並び順を決めないと開くたびにカードの位置が
+  # 入れ替わる。参加数は多くても十数件なので、フェーズをまたいで凝った順序は
+  # 作らず、日程の新しい順にする
   def index
     @exchanges = current_user.exchanges.order(registration_starts_at: :desc)
   end
 
   # 交換会トップ。参加から引くので、参加していなければ見つからない。
-  # 主催しているだけの人もここには入れない。主催者としての導線は
-  # 主催者管理画面（#36）が持つ。自分の取得枠を出すのに参加そのものが要るため、
+  # 主催者も参加者を兼ねるのでここを開ける。主催者管理画面（#36）への導線は
+  # この画面が持つ。自分の取得枠を出すのに参加そのものが要るため、
   # 交換会ではなく参加を引いて、権限の判定と取り出しを1回で済ませる
   def show
     @participation = current_user.participations.find_by!(exchange_id: params.expect(:id))
@@ -27,13 +28,16 @@ class ExchangesController < ApplicationController
     @exchange = owned_exchange
   end
 
+  # 交換会と主催者の参加を1つのトランザクションで作る。
+  # 締切の判定に基準時刻が要ることもあり、組み立てはサービスに置く
   def create
-    @exchange = current_user.owned_exchanges.build(exchange_params)
+    @exchange = Exchanges::Creation.new(owner: current_user,
+                                        attributes: exchange_params,
+                                        at: requested_at).call
 
-    if @exchange.save
-      # 交換会トップへは送らない。作った時点では主催者はまだ参加者ではなく、
-      # トップは参加者しか開けないため 404 になる
-      redirect_to edit_exchange_path(@exchange), notice: t('exchange.flash.created')
+    if @exchange.persisted?
+      # 作った本人はもう参加者なので、そのままトップへ入れる
+      redirect_to exchange_path(@exchange), notice: t('exchange.flash.created')
     else
       render :new, status: :unprocessable_content
     end

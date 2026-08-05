@@ -49,7 +49,7 @@ RSpec.describe ParticipationsController do
           join
         end
 
-        expect(exchange.participations.count).to eq(1)
+        expect(exchange.participations.where(user:).count).to eq(1)
       end
 
       # 存在しない交換会と、招待されていない交換会を見分けられないようにする
@@ -65,7 +65,7 @@ RSpec.describe ParticipationsController do
         travel_to('2026-08-08T00:00:00+09:00') { join }
 
         expect(response).to have_http_status(:conflict)
-        expect(exchange.participations).to be_empty
+        expect(exchange.participant?(user)).to be(false)
       end
 
       it '準備中でも参加できる' do
@@ -82,7 +82,7 @@ RSpec.describe ParticipationsController do
         travel_to(registration) { join }
 
         expect(response).to redirect_to(login_path)
-        expect(exchange.participations).to be_empty
+        expect(exchange.participant?(user)).to be(false)
       end
 
       # ログインを挟んでも行き着く先は同じ。経路によって着地が変わると、
@@ -115,7 +115,7 @@ RSpec.describe ParticipationsController do
           log_in_as(user)
         end
 
-        expect(exchange.participations).to be_empty
+        expect(exchange.participant?(user)).to be(false)
       end
 
       # 保存した意図を残すと、次のログインで身に覚えのない参加が作られる
@@ -138,7 +138,7 @@ RSpec.describe ParticipationsController do
           log_in_as(user)
 
           expect(session[:user_id]).to eq(user.id)
-          expect(exchange.participations).to be_empty
+          expect(exchange.participant?(user)).to be(false)
 
           follow_redirect!
           expect(response.body).to include('参加を受け付ける期間は終わりました')

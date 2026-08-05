@@ -53,13 +53,13 @@ RSpec.describe User do
       expect(user.exchanges).to be_empty
     end
 
-    # 主催者は参加者を兼ねられるが、兼ねるまでは参加者ではない。
-    # 主催した交換会への導線は主催者管理画面が持つ
-    it '主催していても参加していなければ引かない' do
+    # 主催者は必ず参加者を兼ねるので、主催した交換会もここから引ける。
+    # 一覧に並ぶ条件はあくまで参加していることで、主催であることではない
+    it '主催した交換会も引く' do
       user = create(:user)
-      create(:exchange, owner: user)
+      owned = create(:exchange, owner: user)
 
-      expect(user.exchanges).to be_empty
+      expect(user.exchanges).to contain_exactly(owned)
     end
   end
 
@@ -135,6 +135,6 @@ RSpec.describe User do
     user.destroy
 
     expect(described_class.exists?(user.id)).to be(false)
-    expect(Participation.count).to eq(0)
+    expect(Participation.exists?(participation.id)).to be(false)
   end
 end

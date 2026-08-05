@@ -22,10 +22,11 @@ RSpec.describe ExchangesController do
   describe '#index' do
     let!(:now) { '2026-08-04T00:00:00+09:00' }
 
-    # 一覧に並ぶ条件は参加していること。主催や招待だけでは並ばない
+    # 一覧に並ぶ条件は参加していること。招待されただけでは並ばない。
+    # 主催者の参加は factory が作るので、自分が主催のときは重ねて作らない
     def participating(**attributes)
       exchange = create(:exchange, **attributes)
-      create(:participation, user:, exchange:)
+      exchange.participations.create_or_find_by!(user:)
       exchange
     end
 
@@ -54,23 +55,14 @@ RSpec.describe ExchangesController do
       expect(response.body).not_to include('よその交換会')
     end
 
-    # 主催者は参加者を兼ねられるが、兼ねるまでは参加者ではない。
-    # 主催した交換会への導線は主催者管理画面（#36）が持つ
-    it '主催していても参加していなければ並ばない' do
-      create(:exchange, owner: user, name: '主催だけの交換会')
+    # 主催者は必ず参加者を兼ねるので、主催した交換会もここに並ぶ。
+    # 並ばないと、作った本人が自分の交換会へ入る口を持てない
+    it '主催した交換会も並ぶ' do
+      registration_exchange(owner: user, name: '主催した交換会')
 
       travel_to(now) { get exchanges_path }
 
-      expect(response.body).not_to include('主催だけの交換会')
-    end
-
-    # 並ぶ条件は参加していること。主催者だからといって外れてはいけない
-    it '主催していても参加していれば並ぶ' do
-      registration_exchange(owner: user, name: '主催して参加もした交換会')
-
-      travel_to(now) { get exchanges_path }
-
-      expect(response.body).to include('主催して参加もした交換会')
+      expect(response.body).to include('主催した交換会')
     end
 
     it '現在のフェーズが出る' do
@@ -215,14 +207,15 @@ RSpec.describe ExchangesController do
       expect(response).to have_http_status(:not_found)
     end
 
-    # 主催者は参加者を兼ねられるが、兼ねるまでは参加者ではない。
-    # 主催した交換会への導線は主催者管理画面（#36）が持つ
-    it '主催しているだけでは見つからない' do
-      owned = create(:exchange, owner: user)
+    # 主催者は必ず参加者を兼ねるので、自分の交換会のトップを開ける。
+    # 主催者管理画面（#36）への導線はこの画面が持つ
+    it '主催者も開ける' do
+      owned = create(:exchange, owner: user, name: '主催した交換会')
 
       travel_to(now) { get exchange_path(owned) }
 
-      expect(response).to have_http_status(:not_found)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('主催した交換会')
     end
 
     it 'ログインしていなければログイン画面へ送る' do
@@ -291,7 +284,7 @@ RSpec.describe ExchangesController do
         open_top
 
         expect(response.body).to include('参加者')
-        expect(response.body).to include('4人')
+        expect(response.body).to include('5人')
       end
 
       it '本の総数が出る' do

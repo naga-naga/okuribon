@@ -635,7 +635,7 @@ RSpec.describe Exchange do
     it '登録の締切ちょうどからは参加できない' do
       expect { exchange.join!(user, at: '2026-08-08T00:00:00+09:00'.in_time_zone) }
         .to raise_error(Exchange::PhaseViolation)
-      expect(exchange.participations).to be_empty
+      expect(exchange.participant?(user)).to be(false)
     end
 
     it '希望提出期間には参加できない' do
@@ -650,7 +650,7 @@ RSpec.describe Exchange do
       second = exchange.join!(user, at: registration)
 
       expect(second).to eq(first)
-      expect(exchange.participations.count).to eq(1)
+      expect(exchange.participations.where(user:).count).to eq(1)
     end
 
     it '別の利用者はそれぞれ参加できる' do

@@ -198,7 +198,7 @@ RSpec.describe InvitationsController do
         get invitation_path(exchange.invite_token)
 
         expect(response.body).not_to include(book.title)
-        expect(response.body).not_to include(book.gift_code)
+        expect(response.body).not_to include('GIFTCODE12345678')
       end
     end
   end

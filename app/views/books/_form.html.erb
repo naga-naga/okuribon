@@ -1,0 +1,79 @@
+<%= form_with model: [exchange, book], class: 'flex flex-col gap-8' do |f| %>
+  <% if book.errors.any? %>
+    <div class="rounded-[5px] border border-accent bg-accent-soft px-5 py-4">
+      <p class="text-[13.5px] font-medium text-accent">入力を確認してください</p>
+      <ul class="mt-2 flex list-disc flex-col gap-1 pl-5 text-[13px] leading-[1.8] text-ink">
+        <% book.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="flex flex-col gap-5">
+    <div class="flex flex-col gap-1.5">
+      <%= f.label :title, class: 'text-[13px] font-medium text-ink' %>
+      <%= f.text_field :title, required: true,
+                       class: 'rounded-[5px] border border-line-strong bg-paper px-4 py-3 text-[14.5px] text-ink' %>
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <%= f.label :url, class: 'text-[13px] font-medium text-ink' %>
+      <p class="text-[12px] leading-[1.85] text-ink-subtle">
+        ストアの商品ページ。表紙や価格を確かめる先になります。
+      </p>
+      <%= f.url_field :url,
+                      class: 'rounded-[5px] border border-line-strong bg-paper px-4 py-3 text-[14.5px] text-ink' %>
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <%= f.label :summary, class: 'text-[13px] font-medium text-ink' %>
+      <%= f.text_area :summary, rows: 4,
+                      class: 'rounded-[5px] border border-line-strong bg-paper px-4 py-3 text-[14.5px] text-ink' %>
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <%= f.label :recommendation, class: 'text-[13px] font-medium text-ink' %>
+      <%# 読み比べるのがこのツールの一番おいしいところなので、ここだけ書き方を促す %>
+      <p class="text-[12px] leading-[1.85] text-ink-subtle">
+        どこが良かったか、誰に読んでほしいか。ここが交換会の楽しみどころです。
+      </p>
+      <%= f.text_area :recommendation, rows: 5,
+                      class: 'rounded-[5px] border border-line-strong bg-paper px-4 py-3 text-[14.5px] text-ink' %>
+    </div>
+  </div>
+
+  <div class="flex flex-col gap-1.5 border-t border-line pt-8" data-controller="reveal">
+    <%= f.label :gift_code, class: 'text-[13px] font-medium text-ink' %>
+
+    <%# 見えるのは登録した本人と、成立後の受取人だけ（docs/spec.md 8.）。
+        入力欄に貼る時点で不安になる項目なので、誰に見えるのかをその場に書く %>
+    <p class="text-[12px] leading-[1.85] text-ink-subtle">
+      他の参加者には見えません。マッチングが成立したあと、受け取った人にだけ開示されます。
+    </p>
+
+    <div class="flex items-stretch gap-2">
+      <%# 平文の取得経路は gift_code_for だけ。素のリーダーは private なので、
+          フォームも権限判定を通ってから値を受け取る %>
+      <%= f.password_field :gift_code, required: true,
+                           value: book.gift_code_for(current_user, at: requested_at),
+                           autocomplete: 'off',
+                           data: { reveal_target: 'field' },
+                           class: 'min-w-0 flex-1 rounded-[5px] border border-line-strong bg-paper px-4 py-3 ' \
+                                  'text-[14.5px] text-ink' %>
+      <%# JavaScript が動かない環境では押しても何も起きないため、送信には関わらせない %>
+      <button type="button" data-action="reveal#toggle" data-reveal-target="button"
+              class="shrink-0 cursor-pointer rounded-[5px] border border-line-strong bg-paper px-4
+                     text-[13px] font-medium text-ink hover:bg-paper-hover">
+        表示
+      </button>
+    </div>
+  </div>
+
+  <div class="flex flex-wrap items-center gap-4 border-t border-line pt-8">
+    <%= f.submit submit_label,
+                 class: 'cursor-pointer rounded-[5px] bg-accent px-6 py-3.5 text-[14.5px] ' \
+                        'font-medium text-paper hover:bg-accent-hover' %>
+    <%= link_to 'やめる', exchange_books_path(exchange), class: 'text-[13px]' %>
+  </div>
+<% end %>

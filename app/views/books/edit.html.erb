@@ -1,0 +1,12 @@
+<% content_for :title, "#{@book.title}を編集" %>
+
+<div class="mx-auto w-full max-w-[640px] px-4 py-10 sm:px-6">
+  <%# 戻り先は本の一覧だけにする。この画面へ来る入口がそこしかない %>
+  <p class="text-[12px]"><%= link_to '本の一覧', exchange_books_path(@exchange) %></p>
+
+  <h1 class="mt-4 text-[26px] font-bold leading-[1.45] text-ink">本を編集する</h1>
+
+  <div class="mt-8">
+    <%= render 'form', exchange: @exchange, book: @book, submit_label: '保存する' %>
+  </div>
+</div>

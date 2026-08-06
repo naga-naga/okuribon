@@ -26,6 +26,11 @@ ja:
     flash:
       created: 交換会を作成しました
       updated: 交換会を更新しました
+  book:
+    flash:
+      created: 本を登録しました
+      updated: 本の内容を更新しました
+      destroyed: 本の登録を取り消しました
   participation:
     flash:
       joined: 交換会に参加しました
@@ -33,6 +38,12 @@ ja:
     login_required: "%{name}に参加するには、Google でのログインが必要です"
   activerecord:
     attributes:
+      book:
+        title: タイトル
+        summary: あらすじ
+        url: URL
+        recommendation: おすすめポイント
+        gift_code: ギフトコード
       exchange:
         name: 交換会名
         description: 概要

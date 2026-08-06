@@ -24,7 +24,8 @@ Rails.application.routes.draw do
   # 本は必ずどれか1つの交換会に属し、単独では意味を持たない。
   # 交換会の下に置くと、参加しているかどうかの判定を親から引ける
   resources :exchanges, only: [:index, :show, :new, :create, :edit, :update] do
-    resources :books, only: [:index]
+    # 詳細（#23）だけがまだ無い。それ以外は揃っている
+    resources :books, except: [:show]
   end
 
   # 招待URL。交換会の id ではなく招待トークンで引く。

@@ -33,19 +33,21 @@ RSpec.describe Book do
   end
 
   # DB の例外ではなくフォームのエラーとして返す。
-  # NOT NULL に任せると、入力欄に戻さず 500 になる
+  # NOT NULL に任せると、入力欄に戻さず 500 になる。
+  # 型ではなく画面に出る文言で固定する。型で照合すると、属性名の訳を
+  # ja.yml から落としても spec が通り、「Titleを入力してください」が出続ける
   it 'タイトルが空だと保存できない' do
     book = build(:book, title: '  ')
 
     expect(book).not_to be_valid
-    expect(book.errors).to be_of_kind(:title, :blank)
+    expect(book.errors.full_messages).to include('タイトルを入力してください')
   end
 
   it 'ギフトコードが空だと保存できない' do
     book = build(:book, gift_code: '  ')
 
     expect(book).not_to be_valid
-    expect(book.errors).to be_of_kind(:gift_code, :blank)
+    expect(book.errors.full_messages).to include('ギフトコードを入力してください')
   end
 
   it 'バリデーションを外しても DB が空を拒む' do

@@ -381,14 +381,18 @@ RSpec.describe BooksController do
       expect(flash[:notice]).to include('1冊')
     end
 
-    it 'タイトルが空だと保存されない' do
+    # 何が足りないのかを入力欄まで返す。422 で止めるだけでは、
+    # 保存されなかったことしか分からない
+    it 'タイトルが空だと保存されず、理由が画面に出る' do
       expect { register(title: '') }.not_to(change { participation.books.count })
       expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include('タイトルを入力してください')
     end
 
-    it 'ギフトコードが空だと保存されない' do
+    it 'ギフトコードが空だと保存されず、理由が画面に出る' do
       expect { register(gift_code: '') }.not_to(change { participation.books.count })
       expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include('ギフトコードを入力してください')
     end
 
     # クライアントの時計ではなくサーバー側で判定する（docs/spec.md 4. フェーズ）

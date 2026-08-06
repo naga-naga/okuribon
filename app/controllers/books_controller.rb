@@ -34,7 +34,8 @@ class BooksController < ApplicationController
     @book = @participation.books.build(book_params)
 
     if @book.save
-      redirect_to exchange_books_path(@exchange), notice: t('book.flash.created')
+      redirect_to after_create_path,
+                  notice: t('book.flash.created', title: @book.title, count: @participation.books.count)
     else
       render :new, status: :unprocessable_content
     end
@@ -68,6 +69,14 @@ class BooksController < ApplicationController
   # フェーズの判定対象。PhaseGuard から呼ばれる
   def current_exchange
     @exchange
+  end
+
+  # 「登録して、続けてもう1冊」で来たときだけフォームへ戻す。
+  # 何冊でも登録できるので、毎回一覧を経由させると1冊ごとに2画面を往復することになる
+  def after_create_path
+    return new_exchange_book_path(@exchange) if params[:continue].present?
+
+    exchange_books_path(@exchange)
   end
 
   # 自分の本だけを引く。他人の本は見つからないことにする。

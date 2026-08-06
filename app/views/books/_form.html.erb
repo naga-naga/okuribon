@@ -1,4 +1,7 @@
-<%= form_with model: [exchange, book], class: 'flex flex-col gap-8' do |f| %>
+<%# 並びは仕様の順ではなく「書く気になる順」にする（ビジュアルガイド 6.4）。
+    タイトル → おすすめポイント（主役）→ あらすじと URL（補足）→ ギフトコード（機微）。
+    任意のあらすじを後ろに置き、書けなくても先へ進めるようにする %>
+<%= form_with model: [exchange, book], class: 'flex flex-col gap-6' do |f| %>
   <% if book.errors.any? %>
     <div class="rounded-[5px] border border-accent bg-accent-soft px-5 py-4">
       <p class="text-[13.5px] font-medium text-accent">入力を確認してください</p>
@@ -10,57 +13,99 @@
     </div>
   <% end %>
 
-  <div class="flex flex-col gap-5">
-    <div class="flex flex-col gap-1.5">
+  <div class="flex flex-col gap-2">
+    <div class="flex items-baseline gap-2">
       <%= f.label :title, class: 'text-[13px] font-medium text-ink' %>
-      <%= f.text_field :title, required: true,
-                       class: 'rounded-[5px] border border-line-strong bg-paper px-4 py-3 text-[14.5px] text-ink' %>
+      <span class="text-[11px] text-accent">必須</span>
     </div>
+    <%= f.text_field :title, required: true, placeholder: '例：波打ち際の観測所',
+                     class: 'rounded-[5px] border border-line-strong bg-paper px-4 py-3.5 text-[15px] text-ink' %>
+  </div>
 
+  <%# 専用の面を持つのはここだけ。朱の左罫と大きなラベルで、任意でありながら
+      主役であることを面で示す。他の入力欄の2倍の高さを取る %>
+  <div class="flex flex-col gap-4 rounded-[5px] border border-accent-soft border-l-[3px] border-l-accent
+              bg-paper px-6 py-6" data-controller="counter">
     <div class="flex flex-col gap-1.5">
-      <%= f.label :url, class: 'text-[13px] font-medium text-ink' %>
-      <p class="text-[12px] leading-[1.85] text-ink-subtle">
-        ストアの商品ページ。表紙や価格を確かめる先になります。
+      <div class="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+        <%= f.label :recommendation, class: 'text-[17px] font-bold text-ink' %>
+        <span class="text-[11.5px] text-ink-subtle">任意だけれど、ここが主役</span>
+      </div>
+      <p class="text-[13px] leading-[1.85] text-ink-muted">
+        みんながいちばん読むのはここです。あらすじは要りません。<b class="font-bold text-ink">あなたがこの本をどう読んだか</b>を、思い出したままの言葉で。
       </p>
-      <%= f.url_field :url,
-                      class: 'rounded-[5px] border border-line-strong bg-paper px-4 py-3 text-[14.5px] text-ink' %>
     </div>
 
-    <div class="flex flex-col gap-1.5">
-      <%= f.label :summary, class: 'text-[13px] font-medium text-ink' %>
-      <%= f.text_area :summary, rows: 4,
-                      class: 'rounded-[5px] border border-line-strong bg-paper px-4 py-3 text-[14.5px] text-ink' %>
+    <%# 白紙の入力欄をいきなり出されると手が止まる。問いの形で取っかかりを置く %>
+    <div class="flex flex-col gap-2.5">
+      <p class="text-[10.5px] tracking-[0.12em] text-ink-subtle">書き出しに困ったら</p>
+      <div class="flex flex-wrap gap-2">
+        <% ['どこで手が止まった？', '誰に読ませたい？', '読み終えて何をした？', 'いつ読むのがいい？'].each do |hint| %>
+          <span class="rounded-[3px] border border-accent-soft bg-accent-soft px-3 py-1.5 text-[12.5px] text-accent">
+            <%= hint %>
+          </span>
+        <% end %>
+      </div>
     </div>
 
-    <div class="flex flex-col gap-1.5">
-      <%= f.label :recommendation, class: 'text-[13px] font-medium text-ink' %>
-      <%# 読み比べるのがこのツールの一番おいしいところなので、ここだけ書き方を促す %>
-      <p class="text-[12px] leading-[1.85] text-ink-subtle">
-        どこが良かったか、誰に読んでほしいか。ここが交換会の楽しみどころです。
-      </p>
-      <%= f.text_area :recommendation, rows: 5,
-                      class: 'rounded-[5px] border border-line-strong bg-paper px-4 py-3 text-[14.5px] text-ink' %>
+    <%= f.text_area :recommendation, rows: 6,
+                    placeholder: '3年間ずっと同じ場所で波を数えるだけの話なんですが、後半で……',
+                    data: { counter_target: 'field', action: 'input->counter#count' },
+                    class: 'rounded-[5px] border border-line-strong bg-paper px-4 py-3.5 ' \
+                           'text-[14.5px] leading-[2] text-ink' %>
+
+    <%# 上限ではなく目安として出す。字数で切ると、書きたいだけ書けなくなる %>
+    <div class="flex items-center justify-between gap-4">
+      <span class="text-[12px] text-ink-subtle">2〜3行、100字くらいあれば充分に伝わります</span>
+      <span class="tabular text-[12px] text-ink-subtle" data-counter-target="output">
+        <%= book.recommendation.to_s.length %>
+      </span>
     </div>
   </div>
 
-  <div class="flex flex-col gap-1.5 border-t border-line pt-8" data-controller="reveal">
-    <%= f.label :gift_code, class: 'text-[13px] font-medium text-ink' %>
+  <%# 補足の2項目は横に畳んで軽く扱う。狭い画面では縦に積む %>
+  <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+    <div class="flex flex-col gap-2">
+      <div class="flex items-baseline gap-2">
+        <%= f.label :summary, class: 'text-[13px] font-medium text-ink' %>
+        <span class="text-[11px] text-ink-subtle">任意</span>
+      </div>
+      <%= f.text_area :summary, rows: 3, placeholder: 'ストアの紹介文をそのまま貼っても構いません',
+                      class: 'rounded-[5px] border border-line bg-paper px-3.5 py-3 ' \
+                             'text-[13.5px] leading-[1.9] text-ink' %>
+    </div>
 
-    <%# 見えるのは登録した本人と、成立後の受取人だけ（docs/spec.md 8.）。
-        入力欄に貼る時点で不安になる項目なので、誰に見えるのかをその場に書く %>
-    <p class="text-[12px] leading-[1.85] text-ink-subtle">
-      他の参加者には見えません。マッチングが成立したあと、受け取った人にだけ開示されます。
-    </p>
+    <div class="flex flex-col gap-2">
+      <div class="flex items-baseline gap-2">
+        <%= f.label :url, 'ストアのURL', class: 'text-[13px] font-medium text-ink' %>
+        <span class="text-[11px] text-ink-subtle">任意</span>
+      </div>
+      <%= f.url_field :url, placeholder: 'https://',
+                      class: 'rounded-[5px] border border-line bg-paper px-3.5 py-3 text-[13.5px] text-ink' %>
+      <span class="text-[11.5px] leading-[1.7] text-ink-subtle">
+        貼っておくと、受け取った人が同じ版を開けます
+      </span>
+    </div>
+  </div>
 
-    <div class="flex items-stretch gap-2">
+  <%# 機微な項目なので、地から一段沈めた独立した枠に置く %>
+  <div class="flex flex-col gap-3.5 rounded-[5px] border border-line-strong bg-surface-sunken px-6 py-5"
+       data-controller="reveal">
+    <div class="flex items-baseline gap-2">
+      <%= f.label :gift_code, class: 'text-[14px] font-bold text-ink' %>
+      <span class="text-[11px] text-accent">必須</span>
+    </div>
+
+    <div class="flex items-stretch gap-2.5">
       <%# 平文の取得経路は gift_code_for だけ。素のリーダーは private なので、
-          フォームも権限判定を通ってから値を受け取る %>
+          フォームも権限判定を通ってから値を受け取る。
+          伏せ字でも桁が読めるよう等幅で字間を空ける %>
       <%= f.password_field :gift_code, required: true,
                            value: book.gift_code_for(current_user, at: requested_at),
                            autocomplete: 'off',
                            data: { reveal_target: 'field' },
-                           class: 'min-w-0 flex-1 rounded-[5px] border border-line-strong bg-paper px-4 py-3 ' \
-                                  'text-[14.5px] text-ink' %>
+                           class: 'min-w-0 flex-1 rounded-[5px] border border-line-strong bg-paper px-4 py-3.5 ' \
+                                  'font-mono text-[14px] tracking-[0.14em] text-ink' %>
       <%# JavaScript が動かない環境では押しても何も起きないため、送信には関わらせない %>
       <button type="button" data-action="reveal#toggle" data-reveal-target="button"
               class="shrink-0 cursor-pointer rounded-[5px] border border-line-strong bg-paper px-4
@@ -68,12 +113,35 @@
         表示
       </button>
     </div>
+
+    <%# 開いたままの画面を置き去りにさせない。肩越しに覗かれるのは、
+        入力している最中がいちばん起きやすい %>
+    <p class="hidden rounded-[4px] bg-accent-soft px-3.5 py-2.5 text-[12.5px] leading-[1.8] text-accent"
+       data-reveal-target="warning">
+      表示中です。周囲の画面共有にご注意ください。10秒後に自動で伏せ字に戻ります。
+    </p>
+
+    <%# 見えるのは登録した本人と、成立後の受取人だけ（docs/spec.md 8.）。
+        入力欄に貼る時点で不安になる項目なので、誰に見えるのかをその場に置く。
+        主催者に特権が無いことも毎回同じ文で書く %>
+    <p class="border-t border-line pt-3.5 text-[12.5px] leading-[1.9] text-ink">
+      <b class="font-bold">他の参加者には見えません。</b>交換が成立した相手にだけ、結果公開後に開示されます。主催者にも見えません。入力中も既定で伏せ字です。
+    </p>
   </div>
 
-  <div class="flex flex-wrap items-center gap-4 border-t border-line pt-8">
+  <div class="flex flex-wrap items-center gap-3 border-t border-line pt-6">
     <%= f.submit submit_label,
-                 class: 'cursor-pointer rounded-[5px] bg-accent px-6 py-3.5 text-[14.5px] ' \
+                 class: 'cursor-pointer rounded-[5px] bg-accent px-6 py-3 text-[14px] ' \
                         'font-medium text-paper hover:bg-accent-hover' %>
+
+    <%# 何冊でも登録できるので、一覧を経由せずそのまま次を書ける口を主ボタンの隣に置く。
+        編集には次の1冊が無いので出さない %>
+    <% if book.new_record? %>
+      <%= f.submit '登録して、続けてもう1冊', name: 'continue',
+                   class: 'cursor-pointer rounded-[5px] border border-line-strong bg-paper px-6 py-3 ' \
+                          'text-[14px] font-medium text-ink hover:bg-paper-hover' %>
+    <% end %>
+
     <%= link_to 'やめる', exchange_books_path(exchange), class: 'text-[13px]' %>
   </div>
 <% end %>

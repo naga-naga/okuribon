@@ -265,6 +265,43 @@ RSpec.describe BooksController do
 
       expect(response.body).to include('他の参加者には見えません')
     end
+
+    # 主催者に特権はない（docs/spec.md 8.）。ここを書かないと、
+    # 主催者には見えるのだろうと思ったまま入力することになる
+    it '主催者にも見えないことが書かれている' do
+      open_form
+
+      expect(response.body).to include('主催者にも見えません')
+    end
+
+    # 必須は2項目だけ。印が無いと、任意の欄まで埋めないと進めないように見える
+    it '必須の項目に印が付く' do
+      open_form
+
+      expect(response.body.scan('必須').size).to eq(2)
+    end
+
+    it '任意の項目にも印が付く' do
+      open_form
+
+      expect(response.body).to include('任意')
+    end
+
+    # 仕様の順ではなく書く気になる順に並べる。おすすめポイントが主役で、
+    # 任意のあらすじは書けなくても先に進める位置に置く
+    it 'タイトル・おすすめポイント・あらすじ・ギフトコードの順に並ぶ' do
+      open_form
+
+      order = ['タイトル', 'おすすめポイント', 'あらすじ', 'ギフトコード'].map { response.body.index(it) }
+      expect(order).to eq(order.compact.sort)
+    end
+
+    # みんながいちばん読むところなので、書き出しの取っかかりを添える
+    it 'おすすめポイントに書き出しの手がかりが出る' do
+      open_form
+
+      expect(response.body).to include('どこで手が止まった？')
+    end
   end
 
   describe '#create' do
@@ -293,11 +330,27 @@ RSpec.describe BooksController do
       expect(book.recommendation).to eq('読み終わったあとに空が違って見える。')
     end
 
-    # 続けてもう1冊登録できるよう、着地先は一覧に揃える
     it '登録すると本の一覧へ戻る' do
       register
 
       expect(response).to redirect_to(exchange_books_path(exchange))
+    end
+
+    # 何冊でも登録できる。一覧を経由させると、1冊ごとに2画面を往復することになる
+    it '続けて登録するときは登録フォームへ戻る' do
+      post exchange_books_path(exchange),
+           params: { book: { title: '銀河の果ての本屋', gift_code: 'GIFT-1234' },
+                     continue: '登録して、続けてもう1冊' }
+
+      expect(response).to redirect_to(new_exchange_book_path(exchange))
+    end
+
+    # 登録した冊数がそのまま取得枠になる。増えたことをその場で伝える
+    it '登録したタイトルと取得枠を知らせる' do
+      register
+
+      expect(flash[:notice]).to include('銀河の果ての本屋')
+      expect(flash[:notice]).to include('1冊')
     end
 
     it 'タイトルが空だと保存されない' do

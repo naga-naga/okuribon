@@ -1,18 +1,36 @@
 <% content_for :title, "#{@exchange.name}の本" %>
 
+<%# 登録・編集・削除の可否は1回だけ引く。カードごとに引き直すと、
+    描いている途中で締切をまたいだときに1つの画面の中で出し分けが食い違う %>
+<% registering = @exchange.writable?(:book, at: requested_at) %>
+
+<%# 自分の登録冊数がそのまま取得枠。削除の確認文で使う。
+    読み込み済みの一覧から数えるので、カードごとに COUNT が飛ばない %>
+<% my_books = @books.count { it.participation_id == @participation.id } %>
+
 <div class="mx-auto w-full max-w-[640px] px-4 py-10 sm:px-6">
   <%# 戻り先は交換会トップだけにする。この画面へ来る入口がそこしかない %>
   <p class="text-[12px]"><%= link_to @exchange.name, exchange_path(@exchange) %></p>
 
-  <%# 狭い画面では見出しと冊数が縦に折り返る %>
-  <div class="mt-4 flex flex-wrap items-baseline gap-x-3 gap-y-2">
-    <h1 class="text-[26px] font-bold leading-[1.45] text-ink">本の一覧</h1>
-    <span class="tabular text-[13px] text-ink-muted"><%= @books.size %>冊</span>
+  <%# 見出しの行の右端に登録の口を置く。何冊でも登録できるので、
+      登録を終えて戻ってきたところがそのまま次の入口になる。
+      一覧の下に置くと、冊数が増えるほど次の1冊が遠くなる。
+      狭い画面では見出しとボタンが縦に折り返る %>
+  <div class="mt-4 flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
+    <div class="flex flex-wrap items-baseline gap-x-3 gap-y-2">
+      <h1 class="text-[26px] font-bold leading-[1.45] text-ink">本の一覧</h1>
+      <span class="tabular text-[13px] text-ink-muted"><%= @books.size %>冊</span>
+    </div>
+
+    <% if registering %>
+      <%= link_to '本を登録する', new_exchange_book_path(@exchange),
+                  class: 'rounded-[5px] bg-accent px-5 py-2.5 text-[14px] font-medium ' \
+                         'text-paper no-underline hover:bg-accent-hover' %>
+    <% end %>
   </div>
 
   <% if @books.empty? %>
-    <%# 白紙で返すと、壊れているのかまだ誰も登録していないのか区別がつかない。
-        登録の導線は #21 で足すので、ここでは待てば埋まることだけを伝える %>
+    <%# 白紙で返すと、壊れているのかまだ誰も登録していないのか区別がつかない %>
     <div class="mt-6 rounded-[5px] border border-line bg-paper px-5 py-6">
       <p class="text-[14.5px] font-medium text-ink">まだ本は登録されていません。</p>
       <p class="mt-2 text-[13px] leading-[1.85] text-ink-muted">
@@ -22,12 +40,19 @@
   <% else %>
     <ul class="mt-6 flex flex-col gap-3">
       <% @books.each do |book| %>
-        <li class="rounded-[5px] border border-line bg-paper px-5 py-5">
+        <% mine = book.participation_id == @participation.id %>
+        <li class="rounded-[5px] border bg-paper px-5 py-5 <%= mine ? 'border-line-strong' : 'border-line' %>">
           <%# 誰が登録したかは参加者全員に見える（docs/spec.md 8.）。
               狭い画面ではタイトルと登録者名が縦に折り返る %>
           <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
             <h2 class="text-[17px] font-bold leading-[1.5] text-ink"><%= book.title %></h2>
             <span class="text-[12px] text-ink-subtle"><%= book.registrant.display_name %></span>
+
+            <%# 自分の本は取得枠の数でもある。編集・削除の導線だけで見分けさせると、
+                登録期間を過ぎたとたんにどれが自分の本か分からなくなる %>
+            <% if mine %>
+              <span class="ml-auto rounded-[3px] bg-fill px-2 py-0.5 text-[11px] text-ink-muted">自分の本</span>
+            <% end %>
           </div>
 
           <%# あらすじは冒頭だけ。数行を丸ごと並べると、一覧をざっと眺められなくなる %>
@@ -46,6 +71,19 @@
               <%# 改行を活かすので、タグの内側で折り返さない。
                   pre-line はタグ直後の改行も1行として残す %>
               <p class="mt-1.5 whitespace-pre-line text-[14px] leading-[1.95] text-ink"><%= book.recommendation %></p>
+            </div>
+          <% end %>
+
+          <%# 自分の本にだけ出す。押しても通らない導線を残さないよう、
+              登録期間の外では出さない %>
+          <% if registering && mine %>
+            <div class="mt-4 flex items-center gap-4 border-t border-line pt-4">
+              <%= link_to '編集', edit_exchange_book_path(@exchange, book), class: 'text-[13px]' %>
+
+              <%# 取り返しがつかないので確認を挟む。文言は削除の口が2か所あるため helper に置く %>
+              <%= button_to '削除', exchange_book_path(@exchange, book), method: :delete,
+                            form: { data: { turbo_confirm: book_deletion_confirm(book, slots: my_books) } },
+                            class: 'cursor-pointer text-[13px] text-ink-subtle underline hover:text-accent' %>
             </div>
           <% end %>
         </li>

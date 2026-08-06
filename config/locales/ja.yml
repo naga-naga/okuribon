@@ -26,6 +26,13 @@ ja:
     flash:
       created: 交換会を作成しました
       updated: 交換会を更新しました
+  book:
+    deletion_confirm: 「%{title}」の登録を取り消します。取得枠が%{before}冊から%{after}冊に減り、ギフトコードも消えます。よろしいですか？
+    flash:
+      # 登録した冊数がそのまま取得枠になるので、増えたことをその場で伝える
+      created: 「%{title}」を登録しました。あなたの取得枠は%{count}冊になりました
+      updated: 本の内容を更新しました
+      destroyed: 本の登録を取り消しました
   participation:
     flash:
       joined: 交換会に参加しました
@@ -33,6 +40,12 @@ ja:
     login_required: "%{name}に参加するには、Google でのログインが必要です"
   activerecord:
     attributes:
+      book:
+        title: タイトル
+        summary: あらすじ
+        url: URL
+        recommendation: おすすめポイント
+        gift_code: ギフトコード
       exchange:
         name: 交換会名
         description: 概要

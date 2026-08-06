@@ -188,6 +188,34 @@ RSpec.describe BooksController do
         expect(response.body).to include('登録を取り消します')
       end
 
+      # 消えるのは本だけではない。取得枠が1つ減り、その本への他の人の希望も消える
+      it '削除の確認で取得枠が減ることを伝える' do
+        create_list(:book, 2, participation:)
+
+        open_list
+
+        expect(response.body).to include('取得枠が2冊から1冊に減り')
+      end
+
+      # 自分の本は取得枠の数でもある。導線の有無だけで見分けさせると、
+      # 登録期間を過ぎたとたんにどれが自分の本か分からなくなる
+      it '自分の本には印が付く' do
+        create(:book, participation:, title: '灯台守の一年')
+        outside_registration
+
+        open_list
+
+        expect(response.body).to include('自分の本')
+      end
+
+      it '他人の本には印が付かない' do
+        create(:book, participation: create(:participation, exchange:), title: '十三番目の便り')
+
+        open_list
+
+        expect(response.body).not_to include('自分の本')
+      end
+
       it '他人の本には編集も削除も出ない' do
         theirs = create(:book, participation: create(:participation, exchange:))
 
@@ -430,6 +458,13 @@ RSpec.describe BooksController do
       open_form(others_book)
 
       expect(response).to have_http_status(:not_found)
+    end
+
+    # 直しに来て、やはり取り下げると決めることがある。一覧へ戻らせない
+    it '編集画面からも削除できる' do
+      open_form
+
+      expect(response.body).to include('登録を取り消します')
     end
 
     it '参加していなければ見つからない' do

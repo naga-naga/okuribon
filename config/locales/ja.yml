@@ -27,6 +27,7 @@ ja:
       created: 交換会を作成しました
       updated: 交換会を更新しました
   book:
+    deletion_confirm: 「%{title}」の登録を取り消します。取得枠が%{before}冊から%{after}冊に減り、ギフトコードも消えます。よろしいですか？
     flash:
       # 登録した冊数がそのまま取得枠になるので、増えたことをその場で伝える
       created: 「%{title}」を登録しました。あなたの取得枠は%{count}冊になりました

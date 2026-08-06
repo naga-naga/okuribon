@@ -16,6 +16,9 @@ class Book < ApplicationRecord
   # 値で検索する用事も無いので、既定の非決定的暗号化のままにする
   encrypts :gift_code
 
+  # NOT NULL のカラムは presence でも弾く。DB の例外ではなくフォームのエラーとして返すため
+  validates :title, :gift_code, presence: true
+
   # ギフトコードが見えるのは「登録した本人（常時）」と「受け取った人（結果公開後）」の
   # 2者のみ。主催者に特権はない（docs/spec.md 8. 情報の可視性ルール）。
   # 伏せ字の出し分けと gift_code_for を同じ規則から引く。片方だけを直すと、

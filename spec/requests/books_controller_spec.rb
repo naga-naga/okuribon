@@ -155,6 +155,58 @@ RSpec.describe BooksController do
       expect(response).to have_http_status(:ok)
     end
 
+    # 登録・編集・削除のすべてに、この画面から入れるようにする。
+    # リンクは行き先ができてから足す（#22 の時点では行き先が無かった）
+    describe '登録・編集・削除の導線' do
+      it '登録期間中は登録ボタンが出る' do
+        open_list
+
+        expect(response.body).to include(new_exchange_book_path(exchange))
+      end
+
+      it '1冊も登録されていなくても登録ボタンが出る' do
+        open_list
+
+        expect(response.body).to include('まだ本は登録されていません')
+        expect(response.body).to include(new_exchange_book_path(exchange))
+      end
+
+      it '登録期間外は登録ボタンが出ない' do
+        outside_registration
+
+        open_list
+
+        expect(response.body).not_to include(new_exchange_book_path(exchange))
+      end
+
+      it '自分の本には編集と削除が出る' do
+        mine = create(:book, participation:)
+
+        open_list
+
+        expect(response.body).to include(edit_exchange_book_path(exchange, mine))
+        expect(response.body).to include('登録を取り消します')
+      end
+
+      it '他人の本には編集も削除も出ない' do
+        theirs = create(:book, participation: create(:participation, exchange:))
+
+        open_list
+
+        expect(response.body).not_to include(edit_exchange_book_path(exchange, theirs))
+      end
+
+      # 押しても通らない導線を残さない
+      it '登録期間外は自分の本にも編集と削除が出ない' do
+        mine = create(:book, participation:)
+        outside_registration
+
+        open_list
+
+        expect(response.body).not_to include(edit_exchange_book_path(exchange, mine))
+        expect(response.body).not_to include('登録を取り消します')
+      end
+    end
   end
 
   # フェーズは日時から導出されるため、登録期間の外は日程をずらして作る。

@@ -4,6 +4,10 @@ class Book < ApplicationRecord
   belongs_to :participation
   has_one :exchange, through: :participation
 
+  # 登録者。一覧のカードに名前を出すため、参加を経由せず引けるようにする。
+  # 参加は交換会ごとに作られるので、本から見た利用者は必ず1人に定まる
+  has_one :registrant, through: :participation, source: :user
+
   has_many :wishes, dependent: :destroy
   has_one :assignment, dependent: :destroy
 

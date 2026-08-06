@@ -303,6 +303,13 @@ RSpec.describe ExchangesController do
       end
     end
 
+    # 導線が無いと、URL を直打ちしないと開けない画面になる
+    it '本の一覧への導線がある' do
+      open_top
+
+      expect(response.body).to include(exchange_books_path(exchange))
+    end
+
     # 見えるのは登録した本人と、成立後の受取人だけ。トップはどちらの経路でもない
     it 'ギフトコードが含まれない' do
       create(:book, participation:, gift_code: 'MYOWNGIFTCODE')

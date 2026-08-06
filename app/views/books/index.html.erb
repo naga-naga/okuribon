@@ -1,0 +1,55 @@
+<% content_for :title, "#{@exchange.name}の本" %>
+
+<div class="mx-auto w-full max-w-[640px] px-4 py-10 sm:px-6">
+  <%# 戻り先は交換会トップだけにする。この画面へ来る入口がそこしかない %>
+  <p class="text-[12px]"><%= link_to @exchange.name, exchange_path(@exchange) %></p>
+
+  <%# 狭い画面では見出しと冊数が縦に折り返る %>
+  <div class="mt-4 flex flex-wrap items-baseline gap-x-3 gap-y-2">
+    <h1 class="text-[26px] font-bold leading-[1.45] text-ink">本の一覧</h1>
+    <span class="tabular text-[13px] text-ink-muted"><%= @books.size %>冊</span>
+  </div>
+
+  <% if @books.empty? %>
+    <%# 白紙で返すと、壊れているのかまだ誰も登録していないのか区別がつかない。
+        登録の導線は #21 で足すので、ここでは待てば埋まることだけを伝える %>
+    <div class="mt-6 rounded-[5px] border border-line bg-paper px-5 py-6">
+      <p class="text-[14.5px] font-medium text-ink">まだ本は登録されていません。</p>
+      <p class="mt-2 text-[13px] leading-[1.85] text-ink-muted">
+        誰かが登録すると、ここに並びます。
+      </p>
+    </div>
+  <% else %>
+    <ul class="mt-6 flex flex-col gap-3">
+      <% @books.each do |book| %>
+        <li class="rounded-[5px] border border-line bg-paper px-5 py-5">
+          <%# 誰が登録したかは参加者全員に見える（docs/spec.md 8.）。
+              狭い画面ではタイトルと登録者名が縦に折り返る %>
+          <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <h2 class="text-[17px] font-bold leading-[1.5] text-ink"><%= book.title %></h2>
+            <span class="text-[12px] text-ink-subtle"><%= book.registrant.display_name %></span>
+          </div>
+
+          <%# あらすじは冒頭だけ。数行を丸ごと並べると、一覧をざっと眺められなくなる %>
+          <% if book.summary.present? %>
+            <p class="mt-3 text-[13.5px] leading-[1.9] text-ink-muted">
+              <%= truncate(book.summary, length: 80, omission: '…') %>
+            </p>
+          <% end %>
+
+          <%# 読み比べるのがこの画面の目的なので、おすすめポイントは全文を出す。
+              本の詳細（#23）がまだ無く、ここで切ると続きを読む先がどこにも無い。
+              地の上に一段沈めて、あらすじと役割が違うことを面で分ける %>
+          <% if book.recommendation.present? %>
+            <div class="mt-4 rounded-[3px] bg-surface-sunken px-4 py-3.5">
+              <p class="text-[12px] text-ink-subtle">おすすめポイント</p>
+              <%# 改行を活かすので、タグの内側で折り返さない。
+                  pre-line はタグ直後の改行も1行として残す %>
+              <p class="mt-1.5 whitespace-pre-line text-[14px] leading-[1.95] text-ink"><%= book.recommendation %></p>
+            </div>
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
+  <% end %>
+</div>

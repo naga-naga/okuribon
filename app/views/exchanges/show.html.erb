@@ -55,7 +55,15 @@
     <% end %>
   </dl>
 
-  <%# 本の一覧（#22）、結果画面（#32）、主催者管理画面（#36）への導線は、
+  <%# 本を選ぶのがこのツールの中心なので、導線は面で押させる。
+      読み取りは全フェーズで開いているため、フェーズでは出し分けない %>
+  <div class="mt-8 border-t border-line pt-8">
+    <%= link_to '本の一覧を見る', exchange_books_path(@exchange),
+                class: 'block rounded-[5px] border border-line-strong bg-paper px-5 py-4 ' \
+                       'text-center text-[14.5px] font-medium text-ink no-underline hover:bg-paper-hover' %>
+  </div>
+
+  <%# 結果画面（#32）、主催者管理画面（#36）への導線は、
       それぞれの画面が入るときにここへ足す。
       「今なにをすべきか」の文言は #29 で足す %>
 </div>

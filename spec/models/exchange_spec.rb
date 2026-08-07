@@ -367,6 +367,104 @@ RSpec.describe Exchange do
     end
   end
 
+  # 招待画面は「何がいつ起きるのか」を3段で見せる。段はフェーズと1対1ではないので、
+  # フェーズをそのまま並べず、段ごとの進み具合を導く
+  describe '日程の3段' do
+    let!(:exchange) do
+      build(
+        :exchange,
+        registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
+        registration_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
+        wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone
+      )
+    end
+
+    describe '#schedule_starts_at' do
+      it '段ごとの開始日時を返す' do
+        expect(exchange.schedule_starts_at(:registration)).to eq(exchange.registration_starts_at)
+        expect(exchange.schedule_starts_at(:wish)).to eq(exchange.wish_starts_at)
+      end
+
+      # 公開されるのは主催者がマッチングを実行したときで、日時では決まらない。
+      # 希望提出の締切は「それより前には公開されない」という下限にあたる
+      it '結果公開は希望提出の締切を返す' do
+        expect(exchange.schedule_starts_at(:published)).to eq(exchange.wish_ends_at)
+      end
+
+      it '段に無い名前では落ちる' do
+        expect { exchange.schedule_starts_at(:matching) }.to raise_error(KeyError)
+      end
+    end
+
+    describe '#schedule_state' do
+      it '準備中はどの段もまだ始まっていない' do
+        at = '2026-07-25T00:00:00+09:00'.in_time_zone
+
+        expect(exchange.schedule_state(:registration, at:)).to eq(:upcoming)
+        expect(exchange.schedule_state(:wish, at:)).to eq(:upcoming)
+        expect(exchange.schedule_state(:published, at:)).to eq(:upcoming)
+      end
+
+      it '登録期間は1段目だけが進行中' do
+        at = '2026-08-04T00:00:00+09:00'.in_time_zone
+
+        expect(exchange.schedule_state(:registration, at:)).to eq(:current)
+        expect(exchange.schedule_state(:wish, at:)).to eq(:upcoming)
+        expect(exchange.schedule_state(:published, at:)).to eq(:upcoming)
+      end
+
+      it '希望提出期間は1段目が終わり2段目が進行中' do
+        at = '2026-08-11T00:00:00+09:00'.in_time_zone
+
+        expect(exchange.schedule_state(:registration, at:)).to eq(:done)
+        expect(exchange.schedule_state(:wish, at:)).to eq(:current)
+        expect(exchange.schedule_state(:published, at:)).to eq(:upcoming)
+      end
+
+      # マッチング実行待ちに対応する段は無い。希望提出は終わっているが、
+      # 主催者が実行するまで結果は公開されない。3段目を進行中にすると、
+      # もう結果が見られるように読める
+      it 'マッチング実行待ちは2段目まで終わり3段目はまだ始まっていない' do
+        at = '2026-08-20T00:00:00+09:00'.in_time_zone
+
+        expect(exchange.schedule_state(:registration, at:)).to eq(:done)
+        expect(exchange.schedule_state(:wish, at:)).to eq(:done)
+        expect(exchange.schedule_state(:published, at:)).to eq(:upcoming)
+      end
+
+      it '結果公開は3段目が進行中' do
+        exchange.matched_at = '2026-08-16T00:00:00+09:00'.in_time_zone
+        at = '2026-08-20T00:00:00+09:00'.in_time_zone
+
+        expect(exchange.schedule_state(:registration, at:)).to eq(:done)
+        expect(exchange.schedule_state(:wish, at:)).to eq(:done)
+        expect(exchange.schedule_state(:published, at:)).to eq(:current)
+      end
+
+      # 主催者は公開後も日時を動かせる（spec.md 6.9）。日時を先へ動かされても、
+      # 公開が済んでいることは変わらない。段の進み具合を日時から数え直さない
+      it '公開後に日時を先へ動かしても1段目と2段目は終わったまま' do
+        exchange.matched_at = '2026-08-16T00:00:00+09:00'.in_time_zone
+        exchange.registration_starts_at = '2027-01-01T00:00:00+09:00'.in_time_zone
+        exchange.registration_ends_at = '2027-01-08T00:00:00+09:00'.in_time_zone
+        exchange.wish_ends_at = '2027-01-15T00:00:00+09:00'.in_time_zone
+
+        at = '2026-08-20T00:00:00+09:00'.in_time_zone
+
+        expect(exchange.schedule_state(:registration, at:)).to eq(:done)
+        expect(exchange.schedule_state(:wish, at:)).to eq(:done)
+      end
+
+      it '段に無い名前では落ちる' do
+        expect { exchange.schedule_state(:matching, at: Time.current) }.to raise_error(KeyError)
+      end
+
+      it '基準時刻を省略すると呼べない' do
+        expect { exchange.schedule_state(:registration) }.to raise_error(ArgumentError)
+      end
+    end
+  end
+
   # 「登録期間中のみ本を登録できる」といった判定を、書き込み口ごとの手書きにしない。
   # 許可されるフェーズは spec.md 4. フェーズの表と補足に対応する
   describe '#writable?' do

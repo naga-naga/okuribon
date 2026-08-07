@@ -1,39 +1,78 @@
 <% content_for :title, "#{@exchange.name}への招待" %>
 
+<%# 参加できるかどうかは1回だけ引く。段ごとに引き直すと、描いている途中で
+    締切をまたいだときに1つの画面の中で出し分けが食い違う %>
+<% participant = @exchange.participant?(current_user) %>
+<% joinable = !participant && @exchange.writable?(:participation, at: requested_at) %>
+
 <div class="mx-auto w-full max-w-[640px] px-4 py-10 sm:px-6">
-  <p class="text-[12px] font-medium tracking-wide text-ink-subtle">読書交換会への招待</p>
+  <%# 誰から誘われたのかを交換会名より先に置く。本文に混ぜると、知らない集まりの
+      名前だけが大きく出て、心当たりに辿り着けない %>
+  <p class="text-[12px] font-medium tracking-wide text-ink-subtle">
+    <%= t('invitation.from', owner: @exchange.owner.display_name) %>
+  </p>
   <h1 class="mt-2 text-[26px] font-bold leading-[1.45] text-ink"><%= @exchange.name %></h1>
 
-  <p class="mt-2 text-[13.5px] leading-[1.9] text-ink-muted">
-    <%= @exchange.owner.display_name %>さんが主催しています。
-    現在<span class="tabular"><%= @exchange.participations.count %>人</span>が参加しています。
+  <%# 参加者の顔ぶれは参加者にしか見せない（docs/spec.md 8.）。
+      招待URLを知っているだけの人には規模だけを伝える %>
+  <p class="tabular mt-2 text-[13.5px] text-ink-muted">
+    <%= t('invitation.participants', count: @exchange.participations.count) %>
   </p>
 
+  <%# 対応ストアや価格帯の目安が書かれる欄（docs/spec.md 6.9）。地の文に流すと、
+      主催者が決めた条件なのか、ツールの決まりなのかを読み分けられない %>
   <% if @exchange.description.present? %>
-    <p class="mt-6 whitespace-pre-line text-[14.5px] leading-[1.95] text-ink">
-      <%= @exchange.description %>
-    </p>
+    <div class="mt-6 rounded-[5px] border border-line bg-paper px-5 py-5">
+      <p class="text-[12px] font-medium tracking-wide text-ink-subtle">
+        <%= t('invitation.description_label') %>
+      </p>
+      <p class="mt-2.5 whitespace-pre-line text-[14.5px] leading-[2] text-ink">
+        <%= @exchange.description %>
+      </p>
+    </div>
   <% end %>
 
-  <div class="mt-8 border-t border-line pt-8">
-    <h2 class="text-[15px] font-bold text-ink">日程</h2>
+  <% if participant || joinable %>
+    <%# 日時を3つ並べただけでは参加を決められない。数週間拘束されるツールなので、
+        それぞれの期間に何をするのかと、そこで効く決まりを添える %>
+    <div class="mt-8">
+      <p class="text-[12px] font-medium tracking-wide text-ink-subtle">
+        <%= t('invitation.schedule_label') %>
+      </p>
 
-    <dl class="mt-4 flex flex-col gap-3">
-      <%# 登録の締切は希望提出期間の開始でもある。片方だけ書くと、締切のあとに
-          何が始まるのかが読み取れない %>
-      <% [['登録期間の開始', @exchange.registration_starts_at],
-          ['登録の締切（＝希望提出期間の開始）', @exchange.registration_ends_at],
-          ['希望提出の締切', @exchange.wish_ends_at]].each do |label, at| %>
-        <div class="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
-          <dt class="text-[13px] text-ink-muted"><%= label %></dt>
-          <dd class="tabular text-[14.5px] font-medium text-ink"><%= l at, format: :schedule %></dd>
-        </div>
+      <ol class="mt-3 divide-y divide-line overflow-hidden rounded-[4px] border border-line bg-paper">
+        <% Exchange::SCHEDULE_STEPS.each_key do |step| %>
+          <% scope = "exchange.schedule.steps.#{step}" %>
+          <%# 狭い画面では日時とすべきことが縦に積む %>
+          <li class="flex flex-col gap-1 px-4 py-3.5 sm:flex-row sm:items-baseline sm:gap-4">
+            <span class="tabular text-[12.5px] text-ink-subtle sm:w-[160px] sm:flex-none">
+              <%= t("#{scope}.at", at: l(@exchange.schedule_starts_at(step), format: :schedule)) %>
+            </span>
+            <span class="flex flex-col gap-0.5">
+              <span class="text-[13.5px] font-bold text-ink"><%= t("#{scope}.name") %></span>
+              <span class="text-[12px] leading-[1.8] text-ink-muted"><%= t("#{scope}.note") %></span>
+            </span>
+          </li>
+        <% end %>
+      </ol>
+
+      <%# 参加を決める前に、いつまで考えられるのかと、次に何が起きるまで何日あるのかを出す。
+          参加済みの人にはもう関係が無い %>
+      <% if joinable %>
+        <p class="mt-3 text-[12px] leading-[1.85] text-ink-subtle">
+          <%= t('invitation.accepting_until',
+                at: l(@exchange.registration_ends_at, format: :schedule)) %>
+          <%= t('invitation.next_milestone',
+                name: @exchange.next_deadline_name(at: requested_at),
+                remaining: remaining_time_text(@exchange.next_deadline(at: requested_at),
+                                               at: requested_at)) %>
+        </p>
       <% end %>
-    </dl>
-  </div>
+    </div>
+  <% end %>
 
   <%# 言うことが無いときは区切り線ごと出さない %>
-  <% if @exchange.participant?(current_user) %>
+  <% if participant %>
     <div class="mt-8 border-t border-line pt-8">
       <p class="text-[14.5px] font-medium text-success">この交換会にはすでに参加しています。</p>
 
@@ -53,14 +92,7 @@
                              'text-[13.5px] font-medium text-ink-muted hover:bg-paper-hover' %>
       <% end %>
     </div>
-  <% elsif !@exchange.writable?(:participation, at: requested_at) %>
-    <div class="mt-8 border-t border-line pt-8">
-      <p class="text-[14.5px] font-medium text-accent">参加を受け付ける期間は終わりました。</p>
-      <p class="mt-2 text-[13px] leading-[1.85] text-ink-muted">
-        登録の締切を過ぎると参加できません。主催者にお問い合わせください。
-      </p>
-    </div>
-  <% else %>
+  <% elsif joinable %>
     <div class="mt-8 border-t border-line pt-8">
       <%# 未ログインでも参加の口へ送る。押した事実がサーバーに残ってはじめて、
           ログインを終えたあとに参加を確定させられる。
@@ -74,6 +106,58 @@
         <p class="mt-3 text-[12px] leading-[1.85] text-ink-subtle">
           Google でログインすると参加できます。受け取るのは表示名とアイコンだけです。
         </p>
+      <% end %>
+    </div>
+  <% else %>
+    <div class="mt-8 border-t border-line pt-8">
+      <%# 締め出されたのではなく、途中参加ができない仕組みなのだと伝える。
+          理由が無いと、主催者に掛け合えば入れてもらえるようにも読める %>
+      <div class="rounded-[5px] border border-line-strong bg-surface-sunken px-5 py-5">
+        <p class="text-[18px] font-bold leading-[1.5] text-ink">
+          <%= t('invitation.closed.heading') %>
+        </p>
+        <p class="mt-2.5 text-[13.5px] leading-[1.9] text-ink">
+          <%= t('invitation.closed.reason',
+                at: l(@exchange.registration_ends_at, format: :schedule)) %>
+        </p>
+        <p class="mt-3.5 border-t border-line pt-3.5 text-[12.5px] leading-[1.8] text-ink-muted">
+          <%= t('invitation.closed.hint', owner: @exchange.owner.display_name) %>
+        </p>
+      </div>
+
+      <%# 何の集まりだったのかも分からずに追い返されると、
+          次に誘ってもらう相談もできない。概要と日程だけは見せたままにする %>
+      <div class="mt-6">
+        <p class="text-[12px] font-medium tracking-wide text-ink-subtle">
+          <%= t('invitation.closed.schedule_label') %>
+        </p>
+
+        <ol class="mt-3 divide-y divide-line overflow-hidden rounded-[4px] border border-line bg-paper">
+          <% Exchange::SCHEDULE_STEPS.each_key do |step| %>
+            <% state = @exchange.schedule_state(step, at: requested_at) %>
+            <li class="flex items-baseline justify-between gap-3 px-4 py-3">
+              <span class="text-[12.5px] <%= state == :done ? 'text-ink-subtle' : 'text-ink' %>">
+                <%= t("exchange.schedule.steps.#{step}.name") %>
+              </span>
+              <%# 朱は押すものと締切の担当。いま動いている段だけを朱にする %>
+              <span class="tabular flex-none text-[12.5px] <%= state == :current ? 'text-accent' : 'text-ink-subtle' %>">
+                <%= l @exchange.schedule_starts_at(step), format: :schedule %>
+                <%= t("exchange.schedule.states.#{state}") %>
+              </span>
+            </li>
+          <% end %>
+        </ol>
+      </div>
+
+      <%# 未ログインの人に一覧を出しても、参加していない以上そこは空になる。
+          ログインを促すだけの導線を、参加できないと言った直後には置かない %>
+      <% if logged_in? %>
+        <div class="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2">
+          <%= link_to t('invitation.closed.exchanges'), exchanges_path,
+                      class: 'rounded-[5px] border border-line-strong bg-paper px-5 py-2.5 ' \
+                             'text-[13.5px] font-medium text-ink no-underline hover:bg-paper-hover' %>
+          <span class="text-[12.5px] text-ink-subtle"><%= t('invitation.closed.exchanges_note') %></span>
+        </div>
       <% end %>
     </div>
   <% end %>

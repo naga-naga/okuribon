@@ -141,7 +141,7 @@ RSpec.describe ParticipationsController do
           expect(exchange.participant?(user)).to be(false)
 
           follow_redirect!
-          expect(response.body).to include('参加を受け付ける期間は終わりました')
+          expect(response.body).to include('この交換会には参加できません')
         end
       end
     end

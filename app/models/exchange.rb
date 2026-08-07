@@ -18,6 +18,17 @@ class Exchange < ApplicationRecord
     matching: [:awaiting_matching],
   }.freeze
 
+  # 招待画面が見せる日程の3段と、その順序。段はフェーズと1対1ではない。
+  # マッチング実行待ちに当たる段は無く、希望提出が終わって結果公開を待っている状態にあたる
+  SCHEDULE_STEPS = { registration: 0, wish: 1, published: 2 }.freeze
+
+  # フェーズを段の位置に読み替える。準備中はまだ1段目も始まっていないので、
+  # 登録期間と同じ位置に置く。進行中かどうかは位置ではなくフェーズ名の一致で見るため、
+  # 同じ位置に2つ並べても取り違えない
+  SCHEDULE_PHASE_POSITIONS = {
+    preparing: 0, registration: 0, wish: 1, awaiting_matching: 2, published: 2,
+  }.freeze
+
   # フェーズが許さない書き込みを拒否するときに投げる。
   # 応答の組み立ては ApplicationController の rescue_from に集約する
   class PhaseViolation < StandardError
@@ -118,6 +129,27 @@ class Exchange < ApplicationRecord
   # 一律に「締切」と出すと、まだ始まってもいない登録がもう終わるように読める
   def next_deadline_name(at:)
     I18n.t(phase(at:), scope: 'exchange.next_deadlines', default: nil)
+  end
+
+  # 日程の段が始まる日時。段の名前と日時カラムの対応をここだけに置く。
+  # 結果公開が返すのは希望提出の締切で、公開そのものは主催者がマッチングを
+  # 実行したときに起きる。日時では決まらないので、これは下限にあたる。
+  # fetch で落として、綴り間違いを黙って nil に化けさせない
+  def schedule_starts_at(step)
+    { registration: registration_starts_at,
+      wish: wish_starts_at,
+      published: wish_ends_at }.fetch(step)
+  end
+
+  # 段がどこまで進んだか。フェーズをそのまま並べられないのは、
+  # マッチング実行待ちに当たる段が無いため。位置で数え、進行中だけは名前の一致で見る
+  def schedule_state(step, at:)
+    position = SCHEDULE_STEPS.fetch(step)
+    current = phase(at:)
+
+    return :current if step == current
+
+    position < SCHEDULE_PHASE_POSITIONS.fetch(current) ? :done : :upcoming
   end
 
   # 参加の入口は、招待画面のフォームと、ログインを終えて戻ってきた経路の2つある。

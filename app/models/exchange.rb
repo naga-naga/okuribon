@@ -136,9 +136,11 @@ class Exchange < ApplicationRecord
   # 実行したときに起きる。日時では決まらないので、これは下限にあたる。
   # fetch で落として、綴り間違いを黙って nil に化けさせない
   def schedule_starts_at(step)
-    { registration: registration_starts_at,
+    {
+      registration: registration_starts_at,
       wish: wish_starts_at,
-      published: wish_ends_at }.fetch(step)
+      published: wish_ends_at,
+    }.fetch(step)
   end
 
   # 段がどこまで進んだか。フェーズをそのまま並べられないのは、

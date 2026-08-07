@@ -15,6 +15,27 @@ ja:
       preparing: 登録期間の開始
       registration: 登録の締切
       wish: 希望提出の締切
+    # 招待画面が見せる日程の3段。日時だけを並べても参加の判断材料にならないので、
+    # その期間に何をするのかと、そこで効く決まりを添える。
+    # 結果公開だけ「以降」にするのは、公開が主催者の実行で起き、日時で決まらないため
+    schedule:
+      steps:
+        registration:
+          name: 本を登録する
+          note: 登録した冊数と同じだけ受け取れます
+          at: "%{at} から"
+        wish:
+          name: 欲しい本を希望順に並べる
+          note: 自分が登録した本は選べません
+          at: "%{at} から"
+        published:
+          name: 結果公開・ギフトコードを受け取る
+          note: 誰から贈られたかも分かります
+          at: "%{at} 以降"
+      states:
+        done: 終了
+        current: 進行中
+        upcoming: 予定
     # フェーズによる書き込み制御の対象になる操作
     operations:
       participation: 参加の変更
@@ -33,6 +54,23 @@ ja:
       created: 「%{title}」を登録しました。あなたの取得枠は%{count}冊になりました
       updated: 本の内容を更新しました
       destroyed: 本の登録を取り消しました
+  invitation:
+    from: "%{owner} さんからの招待"
+    participants: "%{count}人が参加しています"
+    description_label: 主催者からの説明
+    schedule_label: どう進むか
+    # 参加できるのは常に登録の締切まで。次の節目はフェーズで変わるので別に出す
+    accepting_until: 参加できるのは登録の締切（%{at}）まで。
+    next_milestone: "%{name}まで%{remaining}。"
+    closed:
+      heading: この交換会には参加できません
+      # 締め出されたのではなく仕組みなのだと伝える。理由が無いと、
+      # 主催者に掛け合えば入れてもらえるようにも読める
+      reason: 本の登録期間が%{at}に終わりました。途中から加わると登録冊数と取得枠の釣り合いが崩れてしまうため、締切後の参加は受け付けていません。
+      hint: 次の交換会に誘ってもらえるよう、%{owner} さんに伝えてみてください。
+      schedule_label: この交換会の日程
+      exchanges: 自分の交換会一覧へ
+      exchanges_note: 概要と日程だけは、このまま見られます
   participation:
     flash:
       joined: 交換会に参加しました

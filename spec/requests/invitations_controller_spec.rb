@@ -38,6 +38,18 @@ RSpec.describe InvitationsController do
         expect(response.body).to include('主催 太郎')
       end
 
+      # 誰から誘われたのかが交換会名より先に目に入るようにする。本文に混ぜると、
+      # 知らない集まりの名前だけが大きく出て、心当たりに辿り着けない
+      it '差出人が「○○ さんからの招待」で出る' do
+        expect(response.body).to include('主催 太郎 さんからの招待')
+      end
+
+      # 対応ストアや価格帯の目安が書かれる欄（spec.md 6.9）。地の文に流すと、
+      # 主催者が決めた条件なのか、ツールの決まりなのかを読み分けられない
+      it '主催者の説明にラベルが付く' do
+        expect(response.body).to include('主催者からの説明')
+      end
+
       # 主催者も参加者に数える。招待された人が見るのは交換会の規模で、
       # 主催者だけを別枠に置く理由が無い
       it '参加者数が出る' do
@@ -53,6 +65,17 @@ RSpec.describe InvitationsController do
         expect(response.body).to include('2026年8月10日 10:00')
         expect(response.body).to include('2026年8月24日 10:00')
         expect(response.body).to include('2026年9月7日 10:00')
+      end
+
+      # 日時を3つ並べただけでは、参加を決める材料にならない。数週間拘束される
+      # ツールなので、それぞれの期間に何をするのかと、そこで効く決まりを添える
+      it 'どう進むかが3段で出る' do
+        expect(response.body).to include('本を登録する')
+        expect(response.body).to include('登録した冊数と同じだけ受け取れます')
+        expect(response.body).to include('欲しい本を希望順に並べる')
+        expect(response.body).to include('自分が登録した本は選べません')
+        expect(response.body).to include('結果公開・ギフトコードを受け取る')
+        expect(response.body).to include('誰から贈られたかも分かります')
       end
     end
 
@@ -173,7 +196,7 @@ RSpec.describe InvitationsController do
         travel_to '2026-08-24T10:00:00+09:00' do
           get invitation_path(exchange.invite_token)
 
-          expect(response.body).to include('参加を受け付ける期間は終わりました')
+          expect(response.body).to include('この交換会には参加できません')
           expect(response.body).not_to include('参加する')
         end
       end
@@ -184,6 +207,80 @@ RSpec.describe InvitationsController do
 
           expect(response).to have_http_status(:ok)
           expect(response.body).to include('夏の交換会')
+        end
+      end
+
+      # 締め出されたのではなく、途中参加ができない仕組みなのだと伝える。
+      # 理由が無いと、主催者に掛け合えば入れてもらえるようにも読める
+      it '参加できない理由が出る' do
+        travel_to '2026-09-01T10:00:00+09:00' do
+          get invitation_path(exchange.invite_token)
+
+          expect(response.body).to include('登録冊数と取得枠の釣り合い')
+        end
+      end
+
+      # 概要と日程だけは見せたままにする。何の集まりだったのかも分からずに
+      # 追い返されると、次に誘ってもらう相談もできない
+      it '日程が終了・進行中・予定で見える' do
+        travel_to '2026-09-01T10:00:00+09:00' do
+          get invitation_path(exchange.invite_token)
+
+          expect(response.body).to include('終了')
+          expect(response.body).to include('進行中')
+          expect(response.body).to include('予定')
+        end
+      end
+
+      # 行き先を示さないと、この画面で行き止まりになる
+      it 'ログイン済みなら交換会一覧への導線が出る' do
+        log_in_as(create(:user))
+
+        travel_to '2026-09-01T10:00:00+09:00' do
+          get invitation_path(exchange.invite_token)
+
+          expect(response.body).to include(exchanges_path)
+        end
+      end
+
+      # 未ログインの人に一覧を出しても、参加していない以上そこは空になる。
+      # ログインを促すだけの導線は、参加できないと言った直後に置くものではない
+      it '未ログインでは交換会一覧への導線を出さない' do
+        travel_to '2026-09-01T10:00:00+09:00' do
+          get invitation_path(exchange.invite_token)
+
+          expect(response.body).not_to include('自分の交換会一覧へ')
+        end
+      end
+    end
+
+    # 参加を決める前に、いつまで考えられるのかと、次に何が起きるまで何日あるのかを出す
+    describe '参加を受け付ける締切の案内' do
+      it '準備中は登録期間の開始までの残りが出る' do
+        travel_to '2026-08-05T10:00:00+09:00' do
+          get invitation_path(exchange.invite_token)
+
+          expect(response.body).to include('2026年8月24日 10:00')
+          expect(response.body).to include('登録期間の開始')
+          expect(response.body).to include('あと5日')
+        end
+      end
+
+      it '登録期間は登録の締切までの残りが出る' do
+        travel_to '2026-08-20T10:00:00+09:00' do
+          get invitation_path(exchange.invite_token)
+
+          expect(response.body).to include('登録の締切')
+          expect(response.body).to include('あと4日')
+        end
+      end
+
+      # 参加できないときに締切までの残りを出すと、まだ間に合うように読める
+      it '参加できないときは出さない' do
+        travel_to '2026-09-01T10:00:00+09:00' do
+          get invitation_path(exchange.invite_token)
+
+          expect(response.body).not_to include('参加できるのは')
         end
       end
     end

@@ -322,6 +322,10 @@ project_id は `d4c7c96c-beb2-4f1b-9128-5326c3412668`。
 | `Visual Directions.dc.html` | DIRECTION 2a の出典。方針そのものを見直すとき以外は開かない |
 | `uploads/book-exchange-design-spec.md` | ガイドの元になったデザイン仕様 |
 
+読むのは Claude Design の MCP から。`list_files` でファイルを引き、`read_file` の
+`offset` と `limit` で範囲を絞る。`render_preview` が返す `serve_url` はトークンを含むので、
+コミットにも PR にも書かない。
+
 各ファイルは冒頭20〜30行に対応する節番号と設計意図があり、そのあとに画面が並ぶ。
 画面ごとの枠には `data-screen-label` が振られ、直前に `<!-- ===== 01 … ===== -->` の見出しが付く。
 1ファイル320〜550行あるので全文は読まない。冒頭の意図と、必要な画面の範囲だけを読む。

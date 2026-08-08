@@ -17,9 +17,18 @@
       一覧の下に置くと、冊数が増えるほど次の1冊が遠くなる。
       狭い画面では見出しとボタンが縦に折り返る %>
   <div class="mt-4 flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
-    <div class="flex flex-wrap items-baseline gap-x-3 gap-y-2">
-      <h1 class="text-[26px] font-bold leading-[1.45] text-ink">本の一覧</h1>
-      <span class="tabular text-[13px] text-ink-muted"><%= @books.size %>冊</span>
+    <div>
+      <div class="flex flex-wrap items-baseline gap-x-3 gap-y-2">
+        <h1 class="text-[26px] font-bold leading-[1.45] text-ink">みんなの本</h1>
+        <span class="tabular text-[15px] font-medium text-ink-subtle">
+          <%= @books.size %>冊 ／ <%= @participant_count %>人
+        </span>
+      </div>
+
+      <%# 数週間かかるツールなので、開いた日になにをすればよいかをここで言う %>
+      <p class="mt-1.5 text-[13px] leading-[1.85] text-ink-muted">
+        <%= book_index_guide(@exchange, at: requested_at) %>
+      </p>
     </div>
 
     <% if registering %>

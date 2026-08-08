@@ -102,6 +102,52 @@ RSpec.describe BooksController do
       expect(response.body).to include('まだ本は登録されていません')
     end
 
+    describe '見出し' do
+      # 冊数だけでは、まだ登録していない人がどれだけ残っているかが分からない
+      it '冊数と参加人数が出る' do
+        create(:book, participation:)
+        book_by('佐藤 花子')
+
+        open_list
+
+        expect(response.body).to include('2冊')
+        expect(response.body).to include('3人')
+      end
+
+      # 数週間かかるツールなので、開くたびに今なにをすべきかが分かるようにする
+      it '登録期間中は希望の提出がいつからかを添える' do
+        open_list
+
+        expect(response.body).to include('おすすめポイントを読んで')
+        expect(response.body).to include(I18n.l(exchange.wish_starts_at, format: :schedule))
+      end
+
+      # 一覧は全フェーズで開ける。どのフェーズで来ても、次にすることが書いてある
+      {
+        '準備中' => ['2026-07-25T00:00:00+09:00', '登録期間はまだ始まっていません'],
+        '希望提出期間' => ['2026-08-11T00:00:00+09:00', '欲しい本を希望順に並べましょう'],
+        'マッチング実行待ち' => ['2026-08-20T00:00:00+09:00', '希望の受付は終わりました'],
+      }.each do |phase, (now, guide)|
+        it "#{phase}にはその期間ですることが出る" do
+          exchange.update!(registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
+                           registration_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
+                           wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone)
+
+          travel_to(now) { open_list }
+
+          expect(response.body).to include(guide)
+        end
+      end
+
+      it '結果公開後は結果が出ていることが分かる' do
+        exchange.update!(matched_at: 1.day.ago)
+
+        open_list
+
+        expect(response.body).to include('交換の結果が公開されています')
+      end
+    end
+
     # 403 だと、招待されていない交換会の実在が URL を試すだけで確かめられる
     it '参加していなければ見つからない' do
       log_in_as(create(:user))

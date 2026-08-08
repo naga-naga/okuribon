@@ -40,6 +40,13 @@ Rails.application.routes.draw do
   # 副作用のある操作なので GET では受けない
   delete '/invitations/:token/participation' => 'participations#destroy'
 
+  # 開発用の裏口ログイン。seed が撒いた利用者は Google のアカウントを持たないため、
+  # OAuth の経路では入れない。本番には経路そのものを描かない
+  if Rails.env.local?
+    get '/dev/login' => 'dev/sessions#new', as: :dev_login
+    post '/dev/login/:user_id' => 'dev/sessions#create', as: :dev_login_as
+  end
+
   # ログイン済みの着地は交換会一覧。未ログインなら require_login が
   # ログイン画面へ送り、認証を終えるとここへ戻ってくる
   root 'exchanges#index'

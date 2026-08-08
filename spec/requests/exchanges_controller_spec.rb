@@ -208,7 +208,7 @@ RSpec.describe ExchangesController do
     end
 
     # 主催者は必ず参加者を兼ねるので、自分の交換会のトップを開ける。
-    # 主催者管理画面（#36）への導線はこの画面が持つ
+    # 主催者管理画面への導線はこの画面が持つ
     it '主催者も開ける' do
       owned = create(:exchange, owner: user, name: '主催した交換会')
 
@@ -216,6 +216,24 @@ RSpec.describe ExchangesController do
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include('主催した交換会')
+    end
+
+    # 主催者管理画面へ辿り着く経路はここだけ。交換会一覧は主催と参加を
+    # 区別せずに並べるので（6.6）、ここに無いと入口を持てない
+    it '主催者には主催者管理画面への導線が出る' do
+      owned = create(:exchange, owner: user)
+
+      travel_to(now) { get exchange_path(owned) }
+
+      expect(response.body).to include(exchange_management_path(owned))
+    end
+
+    # 押しても 404 になるリンクを見せない。主催者以外にはその画面の
+    # 存在自体を知らせない（docs/spec.md 8.）
+    it '主催者以外には導線が出ない' do
+      open_top
+
+      expect(response.body).not_to include(exchange_management_path(exchange))
     end
 
     it 'ログインしていなければログイン画面へ送る' do

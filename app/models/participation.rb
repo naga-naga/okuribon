@@ -13,6 +13,20 @@ class Participation < ApplicationRecord
   belongs_to :exchange
   belongs_to :user
 
+  # 登録冊数と希望冊数を参加ごとに数える。主催者管理画面の一覧が使う。
+  # 冊数だけが要る画面で Book を読み込むと、暗号化されたギフトコードまで
+  # 一緒に運ばれてくる。取得経路は結果画面の1つに限る（CLAUDE.md）ので、
+  # ここでは数だけを SQL で受け取る。
+  # DISTINCT を外せない。Book と Wish を同時に外部結合すると行が掛け合わさり、
+  # 2冊×3希望がどちらも6件に化ける
+  scope :with_counts, lambda {
+    left_joins(:books, :wishes)
+      .select('participations.*',
+              'COUNT(DISTINCT books.id) AS books_count',
+              'COUNT(DISTINCT wishes.id) AS wishes_count')
+      .group('participations.id')
+  }
+
   has_many :books, dependent: :destroy
   # 希望リストは順序が意味を持つ。読む側それぞれに order を書かせると、
   # 書き忘れた1か所だけが違う並びを見ることになる

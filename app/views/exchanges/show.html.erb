@@ -63,7 +63,15 @@
                        'text-center text-[14.5px] font-medium text-ink no-underline hover:bg-paper-hover' %>
   </div>
 
-  <%# 結果画面（#32）、主催者管理画面（#36）への導線は、
-      それぞれの画面が入るときにここへ足す。
+  <%# 主催者管理画面へ辿り着く経路はここだけ。交換会一覧は主催と参加を
+      区別せずに並べるので（6.6）、この画面が入口を持つ。
+      主催者以外には出さない。押しても 404 になるリンクは見せない %>
+  <% if @exchange.owner?(current_user) %>
+    <p class="mt-5 text-center text-[13px]">
+      <%= link_to '主催者管理', exchange_management_path(@exchange) %>
+    </p>
+  <% end %>
+
+  <%# 結果画面（#32）への導線は、その画面が入るときにここへ足す。
       「今なにをすべきか」の文言は #29 で足す %>
 </div>

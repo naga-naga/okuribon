@@ -1,4 +1,9 @@
 ja:
+  date:
+    formats:
+      # 表に詰めて並べる日付。rails-i18n の :short は月日を0で詰めるため、
+      # 桁の揃った別の書式を持つ。年は出さない。1つの交換会は数週間で終わる
+      compact: "%-m/%-d"
   time:
     formats:
       # 日程の表示。rails-i18n の :long は秒まで出るため、分までの書式を別に持つ

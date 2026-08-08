@@ -1,0 +1,87 @@
+<% content_for :title, "#{@exchange.name}の管理" %>
+
+<div class="mx-auto w-full max-w-[900px] px-4 py-10 sm:px-6">
+  <%# 戻り先は交換会トップだけにする。この画面へ来る入口がそこしかない %>
+  <p class="text-[12px]"><%= link_to @exchange.name, exchange_path(@exchange) %></p>
+
+  <%# 狭い画面では見出しとフェーズが縦に折り返る %>
+  <div class="mt-4 flex flex-wrap items-baseline gap-x-3 gap-y-2">
+    <h1 class="text-[26px] font-bold leading-[1.45] text-ink">主催者管理</h1>
+
+    <%# 松葉は成立と完了の担当。終わった交換会だけ色を変える %>
+    <span class="rounded-[3px] bg-fill px-2 py-1 text-[12px] font-medium
+                 <%= @exchange.phase(at: requested_at) == :published ? 'text-success' : 'text-ink-muted' %>">
+      <%= @exchange.phase_name(at: requested_at) %>
+    </span>
+  </div>
+
+  <div class="mt-8">
+    <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+      <h2 class="text-[17px] font-bold text-ink">参加者</h2>
+      <span class="tabular text-[14px] font-medium text-ink-subtle">
+        <%= @participations.size %>人・<%= @participations.sum(&:books_count) %>冊
+      </span>
+    </div>
+
+    <%# 主催者に特権はない（docs/spec.md 8.）。書いておかないと、
+        管理画面ならコードも見られるはずだと探させることになる %>
+    <p class="mt-1.5 text-[12.5px] text-ink-subtle">ギフトコードは主催者にも見えません。</p>
+
+    <%# 狭い画面では表が横に溢れるので、この枠の中だけ横に送れるようにする %>
+    <div class="mt-3 overflow-x-auto rounded-[4px] border border-line">
+      <table class="w-full min-w-[520px] border-collapse text-left">
+        <thead>
+          <tr class="border-b border-line bg-surface-sunken">
+            <th class="px-4 py-2.5 text-[10.5px] font-normal tracking-[0.1em] text-ink-subtle">名前</th>
+            <th class="w-[90px] px-4 py-2.5 text-right text-[10.5px] font-normal tracking-[0.1em] text-ink-subtle">登録冊数</th>
+            <th class="w-[140px] px-4 py-2.5 text-right text-[10.5px] font-normal tracking-[0.1em] text-ink-subtle">希望提出</th>
+            <th class="w-[96px] px-4 py-2.5 text-right text-[10.5px] font-normal tracking-[0.1em] text-ink-subtle">参加日</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <% @participations.each do |participation| %>
+            <%# 1冊も登録していない人は受け取る本を持たない。行ごと沈めて、
+                冊数の欄を見比べなくても目に留まるようにする %>
+            <tr class="border-b border-line last:border-b-0
+                       <%= participation.books_count.zero? ? 'bg-surface-sunken' : 'bg-paper' %>">
+              <td class="px-4 py-3 text-[13.5px] text-ink">
+                <%= participation.user.display_name %>
+                <%# 主催者は必ず参加者を兼ねる（6.9）。自分の行が紛れるので印を付ける %>
+                <% if @exchange.owner?(participation.user) %>
+                  <span class="text-[11px] text-ink-subtle">主催・あなた</span>
+                <% end %>
+              </td>
+
+              <td class="tabular px-4 py-3 text-right text-[13.5px]
+                         <%= participation.books_count.zero? ? 'text-accent' : 'text-ink' %>">
+                <%= participation.books_count %>冊
+              </td>
+
+              <%# 何を希望したかは出さない（docs/spec.md 8.）。出した冊数だけを出す。
+                  未提出を朱にするのは、主催者が声を掛ける先がそこだけのため %>
+              <td class="tabular px-4 py-3 text-right text-[13px]
+                         <%= participation.wishes_count.zero? ? 'text-accent' : 'text-success' %>">
+                <%= participation.wishes_count.zero? ? '未提出' : "提出済み #{participation.wishes_count}冊" %>
+              </td>
+
+              <td class="tabular px-4 py-3 text-right text-[12.5px] text-ink-subtle">
+                <%= l participation.created_at.to_date, format: :compact %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+
+    <%# 0冊は締め出しではなく仕組みの結果（6.9）。書かないと、
+        主催者が誤って登録を消したのかと疑う %>
+    <p class="mt-3 text-[12px] leading-[1.8] text-ink-subtle">
+      1冊も登録していない人は取得枠が0で、本を受け取りません。
+    </p>
+  </div>
+
+  <%# 招待URL（#37）、日時の変更（#38）、参加者の除外（#39）、
+      登録冊数の偏りの警告（#40）、マッチングの実行（#31）は、
+      それぞれの画面が入るときにここへ足す %>
+</div>

@@ -331,8 +331,98 @@ RSpec.describe BooksController do
         expect(response.parsed_body.at_css('#wish_list').text).to include('まだ1冊も選んでいません')
       end
 
+      it '取得枠と希望冊数が並ぶ' do
+        register_own(2)
+        wish_for_others(3)
+
+        open_list_while_wishing
+
+        expect(wish_list.text).to include('取得枠2冊に対して希望3冊')
+      end
+
+      # 取得枠は登録した冊数で決まる。何と同じ数なのかを書かないと、
+      # 増やせる数なのか決まった数なのかが読み取れない
+      it '取得枠が何で決まるかを添える' do
+        register_own(2)
+
+        open_list_while_wishing
+
+        expect(response.parsed_body.at_css('aside').text).to include('2冊（登録した本と同じ）')
+      end
+
+      # 希望リストは長いほうが有利。上位が取られると下位へ降りていく
+      it '取得枠の2倍に満たなければ増やすことを促す' do
+        register_own(2)
+        wish_for_others(3)
+
+        open_list_while_wishing
+
+        expect(wish_list.text).to include('もう少し増やすことを推奨します')
+        expect(wish_list.text).to include('4冊以上')
+      end
+
+      it '取得枠の2倍以上あれば促さない' do
+        register_own(2)
+        wish_for_others(4)
+
+        open_list_while_wishing
+
+        expect(wish_list.text).not_to include('もう少し増やすことを推奨します')
+      end
+
+      # 登録期間はもう終わっている。増やすことを促しても、その人には届かない
+      it '1冊も登録していなければ受け取れないことを伝える' do
+        wish_for_others(3)
+
+        open_list_while_wishing
+
+        expect(wish_list.text).to include('受け取れる本はありません')
+        expect(wish_list.text).not_to include('もう少し増やすことを推奨します')
+      end
+
+      # 狭い画面ではシートを畳んだままでも一覧を読み進められる。
+      # 案内を開いた側だけに置くと、既定の状態では冊数がどこにも出ない
+      it '畳んだシートにも冊数が出る' do
+        register_own(2)
+        wish_for_others(3)
+
+        open_list_while_wishing
+
+        expect(wish_summary.text).to include('枠2冊／希望3冊')
+        expect(wish_summary.text).to include('あと1冊推奨')
+      end
+
+      it '畳んだシートでも足りていれば推奨を出さない' do
+        register_own(2)
+        wish_for_others(4)
+
+        open_list_while_wishing
+
+        expect(wish_summary.text).to include('枠2冊／希望4冊')
+        expect(wish_summary.text).not_to include('推奨')
+      end
+
+      # 何人がその本を希望しているかは誰にも見えない（docs/spec.md 8.）。
+      # 案内が数えるのは自分の希望だけで、他の人の希望では動かない
+      it '他の人の希望は冊数に混ざらない' do
+        register_own(1)
+        wanted = book_by('佐藤 花子')
+        create(:wish, participation:, book: wanted, position: 1)
+        3.times { create(:wish, participation: create(:participation, exchange:), book: wanted, position: 1) }
+
+        open_list_while_wishing
+
+        expect(wish_list.text).to include('取得枠1冊に対して希望1冊')
+      end
+
       def wish_list
         response.parsed_body.at_css('#wish_list')
+      end
+
+      # 畳んでいる間に出る1行。開いた側の案内と同じ文字が並ぶので、
+      # 出し分けを確かめるにはここだけを見る
+      def wish_summary
+        wish_list.at_css('#wish_summary')
       end
 
       # 希望リストの末尾に1冊足す。順位は足した順の連番になる
@@ -340,6 +430,15 @@ RSpec.describe BooksController do
         book = book_by('佐藤 花子', title:)
         create(:wish, participation:, book:, position: participation.wishes.count + 1)
         book
+      end
+
+      # 取得枠は自分が登録した冊数と同じ（docs/spec.md 3.）
+      def register_own(count)
+        count.times { create(:book, participation:) }
+      end
+
+      def wish_for_others(count)
+        count.times { |index| wish_for("希望#{index + 1}") }
       end
 
       def rows

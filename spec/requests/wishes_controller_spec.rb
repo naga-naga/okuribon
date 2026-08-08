@@ -212,6 +212,16 @@ RSpec.describe WishesController do
       expect(response.body).to include('target="wish_list"')
     end
 
+    # 案内は希望の冊数で変わる。中身と一緒に差し替えないと、
+    # 1冊足した直後だけ古い冊数が残る
+    it '冊数の案内も新しい冊数で描き直す' do
+      create(:book, participation:)
+
+      add(book_by_other, **turbo)
+
+      expect(response.body).to include('取得枠1冊に対して希望1冊')
+    end
+
     # 開閉の状態を持つシートの外枠は差し替えの外に置く。中身ごと入れ替えると、
     # シートを開いて中の「希望から外す」を押した瞬間にシートが閉じる
     it '差し替えるのは希望リストの中身だけで、シートの外枠は含めない' do

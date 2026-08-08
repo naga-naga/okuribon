@@ -14,4 +14,5 @@
                                                 mine_only: @mine_only } %>
 
 <%= turbo_stream.replace 'wish_list', partial: 'wishes/list',
-                                      locals: { exchange: @exchange, wishes: @wishes, mine_only: @mine_only } %>
+                                      locals: { exchange: @exchange, wishes: @wishes,
+                                                slots: my_books.size, mine_only: @mine_only } %>

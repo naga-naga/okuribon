@@ -23,11 +23,16 @@
     </button>
   </div>
 
-  <%= render 'wishes/list', exchange:, wishes:, mine_only: %>
+  <%= render 'wishes/list', exchange:, wishes:, slots:, mine_only: %>
 
-  <%# 締切そのものは差し替えで変わらないので、入れ替える中身の外に置く %>
+  <%# 締切と取得枠は差し替えで変わらないので、入れ替える中身の外に置く。
+      取得枠は登録した冊数と同じで、この期間はもう本を足せない %>
   <div class="hidden border-t border-line px-5 py-4 group-data-open/sheet:block lg:block lg:px-6">
     <div class="flex justify-between text-[12.5px] text-ink-muted">
+      <span><%= t('wish.slots_label') %></span>
+      <span class="tabular"><%= t('wish.slots_value', count: slots) %></span>
+    </div>
+    <div class="mt-2 flex justify-between text-[12.5px] text-ink-muted">
       <span>希望提出の締切</span>
       <span class="tabular"><%= l(exchange.wish_ends_at, format: :schedule) %></span>
     </div>

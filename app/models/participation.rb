@@ -55,6 +55,8 @@ class Participation < ApplicationRecord
 
     with_lock do
       wishes_by_book_id = wishes.reload.index_by(&:book_id)
+      # 集合ではなく並べた数ごと突き合わせる。Set にすると重複が潰れ、[A, A, B] が
+      # [A, B] と同じものとして通る。A に順位を2度振ることになり、1番が空く
       raise WishListMismatch unless ordered_ids.sort == wishes_by_book_id.keys.sort
 
       ordered_ids.each_with_index do |book_id, index|

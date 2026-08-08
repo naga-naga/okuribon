@@ -106,6 +106,7 @@ ja:
         wish_ends_at: 希望提出期間の終了日時
       wish:
         book: 本
+        position: 順位
     errors:
       models:
         wish:

@@ -44,5 +44,16 @@
         受け取るのは表示名とアイコンだけです。メールアドレスは保存しません。
       </p>
     <% end %>
+
+    <%# 開発用の裏口ログイン（docs/spec.md 11.）。ログイン済みかどうかによらず出す。
+        入れ替わりたいのは、たいていもう誰かで入っているとき。
+        条件は config/routes.rb と揃えること。片方だけ変えると、
+        押せば404になるリンクが残る %>
+    <% if Rails.env.local? %>
+      <div class="border-t border-line pt-5">
+        <%= link_to '開発用ログイン（OAuth を通さず利用者を入れ替える）', dev_login_path,
+                    class: 'text-[12px] leading-[1.85] text-ink-subtle underline underline-offset-2 hover:text-ink' %>
+      </div>
+    <% end %>
   </div>
 </div>

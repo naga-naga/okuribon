@@ -85,6 +85,34 @@ RSpec.describe SessionsController do
       expect(response.body).to include('贈本 太郎')
       expect(response.body).to include('ログアウト')
     end
+
+    # 開発用ログイン（docs/spec.md 11.）は URL を直に打たないと辿り着けない。
+    # 撒いた利用者へ入れ替わるたびに打つことになるので、ここに口を置く
+    context '開発用ログイン' do
+      it '未ログインなら辿れる' do
+        get '/login'
+
+        expect(response.body).to include(dev_login_path)
+      end
+
+      # ログイン済みでも出す。入れ替わりたいのは、たいていもう誰かで入っているとき
+      it 'ログイン済みでも辿れる' do
+        get '/auth/google_oauth2/callback'
+
+        get '/login'
+
+        expect(response.body).to include(dev_login_path)
+      end
+
+      # 経路の無い環境でリンクだけ残ると、押しても404になる案内が出る
+      it 'production では出さない' do
+        allow(Rails).to receive(:env).and_return(ActiveSupport::EnvironmentInquirer.new('production'))
+
+        get '/login'
+
+        expect(response.body).not_to include('/dev/login')
+      end
+    end
   end
 
   describe '#create' do

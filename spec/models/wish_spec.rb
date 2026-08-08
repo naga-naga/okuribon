@@ -41,6 +41,25 @@ RSpec.describe Wish do
     expect { create(:wish, participation: other, book: wish.book) }.not_to raise_error
   end
 
+  # 自分が登録した本は受け取れない（docs/spec.md 3. 交換の仕組み）。
+  # 希望に入れられると、選んだのに絶対に当たらない枠を1つ抱えることになる
+  it '自分が登録した本は希望できない' do
+    participation = create(:participation)
+    book = create(:book, participation:)
+
+    wish = build(:wish, participation:, book:)
+
+    expect(wish).not_to be_valid
+    expect(wish.errors).to be_of_kind(:book, :own_book)
+  end
+
+  it '別の交換会の本は希望できない' do
+    wish = build(:wish, participation: create(:participation), book: create(:book))
+
+    expect(wish).not_to be_valid
+    expect(wish.errors).to be_of_kind(:book, :other_exchange)
+  end
+
   # 順位が重複すると order(:position) の並びが不定になり、
   # 乱数シードを固定してもマッチングの結果を再現できなくなる。
   # 制約は遅延させてあるので、検査を今ここで起こして確かめる

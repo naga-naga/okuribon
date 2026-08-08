@@ -102,8 +102,15 @@ ja:
         registration_starts_at: 登録期間の開始日時
         registration_ends_at: 登録期間の終了日時
         wish_ends_at: 希望提出期間の終了日時
+      wish:
+        book: 本
     errors:
       models:
+        wish:
+          attributes:
+            book:
+              own_book: は自分が登録したものです。自分の本は受け取れません
+              other_exchange: はこの交換会のものではありません
         exchange:
           attributes:
             registration_ends_at:

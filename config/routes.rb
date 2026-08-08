@@ -24,7 +24,8 @@ Rails.application.routes.draw do
   # 本は必ずどれか1つの交換会に属し、単独では意味を持たない。
   # 交換会の下に置くと、参加しているかどうかの判定を親から引ける
   resources :exchanges, only: [:index, :show, :new, :create, :edit, :update] do
-    # 詳細（#23）だけがまだ無い。それ以外は揃っている
+    # 1冊だけを開く画面は持たない（docs/spec.md 6.3）。
+    # 読むための情報は一覧のカードが全部持っていて、ギフトコードは結果画面が受け持つ
     resources :books, except: [:show]
   end
 

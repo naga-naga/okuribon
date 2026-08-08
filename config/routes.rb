@@ -31,6 +31,10 @@ Rails.application.routes.draw do
       # 順位はここでは受け取らない。並べ替えは希望リスト全体を1度に送る（#27）
       resource :wish, only: [:create, :destroy]
     end
+
+    # 並べ替えは希望リスト全体を1度に送る。本を特定しない操作なので、
+    # 本の下ではなく交換会の直下に置く。1人が持つ希望リストは1つなので単数
+    resource :wish_list, only: [:update]
   end
 
   # 招待URL。交換会の id ではなく招待トークンで引く。

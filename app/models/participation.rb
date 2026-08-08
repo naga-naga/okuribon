@@ -17,7 +17,7 @@ class Participation < ApplicationRecord
   # 冊数だけが要る画面で Book を読み込むと、暗号化されたギフトコードまで
   # 一緒に運ばれてくる。取得経路は結果画面の1つに限る（CLAUDE.md）ので、
   # ここでは数だけを SQL で受け取る。
-  # DISTINCT を外せない。本と希望を同時に外部結合すると行が掛け合わさり、
+  # DISTINCT を外せない。Book と Wish を同時に外部結合すると行が掛け合わさり、
   # 2冊×3希望がどちらも6件に化ける
   scope :with_counts, lambda {
     left_joins(:books, :wishes)

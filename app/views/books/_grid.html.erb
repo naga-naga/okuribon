@@ -1,6 +1,9 @@
-<%# カードの一覧。一覧を開くとき以外にもここだけを描き直す用があるので、
-    見出しや絞り込みとは切り離しておく %>
+<%# カードの一覧。希望を1冊出し入れするたびにここごと差し替える。
+    1冊外すと後ろの順位がすべて繰り上がるので、押した1枚だけでは足りない %>
 <div id="book_grid" class="mt-6">
+  <%# 順位は本から引く。カードごとに希望リストを走査すると、冊数の二乗になる %>
+  <% positions = wishes.to_h { [it.book_id, it.position] } %>
+
   <% if books.empty? %>
     <%# 白紙で返すと、壊れているのかまだ誰も登録していないのか区別がつかない %>
     <div class="rounded-[5px] border border-line bg-paper px-5 py-6">
@@ -20,21 +23,27 @@
     </div>
   <% else %>
     <%# ざっと眺めるための密度で並べる。気になった1枚はその場で開き、
-        読み終わったら列の元の位置に戻れる。狭い画面では1カラムに落ちる %>
-    <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        読み終わったら列の元の位置に戻れる。狭い画面では1カラムに落ちる。
+        希望リストが脇に出ている間は、その幅のぶん1列減らす %>
+    <ul class="grid gap-4 sm:grid-cols-2 <%= 'lg:grid-cols-3' unless wishing %>">
       <% books.each do |book| %>
         <% mine = book.participation_id == participation.id %>
         <% actions = registering && mine %>
+        <%# 希望を選ぶ間、自分の本だけは選べない。輪郭も文字も落として、
+            押せないことをボタンの有無だけに頼らず示す %>
+        <% dimmed = wishing && mine %>
+        <% position = positions[book.id] %>
         <li id="<%= dom_id(book) %>" data-controller="book-card"
-            class="group flex flex-col gap-4 rounded-[5px] border bg-paper p-6 data-open:col-span-full
-                   <%= mine ? 'border-line-strong' : 'border-line' %>">
+            class="group flex flex-col gap-4 rounded-[5px] border p-6 data-open:col-span-full
+                   <%= dimmed ? 'border-line bg-surface-sunken' : "bg-paper #{mine ? 'border-line-strong' : 'border-line'}" %>">
           <%# 開くと本文と脇の2段組みになる。閉じている間は本文だけを縦に積む %>
           <div class="flex flex-1 flex-col gap-3.5 group-data-open:flex-row group-data-open:gap-8">
             <div class="flex flex-1 flex-col gap-3.5">
               <%# 誰が登録したかは参加者全員に見える（docs/spec.md 8.） %>
               <div>
                 <div class="flex items-start justify-between gap-2.5">
-                  <h2 class="text-[18px] font-bold leading-[1.45] text-ink group-data-open:text-[22px]">
+                  <h2 class="text-[18px] font-bold leading-[1.45] group-data-open:text-[22px]
+                             <%= dimmed ? 'text-ink-subtle' : 'text-ink' %>">
                     <%= book.title %>
                   </h2>
 
@@ -51,14 +60,15 @@
                   あらすじより前に置く。閉じている間は抜粋で、開くと全文になる。
                   折るのは CSS なので、開いてももう一度サーバーへ行かない %>
               <% if book.recommendation.present? %>
-                <div class="border-l-2 border-accent pl-3">
+                <div class="border-l-2 pl-3 <%= dimmed ? 'border-line' : 'border-accent' %>">
                   <p class="hidden text-[10.5px] tracking-[0.12em] text-accent group-data-open:block">
                     おすすめポイント
                   </p>
                   <%# 改行を活かすので、タグの内側で折り返さない。
                       pre-line はタグ直後の改行も1行として残す %>
-                  <p class="line-clamp-2 whitespace-pre-line text-[13px] leading-[1.9] text-ink
-                            group-data-open:mt-1.5 group-data-open:line-clamp-none"><%= book.recommendation %></p>
+                  <p class="line-clamp-2 whitespace-pre-line text-[13px] leading-[1.9] group-data-open:mt-1.5
+                            group-data-open:line-clamp-none
+                            <%= dimmed ? 'text-ink-muted' : 'text-ink' %>"><%= book.recommendation %></p>
                 </div>
               <% else %>
                 <%# 空白のまま置くと、書き忘れなのか書くところが無いのか分からない %>
@@ -94,9 +104,9 @@
             </div>
           </div>
 
-          <%# 開いている間、他人の本にはこの段の中身が無くなる。線だけが残らないよう畳む %>
+          <%# 開いている間、この段の中身が無くなる本もある。線だけが残らないよう畳む %>
           <footer class="mt-auto flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-line pt-3.5
-                         <%= 'group-data-open:hidden' unless actions %>">
+                         <%= 'group-data-open:hidden' unless actions || wishing %>">
             <button type="button" data-action="book-card#toggle" data-book-card-target="toggle"
                     aria-expanded="false"
                     class="cursor-pointer text-[12.5px] text-accent underline group-data-open:hidden">
@@ -110,6 +120,26 @@
               <%= button_to '削除', exchange_book_path(exchange, book), method: :delete,
                             form: { data: { turbo_confirm: book_deletion_confirm(book, slots:) } },
                             class: 'cursor-pointer text-[12.5px] text-ink-subtle underline hover:text-accent' %>
+            <% end %>
+
+            <% if wishing %>
+              <%# 絞り込みは URL に残るので、押したあとも同じ並びで戻れるよう持ち回す %>
+              <% carry = mine_only ? { filter: 'mine' } : {} %>
+
+              <% if mine %>
+                <span class="text-[12.5px] text-ink-subtle">自分の本は希望に選べません</span>
+              <% elsif position %>
+                <span class="tabular rounded-[3px] bg-accent-soft px-3 py-1 text-[12.5px] font-bold text-accent">
+                  希望 <%= position %>位
+                </span>
+                <%= button_to '希望から外す', exchange_book_wish_path(exchange, book), method: :delete,
+                              params: carry,
+                              class: 'ml-auto cursor-pointer text-[12.5px] text-ink-subtle underline hover:text-accent' %>
+              <% else %>
+                <%= button_to '希望に追加', exchange_book_wish_path(exchange, book), params: carry,
+                              class: 'cursor-pointer rounded-[4px] border border-accent-soft bg-accent-soft ' \
+                                     'px-4 py-2 text-[13px] font-medium text-accent hover:bg-paper-hover' %>
+              <% end %>
             <% end %>
           </footer>
         </li>

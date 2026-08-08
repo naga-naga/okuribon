@@ -1,14 +1,17 @@
 <% content_for :title, "#{@exchange.name}の本" %>
 
-<%# 登録・編集・削除の可否は1回だけ引く。カードごとに引き直すと、
+<%# 登録・希望の可否は1回だけ引く。カードごとに引き直すと、
     描いている途中で締切をまたいだときに1つの画面の中で出し分けが食い違う %>
 <% registering = @exchange.writable?(:book, at: requested_at) %>
+<% wishing = @exchange.writable?(:wish, at: requested_at) %>
 
 <%# 自分の本は取得枠の数でもあり、絞り込みの行き先でもある。
     読み込み済みの一覧から選ぶので、カードごとに COUNT が飛ばない %>
 <% my_books = @books.select { it.participation_id == @participation.id } %>
 
-<div class="mx-auto w-full max-w-[1080px] px-4 py-10 sm:px-6">
+<%# 希望リストは狭い画面では下部に固定されるので、その高さぶん一覧の下を空ける %>
+<div class="mx-auto w-full px-4 pt-10 sm:px-6
+            <%= wishing ? 'max-w-[1180px] pb-44 lg:pb-10' : 'max-w-[1080px] pb-10' %>">
   <%# 戻り先は交換会トップだけにする。この画面へ来る入口がそこしかない %>
   <p class="text-[12px]"><%= link_to @exchange.name, exchange_path(@exchange) %></p>
 
@@ -50,7 +53,17 @@
     </div>
   </div>
 
-  <%= render 'books/grid', exchange: @exchange, books: @mine_only ? my_books : @books,
-                           participation: @participation, registering:,
-                           slots: my_books.size, mine_only: @mine_only %>
+  <%# 希望を選ぶ間だけ、一覧の脇に希望リストが並ぶ。それ以外のフェーズでは
+      並べ替える対象が無いので、一覧が幅いっぱいを使う %>
+  <div class="<%= 'lg:flex lg:items-start lg:gap-6' if wishing %>">
+    <div class="min-w-0 flex-1">
+      <%= render 'books/grid', exchange: @exchange, books: @mine_only ? my_books : @books,
+                               participation: @participation, wishes: @wishes,
+                               registering:, wishing:, slots: my_books.size, mine_only: @mine_only %>
+    </div>
+
+    <% if wishing %>
+      <%= render 'wishes/sheet', exchange: @exchange, wishes: @wishes %>
+    <% end %>
+  </div>
 </div>

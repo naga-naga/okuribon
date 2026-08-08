@@ -269,6 +269,113 @@ RSpec.describe BooksController do
       end
     end
 
+    describe '希望リストの編集' do
+      # 希望提出期間の中の1点。この画面でだけ希望リストが出る
+      let!(:during_wish) { '2026-08-11T00:00:00+09:00'.in_time_zone }
+
+      before do
+        exchange.update!(registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
+                         registration_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
+                         wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone)
+      end
+
+      def open_list_while_wishing
+        travel_to(during_wish) { open_list }
+      end
+
+      def open_list_while_registering
+        travel_to('2026-08-04T00:00:00+09:00'.in_time_zone) { open_list }
+      end
+
+      it '希望提出期間中は希望リストが常時出る' do
+        book_by('佐藤 花子')
+
+        open_list_while_wishing
+
+        expect(response.body).to include('あなたの希望リスト')
+      end
+
+      it '希望提出期間中は各カードから希望に追加できる' do
+        book = book_by('佐藤 花子')
+
+        open_list_while_wishing
+
+        expect(card_for(book).text).to include('希望に追加')
+      end
+
+      it '希望に入れた本には順位が出る' do
+        book = book_by('佐藤 花子')
+        create(:wish, participation:, book:, position: 1)
+
+        open_list_while_wishing
+
+        expect(card_for(book).text).to include('希望 1位')
+        expect(card_for(book).text).to include('希望から外す')
+      end
+
+      # 一覧を読んでいる間ずっと、いま何冊・何位まで選んだかが見えている
+      it '希望リストに順位と本が並ぶ' do
+        book = book_by('佐藤 花子', title: '選んだ本')
+        create(:wish, participation:, book:, position: 1)
+
+        open_list_while_wishing
+
+        expect(response.parsed_body.at_css('#wish_list').text).to include('選んだ本')
+      end
+
+      it '1冊も選んでいなければその旨が出る' do
+        book_by('佐藤 花子')
+
+        open_list_while_wishing
+
+        expect(response.parsed_body.at_css('#wish_list').text).to include('まだ1冊も選んでいません')
+      end
+
+      # 自分の本は受け取れない（docs/spec.md 3.）。押しても通らないボタンを
+      # 出しておいて断るのではなく、選べないことをその場で示す
+      it '自分の本は選べないことが分かる' do
+        book = create(:book, participation:)
+
+        open_list_while_wishing
+
+        expect(card_for(book).text).to include('自分の本は希望に選べません')
+        expect(card_for(book).text).not_to include('希望に追加')
+      end
+
+      # 何人がその本を希望しているかは誰にも見せない（docs/spec.md 8.）。
+      # 中身まで揃えた2冊を並べ、希望された側とされていない側で
+      # カードが1文字も変わらないことを見る
+      it '何人がその本を希望しているかは出ない' do
+        registrant = create(:participation, exchange:, user: create(:user, display_name: '佐藤 花子'))
+        same = { title: '同じ題の本', summary: '同じあらすじ', recommendation: '同じおすすめ' }
+        wanted = create(:book, participation: registrant, **same)
+        ignored = create(:book, participation: registrant, **same)
+        3.times { create(:wish, participation: create(:participation, exchange:), book: wanted) }
+
+        open_list_while_wishing
+
+        expect(card_for(wanted).text).to eq(card_for(ignored).text)
+      end
+
+      # 登録期間はまだ選ぶ対象が揃っていない。出しても押せば断られる
+      it '登録期間中は出ない' do
+        book_by('佐藤 花子')
+
+        open_list_while_registering
+
+        expect(response.body).not_to include('あなたの希望リスト')
+        expect(response.body).not_to include('希望に追加')
+      end
+
+      it 'マッチング実行待ちには出ない' do
+        book_by('佐藤 花子')
+
+        travel_to('2026-08-20T00:00:00+09:00'.in_time_zone) { open_list }
+
+        expect(response.body).not_to include('あなたの希望リスト')
+      end
+    end
+
     # 403 だと、招待されていない交換会の実在が URL を試すだけで確かめられる
     it '参加していなければ見つからない' do
       log_in_as(create(:user))

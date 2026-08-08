@@ -3,6 +3,8 @@
 require 'rails_helper'
 
 RSpec.describe BooksController do
+  include ActionView::RecordIdentifier
+
   let!(:user) { create(:user) }
   let!(:exchange) { create(:exchange, name: '夏の交換会') }
   let!(:participation) { create(:participation, user:, exchange:) }
@@ -12,6 +14,12 @@ RSpec.describe BooksController do
   describe '#index' do
     def open_list
       get exchange_books_path(exchange)
+    end
+
+    # 印や導線はカード単位で確かめる。ページ全体の文字列を見ると、
+    # 隣のカードや見出しに同じ字があったときに見分けがつかない
+    def card_for(book)
+      response.parsed_body.at_css("##{dom_id(book)}")
     end
 
     # 登録者を名前で撒くための入れ物。参加を伴わない本は作れない
@@ -45,27 +53,17 @@ RSpec.describe BooksController do
       expect(response.body).to include('佐藤 花子')
     end
 
-    # 数行のテキストを丸ごと並べると、一覧をざっと眺められなくなる
-    it '長いあらすじは冒頭だけ出る' do
-      book_by('佐藤 花子', summary: "#{'あ' * 200}ここは切られる")
+    # 閉じたカードは抜粋だが、折るのは CSS で、全文は最初から入れておく。
+    # 開くたびにサーバーへ行くと、読み比べのたびに往復が挟まる
+    it '長いあらすじも全文が入る' do
+      book_by('佐藤 花子', summary: "#{'あ' * 200}最後まで読める")
 
       open_list
 
-      expect(response.body).to include('あ' * 50)
-      expect(response.body).not_to include('ここは切られる')
+      expect(response.body).to include('最後まで読める')
     end
 
-    it '短いあらすじはそのまま出る' do
-      book_by('佐藤 花子', summary: 'ある町に住む青年が、古い書店で一冊の本と出会う。')
-
-      open_list
-
-      expect(response.body).to include('ある町に住む青年が、古い書店で一冊の本と出会う。')
-    end
-
-    # 読み比べがこの画面の目的。本の詳細（#23）がまだ無いので、
-    # ここで切ると続きを読む先がどこにも無い
-    it 'おすすめポイントは全文出る' do
+    it 'おすすめポイントも全文が入る' do
       book_by('佐藤 花子', recommendation: "#{'ぜ' * 200}最後まで読める")
 
       open_list
@@ -145,6 +143,74 @@ RSpec.describe BooksController do
         open_list
 
         expect(response.body).to include('交換の結果が公開されています')
+      end
+    end
+
+    describe 'カード' do
+      # 一覧をざっと眺めるための密度で並べる。1列に積むと、
+      # 12冊で画面を何度もめくることになる
+      it '3カラムで並ぶ' do
+        create(:book, participation:)
+
+        open_list
+
+        expect(response.body).to include('lg:grid-cols-3')
+      end
+
+      # 交換会の楽しみどころはおすすめポイント。あらすじを先に置くと、
+      # どの本にも似た筋書きが並び、読み比べる材料が下に沈む
+      it 'おすすめポイントがあらすじより前に出る' do
+        book_by('佐藤 花子', summary: 'あらすじの本文', recommendation: 'おすすめの本文')
+
+        open_list
+
+        expect(response.body.index('おすすめの本文')).to be < response.body.index('あらすじの本文')
+      end
+
+      # 詳細画面へ飛ばすと列の中の位置を見失う。開いて読んで、また列に戻れるようにする
+      it 'その場で開いて閉じられる' do
+        create(:book, participation:)
+
+        open_list
+
+        expect(response.body).to include('続きを読む')
+        expect(response.body).to include('閉じる')
+      end
+
+      # 空白のまま置くと、書き忘れなのか書くところが無いのか分からない
+      it 'おすすめポイントが未記入ならその旨が出る' do
+        book_by('佐藤 花子', recommendation: nil)
+
+        open_list
+
+        expect(response.body).to include('おすすめポイントが未記入です')
+      end
+
+      it '開くとストアへのリンクが出る' do
+        book_by('佐藤 花子', url: 'https://example.com/books/1')
+
+        open_list
+
+        expect(response.body).to include('https://example.com/books/1')
+        expect(response.body).to include('ストアで見る')
+      end
+
+      it 'URL が無ければストアへのリンクは出ない' do
+        book_by('佐藤 花子', url: nil)
+
+        open_list
+
+        expect(response.body).not_to include('ストアで見る')
+      end
+
+      # 登録者が書いた URL をそのままリンクにすると、読み比べに来た人の
+      # ブラウザで javascript: が走る
+      it 'http と https 以外はリンクにしない' do
+        book_by('佐藤 花子', url: "javascript:alert('x')")
+
+        open_list
+
+        expect(response.body).not_to include('javascript:alert')
       end
     end
 
@@ -246,20 +312,20 @@ RSpec.describe BooksController do
       # 自分の本は取得枠の数でもある。導線の有無だけで見分けさせると、
       # 登録期間を過ぎたとたんにどれが自分の本か分からなくなる
       it '自分の本には印が付く' do
-        create(:book, participation:, title: '灯台守の一年')
+        mine = create(:book, participation:, title: '灯台守の一年')
         outside_registration
 
         open_list
 
-        expect(response.body).to include('自分の本')
+        expect(card_for(mine).text).to include('自分の本')
       end
 
       it '他人の本には印が付かない' do
-        create(:book, participation: create(:participation, exchange:), title: '十三番目の便り')
+        theirs = create(:book, participation: create(:participation, exchange:), title: '十三番目の便り')
 
         open_list
 
-        expect(response.body).not_to include('自分の本')
+        expect(card_for(theirs).text).not_to include('自分の本')
       end
 
       it '他人の本には編集も削除も出ない' do

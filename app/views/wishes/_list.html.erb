@@ -2,22 +2,46 @@
     出し入れの口はカードの側にあるので、ここは今の並びを見せて順序だけを動かす。
     何人がその本を希望しているかは、ここにも一覧にも出さない（docs/spec.md 8.） %>
 <div id="wish_list" class="min-h-0 overflow-y-auto px-5 pt-3 pb-5 lg:px-6 lg:pt-4 lg:pb-5">
-  <%# 畳んでいる間の1行。狭い画面でだけ出る。
-      横に流して、何冊選んだかと上位の顔ぶれだけを残す %>
-  <div class="flex gap-2 overflow-x-auto group-data-open/sheet:hidden lg:hidden">
-    <% if wishes.empty? %>
-      <span class="text-[12.5px] text-ink-subtle">まだ1冊も選んでいません</span>
-    <% else %>
-      <% wishes.each do |wish| %>
-        <span class="tabular flex-none rounded-[3px] px-3 py-2 text-[12px] whitespace-nowrap
-                     <%= wish.position == 1 ? 'bg-accent-soft text-accent' : 'bg-fill text-ink' %>">
-          <%= wish.position %> <%= wish.book.title %>
-        </span>
+  <%# 案内の出し分けは畳んだ側と開いた側で共通。数えるのは自分の取得枠と
+      自分の希望だけで、何人がその本を希望しているかは持ち込まない %>
+  <% guidance = wish_guidance_state(slots:, wishes: wishes.size) %>
+
+  <%# 畳んでいる間に出る2行。狭い画面でだけ出る。冊数を1行目に置くのは、
+      ここが狭い画面の既定の状態で、開かないまま一覧を読み進める人がいるため。
+      2行目は横に流して、何冊選んだかと上位の顔ぶれだけを残す %>
+  <div class="group-data-open/sheet:hidden lg:hidden">
+    <p id="wish_summary" class="tabular mb-2 text-[11.5px]
+                                <%= guidance == :enough ? 'text-ink-subtle' : 'text-accent' %>">
+      <%= wish_summary_text(slots:, wishes: wishes.size) %>
+    </p>
+
+    <div class="flex gap-2 overflow-x-auto">
+      <% if wishes.empty? %>
+        <span class="text-[12.5px] text-ink-subtle">まだ1冊も選んでいません</span>
+      <% else %>
+        <% wishes.each do |wish| %>
+          <span class="tabular flex-none rounded-[3px] px-3 py-2 text-[12px] whitespace-nowrap
+                       <%= wish.position == 1 ? 'bg-accent-soft text-accent' : 'bg-fill text-ink' %>">
+            <%= wish.position %> <%= wish.book.title %>
+          </span>
+        <% end %>
       <% end %>
-    <% end %>
+    </div>
   </div>
 
   <div class="hidden group-data-open/sheet:block lg:block">
+    <%# 開いた側の案内。面を朱で塗るのは、まだ増やせる人に限る。
+        取得枠が0の人には増やす道が残っていないので、塗っても圧をかけるだけになる %>
+    <div class="mb-4 rounded-[4px] border px-4 py-3.5
+                <%= guidance == :short ? 'border-accent-soft bg-accent-soft' : 'border-line bg-surface-sunken' %>">
+      <p class="tabular text-[13.5px] font-bold <%= guidance == :enough ? 'text-ink' : 'text-accent' %>">
+        <%= t('wish.guidance.counts', slots:, wishes: wishes.size) %>
+      </p>
+      <p class="mt-1.5 text-[12.5px] leading-[1.8] text-ink-muted">
+        <%= t("wish.guidance.#{guidance}", recommended: recommended_wish_count(slots)) %>
+      </p>
+    </div>
+
     <% if wishes.empty? %>
       <%# 空のまま返すと、選び方が分からないのか壊れているのか区別がつかない %>
       <div class="rounded-[4px] border border-dashed border-line-strong px-4 py-5 text-center">

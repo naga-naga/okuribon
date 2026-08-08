@@ -63,7 +63,8 @@
     </div>
 
     <% if wishing %>
-      <%= render 'wishes/sheet', exchange: @exchange, wishes: @wishes, mine_only: @mine_only %>
+      <%= render 'wishes/sheet', exchange: @exchange, wishes: @wishes,
+                                 slots: my_books.size, mine_only: @mine_only %>
     <% end %>
   </div>
 </div>

@@ -3,6 +3,8 @@
 require 'rails_helper'
 
 RSpec.describe BooksController do
+  include ActionView::RecordIdentifier
+
   let!(:user) { create(:user) }
   let!(:exchange) { create(:exchange, name: '夏の交換会') }
   let!(:participation) { create(:participation, user:, exchange:) }
@@ -12,6 +14,12 @@ RSpec.describe BooksController do
   describe '#index' do
     def open_list
       get exchange_books_path(exchange)
+    end
+
+    # 印や導線はカード単位で確かめる。ページ全体の文字列を見ると、
+    # 隣のカードや見出しに同じ字があったときに見分けがつかない
+    def card_for(book)
+      response.parsed_body.at_css("##{dom_id(book)}")
     end
 
     # 登録者を名前で撒くための入れ物。参加を伴わない本は作れない
@@ -45,27 +53,17 @@ RSpec.describe BooksController do
       expect(response.body).to include('佐藤 花子')
     end
 
-    # 数行のテキストを丸ごと並べると、一覧をざっと眺められなくなる
-    it '長いあらすじは冒頭だけ出る' do
-      book_by('佐藤 花子', summary: "#{'あ' * 200}ここは切られる")
+    # 閉じたカードは抜粋だが、折るのは CSS で、全文は最初から入れておく。
+    # 開くたびにサーバーへ行くと、読み比べのたびに往復が挟まる
+    it '長いあらすじも全文が入る' do
+      book_by('佐藤 花子', summary: "#{'あ' * 200}最後まで読める")
 
       open_list
 
-      expect(response.body).to include('あ' * 50)
-      expect(response.body).not_to include('ここは切られる')
+      expect(response.body).to include('最後まで読める')
     end
 
-    it '短いあらすじはそのまま出る' do
-      book_by('佐藤 花子', summary: 'ある町に住む青年が、古い書店で一冊の本と出会う。')
-
-      open_list
-
-      expect(response.body).to include('ある町に住む青年が、古い書店で一冊の本と出会う。')
-    end
-
-    # 読み比べがこの画面の目的。本の詳細（#23）がまだ無いので、
-    # ここで切ると続きを読む先がどこにも無い
-    it 'おすすめポイントは全文出る' do
+    it 'おすすめポイントも全文が入る' do
       book_by('佐藤 花子', recommendation: "#{'ぜ' * 200}最後まで読める")
 
       open_list
@@ -100,6 +98,175 @@ RSpec.describe BooksController do
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include('まだ本は登録されていません')
+    end
+
+    describe '見出し' do
+      # 冊数だけでは、まだ登録していない人がどれだけ残っているかが分からない
+      it '冊数と参加人数が出る' do
+        create(:book, participation:)
+        book_by('佐藤 花子')
+
+        open_list
+
+        expect(response.body).to include('2冊')
+        expect(response.body).to include('3人')
+      end
+
+      # 数週間かかるツールなので、開くたびに今なにをすべきかが分かるようにする
+      it '登録期間中は希望の提出がいつからかを添える' do
+        open_list
+
+        expect(response.body).to include('おすすめポイントを読んで')
+        expect(response.body).to include(I18n.l(exchange.wish_starts_at, format: :schedule))
+      end
+
+      # 一覧は全フェーズで開ける。どのフェーズで来ても、次にすることが書いてある
+      {
+        '準備中' => ['2026-07-25T00:00:00+09:00', '登録期間はまだ始まっていません'],
+        '希望提出期間' => ['2026-08-11T00:00:00+09:00', '欲しい本を希望順に並べましょう'],
+        'マッチング実行待ち' => ['2026-08-20T00:00:00+09:00', '希望の受付は終わりました'],
+      }.each do |phase, (now, guide)|
+        it "#{phase}にはその期間ですることが出る" do
+          exchange.update!(registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
+                           registration_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
+                           wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone)
+
+          travel_to(now) { open_list }
+
+          expect(response.body).to include(guide)
+        end
+      end
+
+      it '結果公開後は結果が出ていることが分かる' do
+        exchange.update!(matched_at: 1.day.ago)
+
+        open_list
+
+        expect(response.body).to include('交換の結果が公開されています')
+      end
+    end
+
+    describe '絞り込み' do
+      def open_mine
+        get exchange_books_path(exchange, filter: :mine)
+      end
+
+      # 自分がどれを出したかを確かめる用。登録期間の外では編集の導線が消えるので、
+      # 印だけでは冊数を数えづらい
+      it '自分の本だけに絞れる' do
+        create(:book, participation:, title: '自分の本')
+        book_by('佐藤 花子', title: '他の人の本')
+
+        open_mine
+
+        expect(response.body).to include('自分の本')
+        expect(response.body).not_to include('他の人の本')
+      end
+
+      it '絞り込みには自分の冊数が出る' do
+        create_list(:book, 2, participation:)
+
+        open_list
+
+        expect(response.body).to include('自分の本 2')
+      end
+
+      # 見出しが数えるのは交換会全体。絞り込みで動くと、
+      # まだ登録していない人が何人いるかが読めなくなる
+      it '絞っても見出しの冊数と人数は全体のまま' do
+        create(:book, participation:)
+        book_by('佐藤 花子')
+
+        open_mine
+
+        expect(response.body).to include('2冊 ／ 3人')
+      end
+
+      it '知らない絞り込みは全件に倒す' do
+        book_by('佐藤 花子', title: '他の人の本')
+
+        get exchange_books_path(exchange, filter: 'その他')
+
+        expect(response.body).to include('他の人の本')
+      end
+
+      # 取得枠は登録した冊数で決まる。空の一覧をそのまま返すと、
+      # まだ受け取る権利が無いことがどこにも出ない
+      it '自分が1冊も登録していなければその旨が出る' do
+        book_by('佐藤 花子')
+
+        open_mine
+
+        expect(response.body).to include('まだ1冊も登録していません')
+      end
+    end
+
+    describe 'カード' do
+      # 一覧をざっと眺めるための密度で並べる。1列に積むと、
+      # 12冊で画面を何度もめくることになる
+      it '3カラムで並ぶ' do
+        create(:book, participation:)
+
+        open_list
+
+        expect(response.body).to include('lg:grid-cols-3')
+      end
+
+      # 交換会の楽しみどころはおすすめポイント。あらすじを先に置くと、
+      # どの本にも似た筋書きが並び、読み比べる材料が下に沈む
+      it 'おすすめポイントがあらすじより前に出る' do
+        book_by('佐藤 花子', summary: 'あらすじの本文', recommendation: 'おすすめの本文')
+
+        open_list
+
+        expect(response.body.index('おすすめの本文')).to be < response.body.index('あらすじの本文')
+      end
+
+      # 詳細画面へ飛ばすと列の中の位置を見失う。開いて読んで、また列に戻れるようにする
+      it 'その場で開いて閉じられる' do
+        create(:book, participation:)
+
+        open_list
+
+        expect(response.body).to include('続きを読む')
+        expect(response.body).to include('閉じる')
+      end
+
+      # 空白のまま置くと、書き忘れなのか書くところが無いのか分からない
+      it 'おすすめポイントが未記入ならその旨が出る' do
+        book_by('佐藤 花子', recommendation: nil)
+
+        open_list
+
+        expect(response.body).to include('おすすめポイントが未記入です')
+      end
+
+      it '開くとストアへのリンクが出る' do
+        book_by('佐藤 花子', url: 'https://example.com/books/1')
+
+        open_list
+
+        expect(response.body).to include('https://example.com/books/1')
+        expect(response.body).to include('ストアで見る')
+      end
+
+      it 'URL が無ければストアへのリンクは出ない' do
+        book_by('佐藤 花子', url: nil)
+
+        open_list
+
+        expect(response.body).not_to include('ストアで見る')
+      end
+
+      # 登録者が書いた URL をそのままリンクにすると、読み比べに来た人の
+      # ブラウザで javascript: が走る
+      it 'http と https 以外はリンクにしない' do
+        book_by('佐藤 花子', url: "javascript:alert('x')")
+
+        open_list
+
+        expect(response.body).not_to include('javascript:alert')
+      end
     end
 
     # 403 だと、招待されていない交換会の実在が URL を試すだけで確かめられる
@@ -200,20 +367,20 @@ RSpec.describe BooksController do
       # 自分の本は取得枠の数でもある。導線の有無だけで見分けさせると、
       # 登録期間を過ぎたとたんにどれが自分の本か分からなくなる
       it '自分の本には印が付く' do
-        create(:book, participation:, title: '灯台守の一年')
+        mine = create(:book, participation:, title: '灯台守の一年')
         outside_registration
 
         open_list
 
-        expect(response.body).to include('自分の本')
+        expect(card_for(mine).text).to include('自分の本')
       end
 
       it '他人の本には印が付かない' do
-        create(:book, participation: create(:participation, exchange:), title: '十三番目の便り')
+        theirs = create(:book, participation: create(:participation, exchange:), title: '十三番目の便り')
 
         open_list
 
-        expect(response.body).not_to include('自分の本')
+        expect(card_for(theirs).text).not_to include('自分の本')
       end
 
       it '他人の本には編集も削除も出ない' do

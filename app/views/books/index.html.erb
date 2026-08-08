@@ -4,11 +4,12 @@
     描いている途中で締切をまたいだときに1つの画面の中で出し分けが食い違う %>
 <% registering = @exchange.writable?(:book, at: requested_at) %>
 
-<%# 自分の登録冊数がそのまま取得枠。削除の確認文で使う。
-    読み込み済みの一覧から数えるので、カードごとに COUNT が飛ばない %>
-<% my_books = @books.count { it.participation_id == @participation.id } %>
+<%# 自分の本は取得枠の数でもあり、絞り込みの行き先でもある。
+    読み込み済みの一覧から選ぶので、カードごとに COUNT が飛ばない %>
+<% my_books = @books.select { it.participation_id == @participation.id } %>
+<% books = @mine_only ? my_books : @books %>
 
-<div class="mx-auto w-full max-w-[640px] px-4 py-10 sm:px-6">
+<div class="mx-auto w-full max-w-[1080px] px-4 py-10 sm:px-6">
   <%# 戻り先は交換会トップだけにする。この画面へ来る入口がそこしかない %>
   <p class="text-[12px]"><%= link_to @exchange.name, exchange_path(@exchange) %></p>
 
@@ -17,75 +18,150 @@
       一覧の下に置くと、冊数が増えるほど次の1冊が遠くなる。
       狭い画面では見出しとボタンが縦に折り返る %>
   <div class="mt-4 flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
-    <div class="flex flex-wrap items-baseline gap-x-3 gap-y-2">
-      <h1 class="text-[26px] font-bold leading-[1.45] text-ink">本の一覧</h1>
-      <span class="tabular text-[13px] text-ink-muted"><%= @books.size %>冊</span>
-    </div>
+    <div>
+      <div class="flex flex-wrap items-baseline gap-x-3 gap-y-2">
+        <h1 class="text-[26px] font-bold leading-[1.45] text-ink">みんなの本</h1>
+        <span class="tabular text-[15px] font-medium text-ink-subtle">
+          <%= @books.size %>冊 ／ <%= @participant_count %>人
+        </span>
+      </div>
 
-    <% if registering %>
-      <%= link_to '本を登録する', new_exchange_book_path(@exchange),
-                  class: 'rounded-[5px] bg-accent px-5 py-2.5 text-[14px] font-medium ' \
-                         'text-paper no-underline hover:bg-accent-hover' %>
-    <% end %>
-  </div>
-
-  <% if @books.empty? %>
-    <%# 白紙で返すと、壊れているのかまだ誰も登録していないのか区別がつかない %>
-    <div class="mt-6 rounded-[5px] border border-line bg-paper px-5 py-6">
-      <p class="text-[14.5px] font-medium text-ink">まだ本は登録されていません。</p>
-      <p class="mt-2 text-[13px] leading-[1.85] text-ink-muted">
-        誰かが登録すると、ここに並びます。
+      <%# 数週間かかるツールなので、開いた日になにをすればよいかをここで言う %>
+      <p class="mt-1.5 text-[13px] leading-[1.85] text-ink-muted">
+        <%= book_index_guide(@exchange, at: requested_at) %>
       </p>
     </div>
-  <% else %>
-    <ul class="mt-6 flex flex-col gap-3">
-      <% @books.each do |book| %>
-        <% mine = book.participation_id == @participation.id %>
-        <li class="rounded-[5px] border bg-paper px-5 py-5 <%= mine ? 'border-line-strong' : 'border-line' %>">
-          <%# 誰が登録したかは参加者全員に見える（docs/spec.md 8.）。
-              狭い画面ではタイトルと登録者名が縦に折り返る %>
-          <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <h2 class="text-[17px] font-bold leading-[1.5] text-ink"><%= book.title %></h2>
-            <span class="text-[12px] text-ink-subtle"><%= book.registrant.display_name %></span>
 
-            <%# 自分の本は取得枠の数でもある。編集・削除の導線だけで見分けさせると、
-                登録期間を過ぎたとたんにどれが自分の本か分からなくなる %>
-            <% if mine %>
-              <span class="ml-auto rounded-[3px] bg-fill px-2 py-0.5 text-[11px] text-ink-muted">自分の本</span>
-            <% end %>
+    <div class="flex flex-wrap items-center gap-3">
+      <%# 1冊も無いうちは出さない。行き先が両方とも空の絞り込みになる %>
+      <% if @books.any? %>
+        <div class="flex overflow-hidden rounded-[5px] border border-line-strong">
+          <%= link_to 'すべて', exchange_books_path(@exchange),
+                      class: book_filter_segment_class(!@mine_only) %>
+          <%= link_to "自分の本 #{my_books.size}", exchange_books_path(@exchange, filter: :mine),
+                      class: "border-l border-line-strong #{book_filter_segment_class(@mine_only)}" %>
+        </div>
+      <% end %>
+
+      <% if registering %>
+        <%= link_to '本を登録する', new_exchange_book_path(@exchange),
+                    class: 'rounded-[5px] bg-accent px-5 py-2.5 text-[14px] font-medium ' \
+                           'text-paper no-underline hover:bg-accent-hover' %>
+      <% end %>
+    </div>
+  </div>
+
+  <% if books.empty? %>
+    <%# 白紙で返すと、壊れているのかまだ誰も登録していないのか区別がつかない %>
+    <div class="mt-6 rounded-[5px] border border-line bg-paper px-5 py-6">
+      <% if @mine_only %>
+        <%# 取得枠は登録した冊数で決まる。空の一覧をそのまま返すと、
+            まだ受け取る権利が無いことがどこにも出ない %>
+        <p class="text-[14.5px] font-medium text-ink">まだ1冊も登録していません。</p>
+        <p class="mt-2 text-[13px] leading-[1.85] text-ink-muted">
+          登録した冊数と同じだけ受け取れます。
+        </p>
+      <% else %>
+        <p class="text-[14.5px] font-medium text-ink">まだ本は登録されていません。</p>
+        <p class="mt-2 text-[13px] leading-[1.85] text-ink-muted">
+          誰かが登録すると、ここに並びます。
+        </p>
+      <% end %>
+    </div>
+  <% else %>
+    <%# ざっと眺めるための密度で並べる。気になった1枚はその場で開き、
+        読み終わったら列の元の位置に戻れる。狭い画面では1カラムに落ちる %>
+    <ul class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <% books.each do |book| %>
+        <% mine = book.participation_id == @participation.id %>
+        <% actions = registering && mine %>
+        <li id="<%= dom_id(book) %>" data-controller="book-card"
+            class="group flex flex-col gap-4 rounded-[5px] border bg-paper p-6 data-open:col-span-full
+                   <%= mine ? 'border-line-strong' : 'border-line' %>">
+          <%# 開くと本文と脇の2段組みになる。閉じている間は本文だけを縦に積む %>
+          <div class="flex flex-1 flex-col gap-3.5 group-data-open:flex-row group-data-open:gap-8">
+            <div class="flex flex-1 flex-col gap-3.5">
+              <%# 誰が登録したかは参加者全員に見える（docs/spec.md 8.） %>
+              <div>
+                <div class="flex items-start justify-between gap-2.5">
+                  <h2 class="text-[18px] font-bold leading-[1.45] text-ink group-data-open:text-[22px]">
+                    <%= book.title %>
+                  </h2>
+
+                  <%# 自分の本は取得枠の数でもある。編集・削除の導線だけで見分けさせると、
+                      登録期間を過ぎたとたんにどれが自分の本か分からなくなる %>
+                  <% if mine %>
+                    <span class="flex-none rounded-[3px] bg-fill px-2 py-0.5 text-[11px] text-ink-muted">自分の本</span>
+                  <% end %>
+                </div>
+                <p class="mt-1.5 text-[12px] text-ink-muted"><%= book.registrant.display_name %></p>
+              </div>
+
+              <%# おすすめポイントが交換会の楽しみどころなので、朱の縦線を引いて
+                  あらすじより前に置く。閉じている間は抜粋で、開くと全文になる。
+                  折るのは CSS なので、開いてももう一度サーバーへ行かない %>
+              <% if book.recommendation.present? %>
+                <div class="border-l-2 border-accent pl-3">
+                  <p class="hidden text-[10.5px] tracking-[0.12em] text-accent group-data-open:block">
+                    おすすめポイント
+                  </p>
+                  <%# 改行を活かすので、タグの内側で折り返さない。
+                      pre-line はタグ直後の改行も1行として残す %>
+                  <p class="line-clamp-2 whitespace-pre-line text-[13px] leading-[1.9] text-ink
+                            group-data-open:mt-1.5 group-data-open:line-clamp-none"><%= book.recommendation %></p>
+                </div>
+              <% else %>
+                <%# 空白のまま置くと、書き忘れなのか書くところが無いのか分からない %>
+                <p class="border-l-2 border-line pl-3 text-[13px] leading-[1.9] text-ink-subtle">
+                  おすすめポイントが未記入です
+                </p>
+              <% end %>
+
+              <% if book.summary.present? %>
+                <div>
+                  <p class="hidden text-[10.5px] tracking-[0.12em] text-ink-subtle group-data-open:block">あらすじ</p>
+                  <p class="line-clamp-1 whitespace-pre-line text-[12.5px] leading-[1.85] text-ink-muted
+                            group-data-open:mt-1.5 group-data-open:line-clamp-none"><%= book.summary %></p>
+                </div>
+              <% end %>
+            </div>
+
+            <%# 開いたときだけ出る脇。ストアへ出るか、読み終えて列に戻るかの2つ %>
+            <div class="hidden w-[240px] flex-none flex-col gap-3 border-line pl-0
+                        group-data-open:flex sm:group-data-open:border-l sm:group-data-open:pl-6">
+              <% if (store_url = book_store_url(book)) %>
+                <%= link_to 'ストアで見る ↗', store_url, target: '_blank', rel: 'noopener noreferrer',
+                            class: 'rounded-[5px] border border-line-strong px-4 py-2.5 text-center ' \
+                                   'text-[13.5px] font-medium text-ink no-underline hover:bg-paper-hover' %>
+              <% end %>
+
+              <%# 開閉のボタンは2つあるが開き先は1つ。aria-expanded は controller が両方に配る %>
+              <button type="button" data-action="book-card#toggle" data-book-card-target="toggle"
+                      aria-expanded="false"
+                      class="mt-auto cursor-pointer text-left text-[12.5px] text-accent underline">
+                閉じる ↑
+              </button>
+            </div>
           </div>
 
-          <%# あらすじは冒頭だけ。数行を丸ごと並べると、一覧をざっと眺められなくなる %>
-          <% if book.summary.present? %>
-            <p class="mt-3 text-[13.5px] leading-[1.9] text-ink-muted">
-              <%= truncate(book.summary, length: 80, omission: '…') %>
-            </p>
-          <% end %>
+          <%# 開いている間、他人の本にはこの段の中身が無くなる。線だけが残らないよう畳む %>
+          <footer class="mt-auto flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-line pt-3.5
+                         <%= 'group-data-open:hidden' unless actions %>">
+            <button type="button" data-action="book-card#toggle" data-book-card-target="toggle"
+                    aria-expanded="false"
+                    class="cursor-pointer text-[12.5px] text-accent underline group-data-open:hidden">
+              続きを読む ↓
+            </button>
 
-          <%# 読み比べるのがこの画面の目的なので、おすすめポイントは全文を出す。
-              本の詳細（#23）がまだ無く、ここで切ると続きを読む先がどこにも無い。
-              地の上に一段沈めて、あらすじと役割が違うことを面で分ける %>
-          <% if book.recommendation.present? %>
-            <div class="mt-4 rounded-[3px] bg-surface-sunken px-4 py-3.5">
-              <p class="text-[12px] text-ink-subtle">おすすめポイント</p>
-              <%# 改行を活かすので、タグの内側で折り返さない。
-                  pre-line はタグ直後の改行も1行として残す %>
-              <p class="mt-1.5 whitespace-pre-line text-[14px] leading-[1.95] text-ink"><%= book.recommendation %></p>
-            </div>
-          <% end %>
-
-          <%# 自分の本にだけ出す。押しても通らない導線を残さないよう、
-              登録期間の外では出さない %>
-          <% if registering && mine %>
-            <div class="mt-4 flex items-center gap-4 border-t border-line pt-4">
-              <%= link_to '編集', edit_exchange_book_path(@exchange, book), class: 'text-[13px]' %>
+            <% if actions %>
+              <%= link_to '編集', edit_exchange_book_path(@exchange, book), class: 'text-[12.5px]' %>
 
               <%# 取り返しがつかないので確認を挟む。文言は削除の口が2か所あるため helper に置く %>
               <%= button_to '削除', exchange_book_path(@exchange, book), method: :delete,
-                            form: { data: { turbo_confirm: book_deletion_confirm(book, slots: my_books) } },
-                            class: 'cursor-pointer text-[13px] text-ink-subtle underline hover:text-accent' %>
-            </div>
-          <% end %>
+                            form: { data: { turbo_confirm: book_deletion_confirm(book, slots: my_books.size) } },
+                            class: 'cursor-pointer text-[12.5px] text-ink-subtle underline hover:text-accent' %>
+            <% end %>
+          </footer>
         </li>
       <% end %>
     </ul>

@@ -85,6 +85,8 @@ ja:
       joined: 交換会に参加しました
       withdrawn: 交換会への参加を取り消しました
     login_required: "%{name}に参加するには、Google でのログインが必要です"
+    # 別のタブで希望リストを変えたまま、古い並びを保存しようとしたとき
+    wish_list_mismatch: 希望リストが変わっています。画面を読み直してから、もう一度並べ替えてください
   activerecord:
     attributes:
       book:
@@ -102,8 +104,16 @@ ja:
         registration_starts_at: 登録期間の開始日時
         registration_ends_at: 登録期間の終了日時
         wish_ends_at: 希望提出期間の終了日時
+      wish:
+        book: 本
+        position: 順位
     errors:
       models:
+        wish:
+          attributes:
+            book:
+              own_book: は自分が登録したものです。自分の本は受け取れません
+              other_exchange: はこの交換会のものではありません
         exchange:
           attributes:
             registration_ends_at:

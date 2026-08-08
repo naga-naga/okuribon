@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_01_070444) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_08_054021) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -83,6 +83,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_01_070444) do
     t.index ["book_id"], name: "index_wishes_on_book_id"
     t.index ["participation_id", "book_id"], name: "index_wishes_on_participation_id_and_book_id", unique: true
     t.index ["participation_id"], name: "index_wishes_on_participation_id"
+    t.unique_constraint ["participation_id", "position"], deferrable: :deferred
   end
 
   add_foreign_key "assignments", "books"

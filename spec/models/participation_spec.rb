@@ -67,4 +67,139 @@ RSpec.describe Participation do
     expect(Assignment.count).to eq(0)
     expect(book.reload).to be_persisted
   end
+
+  describe '希望リストの操作' do
+    let!(:exchange) do
+      create(
+        :exchange,
+        registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
+        registration_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
+        wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone
+      )
+    end
+    let!(:participation) { create(:participation, exchange:) }
+    # 希望の対象は他人が登録した本。同じ人が登録した3冊を並べても、
+    # 確かめたいのは順位の扱いなので足りる
+    let!(:books) { create_list(:book, 3, participation: create(:participation, exchange:)) }
+    let!(:book) { books.first }
+
+    let!(:wish_phase) { '2026-08-11T00:00:00+09:00'.in_time_zone }
+
+    describe '#add_wish!' do
+      it '希望リストの末尾に足す' do
+        first = participation.add_wish!(books[0], at: wish_phase)
+        second = participation.add_wish!(books[1], at: wish_phase)
+
+        expect(first.position).to eq(1)
+        expect(second.position).to eq(2)
+      end
+
+      # 二重送信や、同時に届いた2つのリクエストで希望が2つできないこと。
+      # 一意インデックスの違反を拾って既存を引くため、2回目もこの経路をそのまま通る
+      it '二度足しても希望は増えず、同じものを返す' do
+        first = participation.add_wish!(book, at: wish_phase)
+        second = participation.add_wish!(book, at: wish_phase)
+
+        expect(second).to eq(first)
+        expect(participation.wishes.count).to eq(1)
+      end
+
+      it '登録期間には足せない' do
+        expect { participation.add_wish!(book, at: '2026-08-04T00:00:00+09:00'.in_time_zone) }
+          .to raise_error(Exchange::PhaseViolation)
+        expect(participation.wishes.count).to eq(0)
+      end
+
+      it '希望提出の締切ちょうどからは足せない' do
+        expect { participation.add_wish!(book, at: '2026-08-15T00:00:00+09:00'.in_time_zone) }
+          .to raise_error(Exchange::PhaseViolation)
+      end
+
+      it '自分が登録した本は足せない' do
+        own = create(:book, participation:)
+
+        expect { participation.add_wish!(own, at: wish_phase) }
+          .to raise_error(ActiveRecord::RecordInvalid)
+      end
+    end
+
+    describe '#remove_wish!' do
+      before { books.each { |b| participation.add_wish!(b, at: wish_phase) } }
+
+      it '希望を消す' do
+        participation.remove_wish!(book, at: wish_phase)
+
+        expect(participation.wishes.reload.map(&:book)).to eq(books.drop(1))
+      end
+
+      # 穴が空いたままだと、次に足した1冊の順位が飛ぶ。
+      # 画面に出す順位と、リストの何番目かが食い違う
+      it '真ん中を消すと順位が1からの連番に詰め直される' do
+        participation.remove_wish!(books[1], at: wish_phase)
+
+        expect(participation.wishes.reload.pluck(:position)).to eq([1, 2])
+        expect(participation.wishes.map(&:book)).to eq([books[0], books[2]])
+      end
+
+      # 二度押しや、別のタブで消したあとの再送信で落とすようなことではない
+      it '希望していない本を渡しても落ちない' do
+        other = create(:book, participation: book.participation)
+
+        expect { participation.remove_wish!(other, at: wish_phase) }
+          .not_to(change { participation.wishes.count })
+      end
+
+      it '希望提出の締切ちょうどからは消せない' do
+        expect { participation.remove_wish!(book, at: '2026-08-15T00:00:00+09:00'.in_time_zone) }
+          .to raise_error(Exchange::PhaseViolation)
+        expect(participation.wishes.count).to eq(3)
+      end
+    end
+
+    describe '#reorder_wishes!' do
+      before { books.each { |b| participation.add_wish!(b, at: wish_phase) } }
+
+      it '渡された順に並べ替える' do
+        participation.reorder_wishes!([books[2].id, books[0].id, books[1].id], at: wish_phase)
+
+        expect(participation.wishes.reload.map(&:book)).to eq([books[2], books[0], books[1]])
+        expect(participation.wishes.pluck(:position)).to eq([1, 2, 3])
+      end
+
+      # 並びはフォームから来るので、値は文字列で届く
+      it '文字列の id でも並べ替えられる' do
+        participation.reorder_wishes!(books.reverse.map { |b| b.id.to_s }, at: wish_phase)
+
+        expect(participation.wishes.reload.map(&:book)).to eq(books.reverse)
+      end
+
+      # 集合が食い違うのは、別のタブで追加・削除したときだけ。
+      # 黙って片方を捨てるより、読み直させるほうが安全
+      it '希望していない本が混じっていれば拒否する' do
+        other = create(:book, participation: book.participation)
+
+        expect { participation.reorder_wishes!(books.map(&:id) + [other.id], at: wish_phase) }
+          .to raise_error(Participation::WishListMismatch)
+      end
+
+      it '希望が欠けていれば拒否し、並びも変えない' do
+        expect { participation.reorder_wishes!([books[2].id, books[0].id], at: wish_phase) }
+          .to raise_error(Participation::WishListMismatch)
+        expect(participation.wishes.reload.map(&:book)).to eq(books)
+      end
+
+      it '同じ本が二度現れれば拒否する' do
+        expect { participation.reorder_wishes!([books[0].id, books[0].id, books[1].id], at: wish_phase) }
+          .to raise_error(Participation::WishListMismatch)
+      end
+
+      it '希望提出の締切ちょうどからは並べ替えられない' do
+        at = '2026-08-15T00:00:00+09:00'.in_time_zone
+
+        expect { participation.reorder_wishes!(books.reverse.map(&:id), at:) }
+          .to raise_error(Exchange::PhaseViolation)
+        expect(participation.wishes.reload.map(&:book)).to eq(books)
+      end
+    end
+  end
 end

@@ -63,7 +63,7 @@
     </div>
 
     <% if wishing %>
-      <%= render 'wishes/sheet', exchange: @exchange, wishes: @wishes %>
+      <%= render 'wishes/sheet', exchange: @exchange, wishes: @wishes, mine_only: @mine_only %>
     <% end %>
   </div>
 </div>

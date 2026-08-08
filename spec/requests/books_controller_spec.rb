@@ -331,6 +331,98 @@ RSpec.describe BooksController do
         expect(response.parsed_body.at_css('#wish_list').text).to include('まだ1冊も選んでいません')
       end
 
+      def wish_list
+        response.parsed_body.at_css('#wish_list')
+      end
+
+      # 希望リストの末尾に1冊足す。順位は足した順の連番になる
+      def wish_for(title)
+        book = book_by('佐藤 花子', title:)
+        create(:wish, participation:, book:, position: participation.wishes.count + 1)
+        book
+      end
+
+      def rows
+        wish_list.css('ol li')
+      end
+
+      def move_button(row, label)
+        row.at_css(%(button[aria-label="#{label}"]))
+      end
+
+      # 並べ替えは順序だけをまとめて送る（docs/spec.md 6.2）。
+      # ここで確かめるのは送る材料が画面に揃っていることまで。
+      # つまんで動かす操作そのものはブラウザでしか確かめられない
+      it '希望リストの並びをそのまま送れる' do
+        first = wish_for('1冊目')
+        second = wish_for('2冊目')
+
+        open_list_while_wishing
+
+        expect(wish_list.css('input[name="book_ids[]"]').pluck('value'))
+          .to eq([first.id.to_s, second.id.to_s])
+      end
+
+      it '送り先は希望リストの更新' do
+        wish_for('1冊目')
+
+        open_list_while_wishing
+
+        expect(wish_list.at_css('form')['action']).to eq(exchange_wish_list_path(exchange))
+      end
+
+      # ドラッグはつまめる人にしか使えない。順位を1つずつ動かす口を別に置く
+      it '各行に順位を上げ下げする口がある' do
+        wish_for('1冊目')
+        wish_for('2冊目')
+
+        open_list_while_wishing
+
+        expect(wish_list.css('button[aria-label="順位を上げる"]').size).to eq(2)
+        expect(wish_list.css('button[aria-label="順位を下げる"]').size).to eq(2)
+      end
+
+      # 端の行に行き先は無い。押せるように見えて何も起きないボタンを置かない
+      it '先頭は上げられず、末尾は下げられない' do
+        wish_for('1冊目')
+        wish_for('2冊目')
+
+        open_list_while_wishing
+
+        expect(move_button(rows.first, '順位を上げる')[:disabled]).to be_present
+        expect(move_button(rows.first, '順位を下げる')[:disabled]).to be_nil
+        expect(move_button(rows.last, '順位を上げる')[:disabled]).to be_nil
+        expect(move_button(rows.last, '順位を下げる')[:disabled]).to be_present
+      end
+
+      # 並べ替えは JavaScript でしか動かない。動かない環境に押せる口を残すと、
+      # 押しても何も起きないボタンになる。カードからの追加・削除はそのまま通る
+      it '並べ替えの口は JavaScript が動くまで出さない' do
+        wish_for('1冊目')
+        wish_for('2冊目')
+
+        open_list_while_wishing
+
+        expect(wish_list.css('li [hidden] button[aria-label="順位を上げる"]').size).to eq(2)
+      end
+
+      # 絞り込みは URL に残る（docs/spec.md 6.2）
+      it '絞り込みを保ったまま並べ替えられる' do
+        wish_for('1冊目')
+
+        travel_to(during_wish) { get exchange_books_path(exchange, filter: 'mine') }
+
+        expect(wish_list.at_css('input[name="filter"]')['value']).to eq('mine')
+      end
+
+      it '1冊も選んでいなければ並べ替えるものが無い' do
+        book_by('佐藤 花子')
+
+        open_list_while_wishing
+
+        expect(wish_list.at_css('form')).to be_nil
+      end
+
       # 自分の本は受け取れない（docs/spec.md 3.）。押しても通らないボタンを
       # 出しておいて断るのではなく、選べないことをその場で示す
       it '自分の本は選べないことが分かる' do

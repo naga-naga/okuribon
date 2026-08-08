@@ -7,6 +7,12 @@ RSpec.describe Assignment do
     expect(described_class.new.returned).to be(false)
   end
 
+  # false を欠落と区別する必要があるため、presence では見られない
+  it '返却フラグが無ければ保存できない' do
+    expect(build(:assignment, returned: nil)).not_to be_valid
+    expect(build(:assignment, returned: false)).to be_valid
+  end
+
   it '本と受取人のどちらが欠けても保存できない' do
     expect { build(:assignment, book: nil).save(validate: false) }
       .to raise_error(ActiveRecord::NotNullViolation)

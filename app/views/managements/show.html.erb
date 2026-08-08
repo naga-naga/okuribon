@@ -18,8 +18,11 @@
   <div class="mt-8">
     <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
       <h2 class="text-[17px] font-bold text-ink">参加者</h2>
+      <%# size ではなく length で数える。GROUP BY を持つリレーションの size は
+          件数ではなくグループごとの件数のハッシュを返す。
+          どのみち下の表で全件を回すので、読み込んでから数えて問い合わせも増やさない %>
       <span class="tabular text-[14px] font-medium text-ink-subtle">
-        <%= @participations.size %>人・<%= @participations.sum(&:books_count) %>冊
+        <%= @participations.length %>人・<%= @participations.sum(&:books_count) %>冊
       </span>
     </div>
 

@@ -43,6 +43,16 @@ RSpec.describe ManagementsController do
         expect(response.body).to include('みずき', '2冊', 'ゆうと', '1冊')
       end
 
+      # 見出しの数は交換会全体の規模。一覧を数え直さずに掴めるようにする
+      it '参加人数と登録された総冊数が見出しに出る' do
+        create_list(:book, 2, participation: owner_participation)
+        create(:book, participation: join('ゆうと'))
+
+        travel_to(registration_phase) { get exchange_management_path(exchange) }
+
+        expect(response.body).to include('2人・3冊')
+      end
+
       it '希望を出した人には冊数が、出していない人には未提出と出る' do
         wisher = join('はるか')
         join('かなえ')

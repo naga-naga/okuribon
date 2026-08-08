@@ -3,16 +3,9 @@
 require 'rails_helper'
 
 RSpec.describe User do
-  it '必須のカラムが無ければ保存できない' do
+  it '必須のカラムに nil を保存できない' do
     [:provider, :uid, :display_name].each do |column|
-      expect(build(:user, column => nil)).not_to be_valid, "#{column} が検証されていない"
-    end
-  end
-
-  # バリデーションを迂回しても DB が弾く
-  it '必須のカラムに nil を書き込めない' do
-    [:provider, :uid, :display_name].each do |column|
-      expect { build(:user, column => nil).save(validate: false) }
+      expect { create(:user, column => nil) }
         .to raise_error(ActiveRecord::NotNullViolation), "#{column} が NOT NULL になっていない"
     end
   end

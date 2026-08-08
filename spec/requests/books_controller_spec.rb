@@ -146,6 +146,61 @@ RSpec.describe BooksController do
       end
     end
 
+    describe '絞り込み' do
+      def open_mine
+        get exchange_books_path(exchange, filter: :mine)
+      end
+
+      # 自分がどれを出したかを確かめる用。登録期間の外では編集の導線が消えるので、
+      # 印だけでは冊数を数えづらい
+      it '自分の本だけに絞れる' do
+        create(:book, participation:, title: '自分の本')
+        book_by('佐藤 花子', title: '他の人の本')
+
+        open_mine
+
+        expect(response.body).to include('自分の本')
+        expect(response.body).not_to include('他の人の本')
+      end
+
+      it '絞り込みには自分の冊数が出る' do
+        create_list(:book, 2, participation:)
+
+        open_list
+
+        expect(response.body).to include('自分の本 2')
+      end
+
+      # 見出しが数えるのは交換会全体。絞り込みで動くと、
+      # まだ登録していない人が何人いるかが読めなくなる
+      it '絞っても見出しの冊数と人数は全体のまま' do
+        create(:book, participation:)
+        book_by('佐藤 花子')
+
+        open_mine
+
+        expect(response.body).to include('2冊 ／ 3人')
+      end
+
+      it '知らない絞り込みは全件に倒す' do
+        book_by('佐藤 花子', title: '他の人の本')
+
+        get exchange_books_path(exchange, filter: 'その他')
+
+        expect(response.body).to include('他の人の本')
+      end
+
+      # 取得枠は登録した冊数で決まる。空の一覧をそのまま返すと、
+      # まだ受け取る権利が無いことがどこにも出ない
+      it '自分が1冊も登録していなければその旨が出る' do
+        book_by('佐藤 花子')
+
+        open_mine
+
+        expect(response.body).to include('まだ1冊も登録していません')
+      end
+    end
+
     describe 'カード' do
       # 一覧をざっと眺めるための密度で並べる。1列に積むと、
       # 12冊で画面を何度もめくることになる

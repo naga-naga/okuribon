@@ -24,6 +24,10 @@ class BooksController < ApplicationController
     # 見出しの「N冊 ／ M人」に使う。冊数だけでは、まだ1冊も登録していない人が
     # どれだけ残っているかが分からない
     @participant_count = @exchange.participations.count
+
+    # 絞り込みは URL に残す。開き直しても同じ並びで戻れる。
+    # 押せる口は2つしかないので、知らない値は全件に倒す
+    @mine_only = params[:filter] == 'mine'
   end
 
   def new

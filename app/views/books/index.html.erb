@@ -4,9 +4,10 @@
     描いている途中で締切をまたいだときに1つの画面の中で出し分けが食い違う %>
 <% registering = @exchange.writable?(:book, at: requested_at) %>
 
-<%# 自分の登録冊数がそのまま取得枠。削除の確認文で使う。
-    読み込み済みの一覧から数えるので、カードごとに COUNT が飛ばない %>
-<% my_books = @books.count { it.participation_id == @participation.id } %>
+<%# 自分の本は取得枠の数でもあり、絞り込みの行き先でもある。
+    読み込み済みの一覧から選ぶので、カードごとに COUNT が飛ばない %>
+<% my_books = @books.select { it.participation_id == @participation.id } %>
+<% books = @mine_only ? my_books : @books %>
 
 <div class="mx-auto w-full max-w-[1080px] px-4 py-10 sm:px-6">
   <%# 戻り先は交換会トップだけにする。この画面へ来る入口がそこしかない %>
@@ -31,26 +32,47 @@
       </p>
     </div>
 
-    <% if registering %>
-      <%= link_to '本を登録する', new_exchange_book_path(@exchange),
-                  class: 'rounded-[5px] bg-accent px-5 py-2.5 text-[14px] font-medium ' \
-                         'text-paper no-underline hover:bg-accent-hover' %>
-    <% end %>
+    <div class="flex flex-wrap items-center gap-3">
+      <%# 1冊も無いうちは出さない。行き先が両方とも空の絞り込みになる %>
+      <% if @books.any? %>
+        <div class="flex overflow-hidden rounded-[5px] border border-line-strong">
+          <%= link_to 'すべて', exchange_books_path(@exchange),
+                      class: book_filter_segment_class(!@mine_only) %>
+          <%= link_to "自分の本 #{my_books.size}", exchange_books_path(@exchange, filter: :mine),
+                      class: "border-l border-line-strong #{book_filter_segment_class(@mine_only)}" %>
+        </div>
+      <% end %>
+
+      <% if registering %>
+        <%= link_to '本を登録する', new_exchange_book_path(@exchange),
+                    class: 'rounded-[5px] bg-accent px-5 py-2.5 text-[14px] font-medium ' \
+                           'text-paper no-underline hover:bg-accent-hover' %>
+      <% end %>
+    </div>
   </div>
 
-  <% if @books.empty? %>
+  <% if books.empty? %>
     <%# 白紙で返すと、壊れているのかまだ誰も登録していないのか区別がつかない %>
     <div class="mt-6 rounded-[5px] border border-line bg-paper px-5 py-6">
-      <p class="text-[14.5px] font-medium text-ink">まだ本は登録されていません。</p>
-      <p class="mt-2 text-[13px] leading-[1.85] text-ink-muted">
-        誰かが登録すると、ここに並びます。
-      </p>
+      <% if @mine_only %>
+        <%# 取得枠は登録した冊数で決まる。空の一覧をそのまま返すと、
+            まだ受け取る権利が無いことがどこにも出ない %>
+        <p class="text-[14.5px] font-medium text-ink">まだ1冊も登録していません。</p>
+        <p class="mt-2 text-[13px] leading-[1.85] text-ink-muted">
+          登録した冊数と同じだけ受け取れます。
+        </p>
+      <% else %>
+        <p class="text-[14.5px] font-medium text-ink">まだ本は登録されていません。</p>
+        <p class="mt-2 text-[13px] leading-[1.85] text-ink-muted">
+          誰かが登録すると、ここに並びます。
+        </p>
+      <% end %>
     </div>
   <% else %>
     <%# ざっと眺めるための密度で並べる。気になった1枚はその場で開き、
         読み終わったら列の元の位置に戻れる。狭い画面では1カラムに落ちる %>
     <ul class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      <% @books.each do |book| %>
+      <% books.each do |book| %>
         <% mine = book.participation_id == @participation.id %>
         <% actions = registering && mine %>
         <li id="<%= dom_id(book) %>" data-controller="book-card"
@@ -136,7 +158,7 @@
 
               <%# 取り返しがつかないので確認を挟む。文言は削除の口が2か所あるため helper に置く %>
               <%= button_to '削除', exchange_book_path(@exchange, book), method: :delete,
-                            form: { data: { turbo_confirm: book_deletion_confirm(book, slots: my_books) } },
+                            form: { data: { turbo_confirm: book_deletion_confirm(book, slots: my_books.size) } },
                             class: 'cursor-pointer text-[12.5px] text-ink-subtle underline hover:text-accent' %>
             <% end %>
           </footer>

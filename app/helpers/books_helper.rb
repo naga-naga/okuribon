@@ -12,6 +12,14 @@ module BooksHelper
       at: deadline && l(deadline, format: :schedule))
   end
 
+  # 絞り込みの1区画。今どちらを見ているかを面で示す。
+  # 文字の色だけで分けると、2つ並んだときにどちらが効いているのか読み取れない
+  def book_filter_segment_class(selected)
+    base = 'px-3.5 py-2.5 text-[12.5px] no-underline'
+
+    selected ? "#{base} bg-accent font-medium text-paper" : "#{base} bg-paper text-ink hover:bg-paper-hover"
+  end
+
   # ストアへのリンク。登録者が書いた URL をそのままリンクにするので、
   # http と https 以外は開かない。javascript: を書いて登録されると、
   # 読み比べに来た参加者のブラウザでそのまま走る。

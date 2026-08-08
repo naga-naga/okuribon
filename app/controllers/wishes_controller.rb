@@ -43,19 +43,6 @@ class WishesController < ApplicationController
     @book = @exchange.books.find(params.expect(:book_id))
   end
 
-  # 1冊外すと後ろの順位がすべて繰り上がる。押したカードだけを差し替えると、
-  # 繰り上がった他のカードの順位が古いまま残る。
-  # 差し替えるのは一覧と希望リストの中身で、開閉の状態を持つシートの外枠は含めない
-  def render_listing
-    load_book_listing
-
-    respond_to do |format|
-      format.turbo_stream { render :listing }
-      # JavaScript が無くても通る道を残す。絞り込みは URL に残っているので持ち回す
-      format.html { redirect_to exchange_books_path(@exchange, filter: params[:filter].presence) }
-    end
-  end
-
   def deny_wish(wish)
     render 'errors/denied', status: :unprocessable_content,
                             locals: { message: wish.errors.full_messages.to_sentence }

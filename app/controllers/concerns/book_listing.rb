@@ -28,4 +28,20 @@ module BookListing
     # 押せる口は2つしかないので、知らない値は全件に倒す
     @mine_only = params[:filter] == 'mine'
   end
+
+  # 希望リストを変えたあとの差し替え。1冊出し入れする口と並べ替える口の両方から呼ぶ。
+  # 1冊外すと後ろの順位がすべて繰り上がり、並べ替えれば全部の順位が変わるので、
+  # 押した要素だけを差し替えると古い順位が残る。
+  # 差し替えるのは一覧と希望リストの中身で、開閉の状態を持つシートの外枠は含めない
+  def render_listing
+    load_book_listing
+
+    respond_to do |format|
+      # 描く場所は口ごとに変えない。コントローラ名から引かせると、
+      # 口が増えたときに同じ内容のテンプレートがもう1枚生える
+      format.turbo_stream { render 'wishes/listing' }
+      # JavaScript が無くても通る道を残す。絞り込みは URL に残っているので持ち回す
+      format.html { redirect_to exchange_books_path(@exchange, filter: params[:filter].presence) }
+    end
+  end
 end

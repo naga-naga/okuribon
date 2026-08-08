@@ -68,6 +68,63 @@ RSpec.describe Participation do
     expect(book.reload).to be_persisted
   end
 
+  describe '.with_counts' do
+    let!(:exchange) { create(:exchange) }
+    let!(:participation) { create(:participation, exchange:) }
+    let!(:other) { create(:participation, exchange:) }
+
+    it '登録冊数と希望冊数を数える' do
+      create_list(:book, 2, participation:)
+      create_list(:book, 3, participation: other)
+      exchange.books.where(participation: other).each_with_index do |book, index|
+        create(:wish, participation:, book:, position: index + 1)
+      end
+
+      row = exchange.participations.with_counts.find(participation.id)
+
+      expect(row.books_count).to eq(2)
+      expect(row.wishes_count).to eq(3)
+    end
+
+    it '1冊も登録せず希望も出していなければ0を返す' do
+      row = exchange.participations.with_counts.find(participation.id)
+
+      expect(row.books_count).to eq(0)
+      expect(row.wishes_count).to eq(0)
+    end
+
+    # 本と希望を同時に外部結合すると、片方の行数がもう片方を水増しする。
+    # 掛け合わさった行をそのまま数えると、2冊×3希望が6と6になる
+    it '本と希望の両方があっても互いの件数を水増ししない' do
+      create_list(:book, 2, participation:)
+      exchange.books.where(participation: other).destroy_all
+      books = create_list(:book, 3, participation: other)
+      books.each_with_index { |book, index| create(:wish, participation:, book:, position: index + 1) }
+
+      row = exchange.participations.with_counts.find(participation.id)
+
+      expect(row.books_count).to eq(2)
+      expect(row.wishes_count).to eq(3)
+    end
+
+    # ギフトコードの取得経路は1つに限る（CLAUDE.md）。冊数を出すだけの画面が
+    # Book を引くと、暗号化された値が画面の裏側まで運ばれてくる。
+    # 人数ぶんの追い引きが起きないことも、同じ1本の問い合わせで担保される
+    it '本にも希望にも問い合わせず1回で引く' do
+      create_list(:book, 2, participation:)
+      create_list(:book, 2, participation: other)
+
+      queries = []
+      subscriber = ActiveSupport::Notifications.subscribe('sql.active_record') do |*, payload|
+        queries << payload[:sql] unless payload[:name] == 'SCHEMA'
+      end
+      exchange.participations.with_counts.to_a
+      ActiveSupport::Notifications.unsubscribe(subscriber)
+
+      expect(queries.size).to eq(1)
+    end
+  end
+
   describe '希望リストの操作' do
     let!(:exchange) do
       create(

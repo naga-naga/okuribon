@@ -146,5 +146,21 @@ RSpec.describe ManagementsController do
 
       expect(response).to redirect_to(login_path)
     end
+
+    # ログインを挟むぶん、主催者以外の 404 とは応答が変わる。実在する交換会だけが
+    # ログイン画面へ、存在しない id が 404 へ分かれると、未ログインのまま
+    # id を試すだけで実在を確かめられてしまう（docs/spec.md 8.）。
+    # require_login が Exchange を引く前に返すことで、両者は同じ応答になる。
+    # 交換会を先に引く形へ直すと、ここが落ちる
+    it '未ログインなら、実在しない交換会でも応答が変わらない' do
+      travel_to(registration_phase) do
+        get exchange_management_path(exchange)
+        existing = [response.status, response.headers['Location']]
+
+        get exchange_management_path(Exchange.maximum(:id) + 1)
+
+        expect([response.status, response.headers['Location']]).to eq(existing)
+      end
+    end
   end
 end

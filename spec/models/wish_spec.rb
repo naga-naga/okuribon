@@ -40,4 +40,28 @@ RSpec.describe Wish do
 
     expect { create(:wish, participation: other, book: wish.book) }.not_to raise_error
   end
+
+  # 順位が重複すると order(:position) の並びが不定になり、
+  # 乱数シードを固定してもマッチングの結果を再現できなくなる。
+  # 制約は遅延させてあるので、検査を今ここで起こして確かめる
+  it '同じ参加者の中で順位が重複できない' do
+    wish = create(:wish, position: 1)
+    create(:wish, participation: wish.participation, position: 1)
+
+    expect { ActiveRecord::Base.connection.execute('SET CONSTRAINTS ALL IMMEDIATE') }
+      .to raise_error(ActiveRecord::RecordNotUnique)
+  end
+
+  # 並べ替えは順位を1つずつ書き換えるので、途中で必ず重複が生まれる。
+  # 即時に検査する制約だと、退避用の値を経由するような書き方を強いられる
+  it '並べ替えの途中で順位が重複しても、元に戻せば通る' do
+    first = create(:wish, position: 1)
+    second = create(:wish, participation: first.participation, position: 2)
+
+    first.update!(position: 2)
+    second.update!(position: 1)
+
+    expect { ActiveRecord::Base.connection.execute('SET CONSTRAINTS ALL IMMEDIATE') }
+      .not_to raise_error
+  end
 end

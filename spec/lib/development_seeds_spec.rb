@@ -108,14 +108,28 @@ RSpec.describe DevelopmentSeeds do
 
   # 撒く入口。ここを通らないと、bin/rails db:seed からは何も起きない
   describe 'db/seeds.rb' do
-    it '撒ける' do
-      expect { Rails.application.load_seed }.to change(Exchange, :count)
+    def load_seed_in(env)
+      allow(Rails).to receive(:env).and_return(ActiveSupport::EnvironmentInquirer.new(env))
+
+      Rails.application.load_seed
+    end
+
+    it 'development では撒き、撒いた件数を知らせる' do
+      allow($stdout).to receive(:puts)
+
+      expect { load_seed_in('development') }.to change(Exchange, :count)
+      expect($stdout).to have_received(:puts).with(/交換会 \d+ 件/)
     end
 
     # 本番のデータベースへ架空の交換会を流し込まない
     it 'production では撒かない' do
-      allow(Rails).to receive(:env).and_return(ActiveSupport::EnvironmentInquirer.new('production'))
+      expect { load_seed_in('production') }.not_to change(Exchange, :count)
+    end
 
+    # db:prepare はデータベースを作ったときに seed も撒く。まっさらな test の
+    # データベースを毎回作る CI では、rspec が始まる前に撒かれてしまい、
+    # 件数を数える spec が撒いた分だけずれて落ちる
+    it 'test では撒かない' do
       expect { Rails.application.load_seed }.not_to change(Exchange, :count)
     end
   end

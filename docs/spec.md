@@ -299,7 +299,9 @@
 
 ### 9.1 撒き方
 
-上の状態は `db/seeds.rb` から `DevelopmentSeeds`（`lib/development_seeds.rb`）が撒く。`bin/rails db:seed` で8つの交換会ができ、5つのフェーズと上の6項目がすべて揃う。production では撒かない。
+上の状態は `db/seeds.rb` から `DevelopmentSeeds`（`lib/development_seeds.rb`）が撒く。`bin/rails db:seed` で8つの交換会ができ、5つのフェーズと上の6項目がすべて揃う。
+
+**撒くのは development だけ。** production を弾くだけでは足りない。`db:prepare` はデータベースを作ったときに seed も撒くため、CI のようにまっさらな test のデータベースを毎回作る環境では、rspec が始まる前に撒かれてしまう。件数を数える spec が撒いた分だけずれて落ちる。
 
 - **交換会1つにシナリオ1つ。** 何を見るための交換会かは概要の末尾に「（開発用データ: …）」として書いてある。1つの交換会に状態を詰め込むと、片方を見るためにもう片方を崩すことになる
 - **日時は基準時刻からの相対で撒く。** 現在時刻を差し替える仕組みは持たない（11.）。基準時刻は `db/seeds.rb` が入口で1回だけ読み、`DevelopmentSeeds.new(at:)` に渡す

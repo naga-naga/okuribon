@@ -1,0 +1,35 @@
+<% content_for :title, '開発用ログイン' %>
+
+<%# 開発用の画面なのでビジュアルガイドには無い。既存のトークンだけで素朴に組む %>
+<div class="mx-auto flex w-full max-w-[640px] flex-col gap-6 px-4 py-10 sm:px-6">
+  <div class="flex flex-col gap-2">
+    <h1 class="text-[22px] font-bold leading-[1.45] text-ink">開発用ログイン</h1>
+    <p class="text-[13.5px] leading-[1.9] text-ink-muted">
+      OAuth を通さずに利用者を入れ替えます。この画面は開発環境とテスト環境にしかありません。
+      <code class="text-ink">bin/rails db:seed</code> で撒いた利用者はここからしか入れません。
+    </p>
+  </div>
+
+  <ul class="flex flex-col gap-2">
+    <% @users.each do |user| %>
+      <li class="flex items-center justify-between gap-4 rounded-[5px] border border-line bg-paper px-5 py-4">
+        <div class="flex flex-col gap-0.5">
+          <span class="text-[14.5px] font-medium text-ink"><%= user.display_name %></span>
+          <span class="text-[12px] text-ink-subtle">
+            主催 <%= user.owned_exchanges.count %> 件 ／ 参加 <%= user.exchanges.count %> 件
+          </span>
+        </div>
+
+        <%= button_to 'この人になる', dev_login_as_path(user),
+                      class: 'shrink-0 cursor-pointer rounded-[5px] border border-line-strong bg-paper ' \
+                             'px-4 py-2.5 text-[13.5px] font-medium text-ink hover:bg-paper-hover' %>
+      </li>
+    <% end %>
+  </ul>
+
+  <% if @users.empty? %>
+    <p class="rounded-[5px] border border-line bg-paper px-5 py-4 text-[13.5px] leading-[1.9] text-ink">
+      利用者がいません。<code>bin/rails db:seed</code> を先に実行してください。
+    </p>
+  <% end %>
+</div>

@@ -1,0 +1,16 @@
+<%# 差し替えるのは一覧と希望リストの中身の2か所。1冊外すと後ろの順位が
+    すべて繰り上がるので、押したカード1枚だけでは足りない。
+    開閉の状態を持つシートの外枠は含めない %>
+<% my_books = @books.select { it.participation_id == @participation.id } %>
+
+<%= turbo_stream.replace 'book_grid', partial: 'books/grid',
+                                      locals: { exchange: @exchange,
+                                                books: @mine_only ? my_books : @books,
+                                                participation: @participation,
+                                                wishes: @wishes,
+                                                registering: @exchange.writable?(:book, at: requested_at),
+                                                wishing: @exchange.writable?(:wish, at: requested_at),
+                                                slots: my_books.size,
+                                                mine_only: @mine_only } %>
+
+<%= turbo_stream.replace 'wish_list', partial: 'wishes/list', locals: { wishes: @wishes } %>

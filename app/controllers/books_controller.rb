@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 class BooksController < ApplicationController
+  include BookListing
   include PhaseGuard
 
   before_action :require_login
@@ -17,17 +18,7 @@ class BooksController < ApplicationController
   # 登録順に並べる。開くたびにカードの位置が入れ替わると、
   # 前に見た本を毎回探し直すことになる
   def index
-    # 冊数の表示と空の判定にも同じ本を使うので、その場で読み込む。
-    # 関連のままだと、並べる前に COUNT と EXISTS が別々に飛ぶ
-    @books = @exchange.books.includes(:registrant).order(:created_at, :id).load
-
-    # 見出しの「N冊 ／ M人」に使う。冊数だけでは、まだ1冊も登録していない人が
-    # どれだけ残っているかが分からない
-    @participant_count = @exchange.participations.count
-
-    # 絞り込みは URL に残す。開き直しても同じ並びで戻れる。
-    # 押せる口は2つしかないので、知らない値は全件に倒す
-    @mine_only = params[:filter] == 'mine'
+    load_book_listing
   end
 
   def new

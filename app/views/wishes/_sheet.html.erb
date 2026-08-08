@@ -1,0 +1,38 @@
+<%# 希望リストの置き場所。広い画面では一覧の右に開いたまま並べ、狭い画面では
+    下部に固定したシートにする。畳んでいる間も順位のチップが横に並ぶので、
+    一覧を読んでいる間ずっと「いま何冊・何位まで選んだか」が見えている。
+
+    開閉の状態はこの外枠が持つ。Turbo Stream で入れ替えるのは中身（#wish_list）だけで、
+    ここを含めると、シートを開いて中身を操作した瞬間にシートが閉じる %>
+<aside data-controller="wish-sheet"
+       class="group/sheet fixed inset-x-0 bottom-0 z-20 flex max-h-[80dvh] flex-col border-t border-line-strong
+              bg-paper lg:sticky lg:top-6 lg:mt-6 lg:max-h-[calc(100dvh-3rem)] lg:w-[340px] lg:flex-none
+              lg:rounded-[5px] lg:border">
+  <div class="flex items-baseline gap-3 px-5 py-3.5 lg:px-6 lg:pt-6 lg:pb-0">
+    <h2 class="text-[15px] font-bold text-ink lg:text-[16px]">あなたの希望リスト</h2>
+
+    <%# 追加と削除はその場で保存する。提出ボタンを探させないために言っておく %>
+    <span class="text-[11.5px] text-ink-subtle">自動保存</span>
+
+    <%# 畳む口は狭い画面にだけ要る。広い画面では常に開いている %>
+    <button type="button" data-action="wish-sheet#toggle" data-wish-sheet-target="toggle"
+            aria-expanded="false" aria-controls="wish_list"
+            class="ml-auto cursor-pointer text-[12.5px] text-accent underline lg:hidden">
+      <span class="group-data-open/sheet:hidden">開く ↑</span>
+      <span class="hidden group-data-open/sheet:inline">閉じる ↓</span>
+    </button>
+  </div>
+
+  <%= render 'wishes/list', wishes: %>
+
+  <%# 締切そのものは差し替えで変わらないので、入れ替える中身の外に置く %>
+  <div class="hidden border-t border-line px-5 py-4 group-data-open/sheet:block lg:block lg:px-6">
+    <div class="flex justify-between text-[12.5px] text-ink-muted">
+      <span>希望提出の締切</span>
+      <span class="tabular"><%= l(exchange.wish_ends_at, format: :schedule) %></span>
+    </div>
+    <p class="mt-2.5 text-[12px] leading-[1.8] text-ink-subtle">
+      締切の時点のリストがそのまま提出されます。提出ボタンはありません。
+    </p>
+  </div>
+</aside>

@@ -4,34 +4,30 @@ require 'rails_helper'
 
 RSpec.describe WishesHelper do
   describe '#wish_guidance_state' do
-    def state(slots:, wishes:)
-      helper.wish_guidance_state(slots:, wishes:)
-    end
-
     # 希望リストは長いほうが有利。取得枠の2倍以上を推奨する（docs/spec.md 3.）
     it '取得枠の2倍に満たなければ増やすことを促す' do
-      expect(state(slots: 2, wishes: 3)).to eq(:short)
+      expect(helper.wish_guidance_state(slots: 2, wishes: 3)).to eq(:short)
     end
 
     it '1冊も選んでいなければ促す' do
-      expect(state(slots: 2, wishes: 0)).to eq(:short)
+      expect(helper.wish_guidance_state(slots: 2, wishes: 0)).to eq(:short)
     end
 
     # ちょうど2倍は推奨を満たしている。ここを短いほうに寄せると、
     # 推奨どおりに並べ終えた人にまで増やせと出続ける
     it 'ちょうど2倍なら促さない' do
-      expect(state(slots: 2, wishes: 4)).to eq(:enough)
+      expect(helper.wish_guidance_state(slots: 2, wishes: 4)).to eq(:enough)
     end
 
     it '2倍を超えていれば促さない' do
-      expect(state(slots: 2, wishes: 5)).to eq(:enough)
+      expect(helper.wish_guidance_state(slots: 2, wishes: 5)).to eq(:enough)
     end
 
     # 取得枠が0の人は希望を何冊並べても受け取れない。
     # 増やすことを促すと、やれば届くように読める
     it '取得枠が0なら冊数によらず別の状態になる' do
-      expect(state(slots: 0, wishes: 0)).to eq(:no_slots)
-      expect(state(slots: 0, wishes: 3)).to eq(:no_slots)
+      expect(helper.wish_guidance_state(slots: 0, wishes: 0)).to eq(:no_slots)
+      expect(helper.wish_guidance_state(slots: 0, wishes: 3)).to eq(:no_slots)
     end
   end
 

@@ -85,6 +85,8 @@ ja:
       joined: 交換会に参加しました
       withdrawn: 交換会への参加を取り消しました
     login_required: "%{name}に参加するには、Google でのログインが必要です"
+    # 別のタブで希望リストを変えたまま、古い並びを保存しようとしたとき
+    wish_list_mismatch: 希望リストが変わっています。画面を読み直してから、もう一度並べ替えてください
   activerecord:
     attributes:
       book:

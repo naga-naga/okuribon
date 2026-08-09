@@ -1,0 +1,63 @@
+<% content_for :title, "マッチングを実行 — #{@exchange.name}" %>
+
+<div class="mx-auto w-full max-w-[560px] px-4 py-10 sm:px-6">
+  <%# 戻り先は管理画面だけにする。この画面へ来る入口がそこしかない %>
+  <p class="text-[12px]"><%= link_to '主催者管理', exchange_management_path(@exchange) %></p>
+
+  <%# 朱の縁で、ほかの画面と扱いが違うことを枠のうちに示す %>
+  <div class="mt-4 rounded-[6px] border border-line-strong bg-paper p-6 sm:p-7">
+    <div class="font-mono text-[10.5px] tracking-[0.12em] text-accent">
+      <%= t('management.matching.confirm.eyebrow') %>
+    </div>
+
+    <h1 class="mt-2 text-[20px] font-bold leading-[1.5] text-ink">
+      <%= t('management.matching.confirm.heading') %>
+    </h1>
+
+    <p class="mt-2 text-[13px] leading-[1.9] text-ink">
+      <%= t('management.matching.confirm.body') %>
+    </p>
+
+    <%# 実行すると何が起きるかを数で示す。一覧を読み比べて自分で数えさせない %>
+    <div class="tabular mt-5 overflow-hidden rounded-[4px] border border-line">
+      <% [[t('management.matching.confirm.target'),
+           t('management.matching.confirm.target_value',
+             people: @summary.target_count, books: @summary.books_count)],
+          [t('management.matching.confirm.unsubmitted'),
+           t('management.matching.confirm.unsubmitted_value', count: @summary.unsubmitted_count)],
+          [t('management.matching.confirm.returning'),
+           t('management.matching.confirm.returning_value', count: @summary.returning_count)]].each do |label, value| %>
+        <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-line
+                    bg-surface-sunken px-3.5 py-2.5 last:border-b-0">
+          <span class="text-[12.5px] text-ink-muted"><%= label %></span>
+          <span class="text-[12.5px] text-ink"><%= value %></span>
+        </div>
+      <% end %>
+    </div>
+
+    <%= form_with url: exchange_management_matching_path(@exchange), method: :post do |f| %>
+      <%# サーバー側の歯止めはフェーズの検証（Matching::Execution）で、これは読み飛ばしの
+          歯止め。チェックを外したまま送れるのはフォームを迂回した場合だけで、
+          そのときに断る理由はフェーズのほうが持っている %>
+      <label class="mt-5 flex items-start gap-2.5 rounded-[4px] border border-accent-soft
+                    bg-accent-soft px-4 py-3.5">
+        <%= check_box_tag :acknowledged, '1', false, required: true, class: 'mt-1 accent-accent' %>
+        <span class="text-[12.5px] leading-[1.8] text-accent">
+          <%= t('management.matching.confirm.acknowledge') %>
+        </span>
+      </label>
+
+      <div class="mt-5 flex flex-wrap items-center gap-3 border-t border-line pt-5">
+        <%# 押した瞬間に使えなくなる。二重送信は Matching::Execution も行ロックで
+            断るが、断られた画面を主催者に見せずに済むならそのほうがよい %>
+        <%= f.submit t('management.matching.confirm.execute'),
+                     data: { turbo_submits_with: t('management.matching.confirm.submitting') },
+                     class: 'cursor-pointer rounded-[5px] bg-accent px-6 py-3 text-[14px] ' \
+                            'font-medium text-paper hover:bg-accent-hover' %>
+
+        <%= link_to t('management.matching.confirm.cancel'), exchange_management_path(@exchange),
+                    class: 'text-[13px]' %>
+      </div>
+    <% end %>
+  </div>
+</div>

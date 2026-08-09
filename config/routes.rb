@@ -36,9 +36,7 @@ Rails.application.routes.draw do
     # 本の下ではなく交換会の直下に置く。1人が持つ希望リストは1つなので単数
     resource :wish_list, only: [:update]
 
-    # 主催者管理画面。1つの交換会に管理画面は1つなので単数で置く。
-    # 日時の変更（#38）とマッチングの実行（#31）は、
-    # この下に別のリソースとして並べる
+    # 主催者管理画面。1つの交換会に管理画面は1つなので単数で置く
     resource :management, only: [:show] do
       # 招待トークンの再発行。1つの交換会が持つトークンは1つなので単数で置く。
       # 作り直すのではなく差し替えなので create ではなく update で受ける。
@@ -49,6 +47,12 @@ Rails.application.routes.draw do
       # 自分の参加を消す辞退（/invitations/:token/participation）とは
       # 経路を分ける。押せる人も、対象を選べるかどうかも違う
       resources :participants, only: [:destroy]
+
+      # マッチングの実行。一度しか実行できないので単数で置く。
+      # new は実行前の確認画面。取り返しがつかない操作なので、ブラウザの
+      # ダイアログではなく画面を1枚挟む（docs/spec.md 6.8）。
+      # 管理画面の下に置くのは、招待トークンの再発行と同じく主催者しか触らないため
+      resource :matching, only: [:new, :create]
     end
   end
 

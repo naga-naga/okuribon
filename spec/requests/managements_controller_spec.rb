@@ -159,6 +159,59 @@ RSpec.describe ManagementsController do
         expect(response.body).not_to include(I18n.t('management.schedule.note'))
       end
 
+      # 除外できるのは参加できる期間と同じく登録の締切まで（docs/spec.md 4.）
+      it '登録期間中なら、参加者の行に除外の口が出る' do
+        participation = join('ゆうと')
+
+        travel_to(registration_phase) { get exchange_management_path(exchange) }
+
+        expect(response.body).to include(exchange_management_participant_path(exchange, participation))
+      end
+
+      # 外すと本もギフトコードも消える。取り消せないので、押す前に断りを出す
+      it '除外には確認が挟まる' do
+        join('ゆうと')
+
+        travel_to(registration_phase) { get exchange_management_path(exchange) }
+
+        expect(response.body).to include('data-turbo-confirm',
+                                         I18n.t('management.participants.exclude_confirm', name: 'ゆうと'))
+      end
+
+      # 主催者は必ず参加者を兼ねる（docs/spec.md 6.9）。押しても 403 になる口は出さない
+      it '主催者自身の行には除外の口が出ない' do
+        travel_to(registration_phase) { get exchange_management_path(exchange) }
+
+        expect(response.body).not_to include(exchange_management_participant_path(exchange, owner_participation))
+      end
+
+      it '登録の締切を過ぎていれば、除外の口が出ない' do
+        participation = join('ゆうと')
+
+        travel_to(phase_times.fetch(:wish)) { get exchange_management_path(exchange) }
+
+        expect(response.body).not_to include(exchange_management_participant_path(exchange, participation))
+      end
+
+      # 出ない理由を書かないと、主催者が探しに行くことになる
+      it '除外できる期限を添える' do
+        travel_to(registration_phase) { get exchange_management_path(exchange) }
+
+        expect(response.body).to include(
+          I18n.t('management.participants.exclusion_open',
+                 at: I18n.l(exchange.registration_ends_at, format: :schedule))
+        )
+      end
+
+      it '締切後は、もう外せないことを添える' do
+        travel_to(phase_times.fetch(:wish)) { get exchange_management_path(exchange) }
+
+        expect(response.body).to include(
+          I18n.t('management.participants.exclusion_closed',
+                 at: I18n.l(exchange.registration_ends_at, format: :schedule))
+        )
+      end
+
       # 押すと古いURLが開けなくなる。取り消せないので、押す前に断りを出す
       it '再発行には確認が挟まる' do
         travel_to(registration_phase) { get exchange_management_path(exchange) }

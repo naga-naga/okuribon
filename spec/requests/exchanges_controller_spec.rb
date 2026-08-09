@@ -578,6 +578,99 @@ RSpec.describe ExchangesController do
       expect(exchange.reload.wish_ends_at.rfc3339).to eq('2026-10-01T10:00:00+09:00')
     end
 
+    # 登録期間の開始と終了が入れ替わる変更。DB の例外ではなく、
+    # フォームに戻せる日本語のエラーとして返す
+    it '登録期間の開始が終了より後になる変更は拒否される' do
+      patch exchange_path(exchange),
+            params: { exchange: { registration_starts_at: '2026-09-01T10:00',
+                                  registration_ends_at: '2026-08-01T10:00' } }
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include('登録期間の終了日時は開始日時より後にしてください')
+    end
+
+    # 希望提出期間の開始は registration_ends_at から導出されるので、
+    # 登録の締切を希望提出の締切より後ろへ動かすと、この期間が潰れる
+    it '希望提出期間の開始が終了より後になる変更は拒否される' do
+      patch exchange_path(exchange),
+            params: { exchange: { registration_ends_at: '2026-09-01T10:00',
+                                  wish_ends_at: '2026-08-25T10:00' } }
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(response.body).to include('希望提出期間の終了日時は開始日時より後にしてください')
+    end
+
+    # 開始と終了が同時刻。各期間は終了時刻を含まないので、
+    # 幅が0の期間はどのフェーズにも属さない時間を生む
+    it '開始と終了が同時刻になる変更は拒否される' do
+      patch exchange_path(exchange),
+            params: { exchange: { registration_starts_at: '2026-08-01T10:00',
+                                  registration_ends_at: '2026-08-01T10:00' } }
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(exchange.reload.registration_ends_at.rfc3339).not_to eq('2026-08-01T10:00:00+09:00')
+    end
+
+    # フェーズは状態カラムを持たず日時から導出する。締切を延ばした瞬間に
+    # 希望提出期間へ戻り、参加者の書き込みがその場で開き直す
+    it '締切を延ばすとフェーズがその場で切り替わる' do
+      exchange.update!(registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
+                       registration_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
+                       wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone)
+      at = '2026-08-20T00:00:00+09:00'.in_time_zone
+      expect(exchange.phase(at:)).to eq(:awaiting_matching)
+
+      travel_to(at) do
+        patch exchange_path(exchange), params: { exchange: { wish_ends_at: '2026-08-25T00:00' } }
+      end
+
+      expect(exchange.reload.phase(at:)).to eq(:wish)
+      expect(exchange.writable?(:wish, at:)).to be(true)
+    end
+
+    # 結果公開後も日程は変更できる（docs/spec.md 6.9）。マッチングを実行したかどうかで
+    # フェーズが決まるので、日時を動かしても結果公開のままになる（4.）
+    context 'マッチングの実行後' do
+      let!(:at) { '2026-08-20T00:00:00+09:00'.in_time_zone }
+
+      before { exchange.update!(matched_at: at) }
+
+      it '日程を変更できる' do
+        travel_to(at) do
+          patch exchange_path(exchange), params: { exchange: { wish_ends_at: '2026-10-01T10:00' } }
+        end
+
+        expect(exchange.reload.wish_ends_at.rfc3339).to eq('2026-10-01T10:00:00+09:00')
+      end
+
+      # 日時を過去へ戻しても結果公開のまま。ここが崩れると、
+      # 受け取った人に見えていたギフトコードが見えなくなる（docs/spec.md 8.）
+      it '日程を過去へ戻しても結果公開のままになる' do
+        travel_to(at) do
+          patch exchange_path(exchange),
+                params: { exchange: { registration_starts_at: '2026-09-01T00:00',
+                                      registration_ends_at: '2026-09-08T00:00',
+                                      wish_ends_at: '2026-09-15T00:00' } }
+        end
+
+        expect(exchange.reload.phase(at:)).to eq(:published)
+      end
+
+      # 結果公開はどの操作も許さない。日時を書き込みができる期間へ動かしても、
+      # phase が :published を返すので開き直さない
+      it '日程を動かしても書き込みは開き直さない' do
+        travel_to(at) do
+          patch exchange_path(exchange),
+                params: { exchange: { registration_starts_at: '2026-08-19T00:00',
+                                      registration_ends_at: '2026-08-26T00:00',
+                                      wish_ends_at: '2026-09-02T00:00' } }
+        end
+
+        exchange.reload
+        expect(Exchange::WRITABLE_PHASES.keys).to all(satisfy { |op| !exchange.writable?(op, at:) })
+      end
+    end
+
     it '変更できたことを知らせる' do
       patch exchange_path(exchange), params: { exchange: { name: '初夏の交換会' } }
 

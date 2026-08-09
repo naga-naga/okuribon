@@ -113,6 +113,52 @@ RSpec.describe ManagementsController do
         expect(response.body).to include(invitation_url(exchange.invite_token))
       end
 
+      # 日程は主催者が動かせる。いま何がいつまでなのかを、編集画面を開かずに掴めるようにする
+      it '各期間の開始と終了が並ぶ' do
+        travel_to(registration_phase) { get exchange_management_path(exchange) }
+
+        expect(response.body).to include('登録期間', '希望提出期間',
+                                         I18n.l(exchange.registration_starts_at, format: :schedule),
+                                         I18n.l(exchange.registration_ends_at, format: :schedule),
+                                         I18n.l(exchange.wish_ends_at, format: :schedule))
+      end
+
+      # どの期間がいま動いているかを添える。日時を読み比べさせない
+      it '期間の状態が出る' do
+        travel_to(phase_times.fetch(:wish)) { get exchange_management_path(exchange) }
+
+        expect(response.body).to include(I18n.t('exchange.schedule.states.done'),
+                                         I18n.t('exchange.schedule.states.current'))
+      end
+
+      # 日時の入力欄は交換会の編集画面に1つだけ置く（docs/spec.md 6.9）。
+      # ここは現在の日程を見せて、変更はそちらへ送る
+      it '変更は交換会の編集画面へ送る' do
+        travel_to(registration_phase) { get exchange_management_path(exchange) }
+
+        expect(response.body).to include(edit_exchange_path(exchange))
+      end
+
+      # 締切を動かすと、参加者の画面の残り時間もその場で変わる。
+      # フェーズは状態カラムを持たず日時から導出するため
+      it '締切の変更が参加者に即座に効くことを添える' do
+        travel_to(registration_phase) { get exchange_management_path(exchange) }
+
+        expect(response.body).to include(I18n.t('management.schedule.note'))
+      end
+
+      # 結果公開後も日程は変更できる（docs/spec.md 6.9）。ただし動かしても
+      # 結果公開のままなので、締切を戻せば登録が開き直ると読ませない
+      it '結果公開後は、日程を変えても再開しないことを添える' do
+        at = phase_times.fetch(:published)
+        exchange.update!(matched_at: at)
+
+        travel_to(at) { get exchange_management_path(exchange) }
+
+        expect(response.body).to include(I18n.t('management.schedule.note_published'))
+        expect(response.body).not_to include(I18n.t('management.schedule.note'))
+      end
+
       # 押すと古いURLが開けなくなる。取り消せないので、押す前に断りを出す
       it '再発行には確認が挟まる' do
         travel_to(registration_phase) { get exchange_management_path(exchange) }

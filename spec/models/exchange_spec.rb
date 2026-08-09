@@ -683,7 +683,7 @@ RSpec.describe Exchange do
     end
   end
 
-  describe '#withdrawable?' do
+  describe '#removable_participant?' do
     let!(:exchange) do
       create(
         :exchange,
@@ -699,28 +699,28 @@ RSpec.describe Exchange do
     it '登録期間中の参加者なら true になる' do
       exchange.join!(user, at: registration)
 
-      expect(exchange.withdrawable?(user, at: registration)).to be(true)
+      expect(exchange.removable_participant?(user, at: registration)).to be(true)
     end
 
     it '参加していなければ false になる' do
-      expect(exchange.withdrawable?(user, at: registration)).to be(false)
+      expect(exchange.removable_participant?(user, at: registration)).to be(false)
     end
 
     # 抜けられる期間かどうかによらない
     it '主催者なら false になる' do
       exchange.join!(exchange.owner, at: registration)
 
-      expect(exchange.withdrawable?(exchange.owner, at: registration)).to be(false)
+      expect(exchange.removable_participant?(exchange.owner, at: registration)).to be(false)
     end
 
     it '登録の締切を過ぎていれば false になる' do
       exchange.join!(user, at: registration)
 
-      expect(exchange.withdrawable?(user, at: '2026-08-08T00:00:00+09:00'.in_time_zone)).to be(false)
+      expect(exchange.removable_participant?(user, at: '2026-08-08T00:00:00+09:00'.in_time_zone)).to be(false)
     end
 
     it '利用者がいなければ false になる' do
-      expect(exchange.withdrawable?(nil, at: registration)).to be(false)
+      expect(exchange.removable_participant?(nil, at: registration)).to be(false)
     end
   end
 
@@ -780,7 +780,7 @@ RSpec.describe Exchange do
     end
   end
 
-  describe '#withdraw!' do
+  describe '#remove_participant!' do
     let!(:exchange) do
       create(
         :exchange,
@@ -796,7 +796,7 @@ RSpec.describe Exchange do
     it '参加を取り消す' do
       exchange.join!(user, at: registration)
 
-      expect { exchange.withdraw!(user, at: registration) }
+      expect { exchange.remove_participant!(user, at: registration) }
         .to change { exchange.participant?(user) }.from(true).to(false)
     end
 
@@ -805,14 +805,14 @@ RSpec.describe Exchange do
       participation = exchange.join!(user, at: registration)
       create(:book, participation:)
 
-      expect { exchange.withdraw!(user, at: registration) }
+      expect { exchange.remove_participant!(user, at: registration) }
         .to change(Book, :count).by(-1)
     end
 
     it '準備中でも辞退できる' do
       exchange.join!(user, at: '2026-07-25T00:00:00+09:00'.in_time_zone)
 
-      expect { exchange.withdraw!(user, at: '2026-07-25T00:00:00+09:00'.in_time_zone) }
+      expect { exchange.remove_participant!(user, at: '2026-07-25T00:00:00+09:00'.in_time_zone) }
         .to change { exchange.participations.count }.by(-1)
     end
 
@@ -821,7 +821,7 @@ RSpec.describe Exchange do
     it '登録の締切ちょうどからは辞退できない' do
       exchange.join!(user, at: registration)
 
-      expect { exchange.withdraw!(user, at: '2026-08-08T00:00:00+09:00'.in_time_zone) }
+      expect { exchange.remove_participant!(user, at: '2026-08-08T00:00:00+09:00'.in_time_zone) }
         .to raise_error(Exchange::PhaseViolation)
       expect(exchange.participant?(user)).to be(true)
     end
@@ -829,21 +829,21 @@ RSpec.describe Exchange do
     it '希望提出期間には辞退できない' do
       exchange.join!(user, at: registration)
 
-      expect { exchange.withdraw!(user, at: '2026-08-11T00:00:00+09:00'.in_time_zone) }
+      expect { exchange.remove_participant!(user, at: '2026-08-11T00:00:00+09:00'.in_time_zone) }
         .to raise_error(Exchange::PhaseViolation)
     end
 
     # 二重送信や、戻るボタンからの再送信で落ちないこと
     it '二度呼んでも落ちない' do
       exchange.join!(user, at: registration)
-      exchange.withdraw!(user, at: registration)
+      exchange.remove_participant!(user, at: registration)
 
-      expect { exchange.withdraw!(user, at: registration) }
+      expect { exchange.remove_participant!(user, at: registration) }
         .not_to(change { exchange.participations.count })
     end
 
     it '参加していない利用者を渡しても落ちない' do
-      expect { exchange.withdraw!(user, at: registration) }
+      expect { exchange.remove_participant!(user, at: registration) }
         .not_to(change { exchange.participations.count })
     end
 
@@ -852,7 +852,7 @@ RSpec.describe Exchange do
       other = create(:user)
       exchange.join!(other, at: registration)
 
-      exchange.withdraw!(user, at: registration)
+      exchange.remove_participant!(user, at: registration)
 
       expect(exchange.participant?(other)).to be(true)
     end
@@ -862,7 +862,7 @@ RSpec.describe Exchange do
     it '主催者は辞退できない' do
       exchange.join!(exchange.owner, at: registration)
 
-      expect { exchange.withdraw!(exchange.owner, at: registration) }
+      expect { exchange.remove_participant!(exchange.owner, at: registration) }
         .to raise_error(Exchange::OwnerLocked)
       expect(exchange.participant?(exchange.owner)).to be(true)
     end
@@ -872,14 +872,14 @@ RSpec.describe Exchange do
     it '主催者は抜けられない期間でも同じ理由で拒否される' do
       exchange.join!(exchange.owner, at: registration)
 
-      expect { exchange.withdraw!(exchange.owner, at: '2026-08-11T00:00:00+09:00'.in_time_zone) }
+      expect { exchange.remove_participant!(exchange.owner, at: '2026-08-11T00:00:00+09:00'.in_time_zone) }
         .to raise_error(Exchange::OwnerLocked)
     end
 
     # 辞退したあと考え直すことはある。登録期間のうちなら戻れる
     it '辞退したあとに参加し直せる' do
       exchange.join!(user, at: registration)
-      exchange.withdraw!(user, at: registration)
+      exchange.remove_participant!(user, at: registration)
 
       expect { exchange.join!(user, at: registration) }
         .to change { exchange.participant?(user) }.from(false).to(true)

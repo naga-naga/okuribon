@@ -113,9 +113,9 @@ class Exchange < ApplicationRecord
     owner_id == user.id
   end
 
-  # 辞退できるかどうか。着地画面のボタンの出し分けと withdraw! の拒否を
+  # 参加を取り消せるかどうか。ボタンの出し分けと remove_participant! の拒否を
   # 同じ規則から引く。片方だけを直すと、押しても断られるボタンが残る
-  def withdrawable?(user, at:)
+  def removable_participant?(user, at:)
     participant?(user) && !owner?(user) && writable?(:participation, at:)
   end
 
@@ -184,11 +184,14 @@ class Exchange < ApplicationRecord
     participations.create_or_find_by!(user:)
   end
 
-  # 辞退。参加と同じ操作名で表を引くため、抜けられる期間は参加できる期間と必ず一致する。
+  # 参加の取り消し。入口は本人の辞退と主催者による除外の2つあるが、通す検証は同じ
+  # なので、口ごとに分けずここへ集める。片方にだけ条件を書き足すと、辞退では
+  # 断られるものが除外では通る。
+  # 参加と同じ操作名で表を引くため、抜けられる期間は参加できる期間と必ず一致する。
   # 別々に書くと、希望提出期間に入ってから抜けられて取得枠の計算が壊れる。
   # 登録した本は参加にぶら下がっているので、参加を消せば一緒に消える。
   # 参加が無ければ何もしない。二重送信や再送信で落とすようなことではない
-  def withdraw!(user, at:)
+  def remove_participant!(user, at:)
     # 役割をフェーズより先に見る。主催者が抜けられないのは期間によらないため、
     # 順を逆にすると締切後に押したときだけ理由が入れ替わる
     raise OwnerLocked if owner?(user)

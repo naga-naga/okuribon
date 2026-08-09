@@ -1,0 +1,41 @@
+<%# ギフトコードの平文を置く唯一の面。取得経路は Book#gift_code_for だけで、
+    見えない相手には nil が返る。ここで権限を判定し直さない。
+    伏せ字が既定で、開くのは明示的な操作（docs/spec.md 10.）。
+    開いた状態は保存しないので、画面を移れば必ず伏せ字に戻る %>
+<div class="flex flex-col gap-3 rounded-[5px] border border-line bg-surface-sunken px-4 py-4 sm:px-5"
+     data-controller="reveal clipboard">
+  <div class="flex flex-wrap items-center gap-2.5">
+    <%# 伏せ字でも桁が読めるよう等幅で字間を空ける。
+        値は書き換えるものではないので readonly にする %>
+    <%= tag.input type: 'password', value: code, readonly: true, autocomplete: 'off',
+                  aria: { label: t('result.gift_code.label') },
+                  data: { reveal_target: 'field', clipboard_target: 'source' },
+                  class: 'min-w-0 flex-1 rounded-[5px] border border-line-strong bg-paper px-4 py-3 ' \
+                         'font-mono text-[15px] tracking-[0.14em] text-ink' %>
+
+    <%# 伏せたままでも押せる。開かずに済むなら、そのほうが覗かれる機会が少ない %>
+    <button type="button" data-action="clipboard#copy" data-clipboard-target="button"
+            class="shrink-0 cursor-pointer rounded-[5px] border border-success bg-success px-4 py-2.5
+                   text-[13.5px] font-medium text-paper hover:bg-success-hover">
+      <%= t('result.gift_code.copy') %>
+    </button>
+
+    <%# JavaScript が動かない環境では押しても何も起きないため、送信には関わらせない %>
+    <button type="button" data-action="reveal#toggle" data-reveal-target="button"
+            class="shrink-0 cursor-pointer rounded-[5px] border border-line-strong bg-paper px-4 py-2.5
+                   text-[13.5px] font-medium text-ink hover:bg-paper-hover">
+      <%= t('result.gift_code.reveal') %>
+    </button>
+  </div>
+
+  <%# 開いたままの画面を置き去りにさせない。結果画面は人に見せながら開かれやすい %>
+  <p class="hidden rounded-[4px] bg-accent-soft px-3.5 py-2.5 text-[12.5px] leading-[1.8] text-accent"
+     data-reveal-target="warning">
+    <%= t('result.gift_code.warning') %>
+  </p>
+
+  <%# 誰に見えるのかをコードのその場に置く。急かす文言は置かない %>
+  <p class="border-t border-line pt-3 text-[12px] leading-[1.9] text-ink-muted">
+    <%= note %> <%= t('result.gift_code.keep') %>
+  </p>
+</div>

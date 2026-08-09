@@ -59,7 +59,7 @@ class Book < ApplicationRecord
 
   # 返却は誰にも渡せなかった本が登録者へ戻ることなので、受け取りとして数えない
   def recipient?(user, at:)
-    return false unless exchange.phase(at:) == :published
+    return false unless exchange.published?(at:)
     return false if assignment.nil? || assignment.returned?
 
     assignment.participation.user_id == user.id

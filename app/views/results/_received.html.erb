@@ -1,0 +1,44 @@
+<% book = assignment.book %>
+<% registrant = book.registrant.display_name %>
+
+<%# 松葉の縁で、受け取った本だけを他と分ける %>
+<article class="overflow-hidden rounded-[6px] border border-success bg-paper">
+  <%# 贈り主の名前はタイトルより上・帯の中。読む前に「誰から」が目に入る %>
+  <header class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 bg-success-soft px-5 py-3.5 sm:px-6">
+    <p class="text-[14px] font-bold text-success"><%= t('result.from', name: registrant) %></p>
+
+    <%# 1冊しか受け取っていない人に「1冊目 / 1」は要らない %>
+    <% if total > 1 %>
+      <p class="tabular font-mono text-[11px] tracking-[0.12em] text-success">
+        <%= t('result.order', index:, total:) %>
+      </p>
+    <% end %>
+  </header>
+
+  <div class="flex flex-col gap-5 p-5 sm:p-7">
+    <h2 class="text-[22px] font-bold leading-[1.45] text-ink sm:text-[26px]"><%= book.title %></h2>
+
+    <%# おすすめポイントが交換会の楽しみどころ。一覧では抜粋だったものを全文で置く %>
+    <% if book.recommendation.present? %>
+      <div class="border-l-[3px] border-accent pl-4">
+        <p class="font-mono text-[10.5px] tracking-[0.12em] text-accent">
+          <%= t('result.recommendation_label', name: registrant) %>
+        </p>
+        <%# 改行を活かすので、タグの内側で折り返さない %>
+        <p class="mt-2 whitespace-pre-line text-[15px] leading-[2.05] text-ink"><%= book.recommendation %></p>
+      </div>
+    <% end %>
+
+    <%= render 'results/gift_code',
+               code: book.gift_code_for(current_user, at: requested_at),
+               note: t('result.gift_code.note', name: registrant) %>
+
+    <%# 登録フォームが「貼っておくと、受け取った人が同じ版を開けます」と書いている。
+        コードを使う先がそこなので、コードのすぐ下に置く %>
+    <% if (store_url = book_store_url(book)) %>
+      <%= link_to t('result.store'), store_url, target: '_blank', rel: 'noopener noreferrer',
+                  class: 'self-start rounded-[5px] border border-line-strong px-5 py-2.5 ' \
+                         'text-[13.5px] font-medium text-ink no-underline hover:bg-paper-hover' %>
+    <% end %>
+  </div>
+</article>

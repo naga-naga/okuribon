@@ -98,6 +98,13 @@ class Exchange < ApplicationRecord
     :awaiting_matching
   end
 
+  # 結果が公開されているか。ギフトコードの可視性も結果画面の可否もここに乗る。
+  # フェーズ名との比較を呼ぶ側それぞれに書かせない。綴り間違いは黙って false になり、
+  # 見えてはいけないものが見える側に倒れる
+  def published?(at:)
+    phase(at:) == :published
+  end
+
   # 未ログインの人も着地画面を見るため、利用者がいない場合も答える。
   # 呼ぶ側それぞれに nil の判定を書かせない
   def participant?(user)

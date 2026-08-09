@@ -1,0 +1,20 @@
+<% content_for :title, "結果 — #{@exchange.name}" %>
+
+<%# 結果はまだ無いので 404 で返すが、行き止まりにはしない。
+    素の 404 だと、URL を間違えたのか時期が早いのかを参加者が区別できない %>
+<div class="mx-auto w-full max-w-[560px] px-4 py-10 sm:px-6">
+  <p class="text-[12px]"><%= link_to @exchange.name, exchange_path(@exchange) %></p>
+
+  <div class="mt-4 rounded-[6px] border border-line bg-paper px-6 py-7">
+    <h1 class="text-[20px] font-bold leading-[1.5] text-ink"><%= t('result.unpublished.heading') %></h1>
+
+    <%# フェーズは日時から導出されるので、いま何を待っているのかをその場で言える %>
+    <p class="mt-3 text-[13.5px] leading-[1.95] text-ink">
+      <%= t('result.unpublished.body', phase: @exchange.phase_name(at: requested_at)) %>
+    </p>
+
+    <p class="mt-5 border-t border-line pt-5 text-[13px]">
+      <%= link_to t('result.unpublished.back'), exchange_path(@exchange) %>
+    </p>
+  </div>
+</div>

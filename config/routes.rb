@@ -37,7 +37,7 @@ Rails.application.routes.draw do
     resource :wish_list, only: [:update]
 
     # 結果画面。1つの交換会が出す結果は1つなので単数で置く。
-    # 見えるものは開いた人によって変わるが、それは結果の切り口であって別の資源ではない
+    # 見えるものは開いた人によって変わるが、それは結果の切り口であって別のリソースではない
     resource :result, only: [:show]
 
     # 主催者管理画面。1つの交換会に管理画面は1つなので単数で置く

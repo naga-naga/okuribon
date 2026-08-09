@@ -36,9 +36,11 @@ class Participation < ApplicationRecord
   # 結果画面に並べる、他人から受け取った本。返却は誰にも渡せなかった本が
   # 登録者へ戻ることなので、受け取りには数えない（Book#recipient? と同じ扱い）。
   # ドラフトで取れた順に並べ、余り物の割当（巡が nil）は最後に置く。
-  # PostgreSQL は昇順で NULL を最後に並べるため、並び順の指定はこれで足りる
+  # NULLS LAST は明示する。省くと、NULL をどちらの端へ置くかが DBMS の既定任せになり、
+  # 並び順が暗黙の前提の上に乗る
   def received_assignments
-    assignments.where(returned: false).order(:round, :id)
+    assignments.where(returned: false)
+               .order(Assignment.arel_table[:round].asc.nulls_last, :id)
                .includes(book: [:registrant, :assignment, :exchange])
   end
 

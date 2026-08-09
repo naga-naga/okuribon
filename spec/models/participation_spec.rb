@@ -125,7 +125,7 @@ RSpec.describe Participation do
     end
   end
 
-  describe '結果画面が引く割当' do
+  describe '#received_assignments と #returned_assignments' do
     let!(:exchange) { create(:exchange) }
     let!(:participation) { create(:participation, exchange:) }
     let!(:other) { create(:participation, exchange:) }

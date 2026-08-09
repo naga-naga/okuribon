@@ -3,18 +3,17 @@
 require 'rails_helper'
 
 RSpec.describe ResultsController do
-  # 主催者はこの画面の見え方に関わらない。主催者に特権は無く（docs/spec.md 8.）、
-  # 受け取った本があるかどうかだけで決まるので、factory の既定に任せる
+  let!(:organizer) { create(:user, display_name: 'みずき') }
   let!(:exchange) do
     create(:exchange,
+           owner: organizer,
            registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
            registration_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
            wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone)
   end
 
-  # 実行した時刻と、それを見に来る時刻。公開の日時が画面に出るので分けておく
+  # マッチングを実行した時刻。画面に出るので、見に来る時刻とは分けておく
   let!(:published_at) { '2026-08-20T21:04:00+09:00'.in_time_zone }
-  let!(:opened_at) { '2026-08-21T09:00:00+09:00'.in_time_zone }
 
   let!(:viewer) { create(:user, display_name: 'あなた') }
   let!(:participation) { create(:participation, exchange:, user: viewer) }
@@ -42,7 +41,8 @@ RSpec.describe ResultsController do
     exchange.update!(matched_at: published_at)
   end
 
-  def open_result(target = exchange, at: opened_at)
+  # 見に来る時刻。公開そのものは published_at に起きている
+  def open_result(target = exchange, at: '2026-08-21T09:00:00+09:00'.in_time_zone)
     travel_to(at) { get exchange_result_path(target) }
   end
 
@@ -71,20 +71,37 @@ RSpec.describe ResultsController do
 
         open_result
 
-        expect(response.body).to include(I18n.t('result.from', name: 'ゆうと'),
-                                         '後半で数字の意味が反転します')
+        expect(response.body).to include('ゆうと さんから', '後半で数字の意味が反転します')
       end
 
-      # 一度見えたら取り消せない。伏せ字が既定で、明示的な操作で開く（docs/spec.md 10.）
-      it 'ギフトコードは伏せ字で入り、表示とコピーの口が付く' do
+      # 一度見えたら取り消せない。既定は伏せ字にする（docs/spec.md 10.）
+      it 'ギフトコードは伏せ字で入る' do
         receive_book(from: join('ゆうと'), gift_code: 'MINE-CODE-0001')
         publish
 
         open_result
 
-        expect(response.body).to include('MINE-CODE-0001', 'type="password"',
-                                         I18n.t('result.gift_code.reveal'),
-                                         I18n.t('result.gift_code.copy'))
+        expect(response.body).to include('MINE-CODE-0001')
+        expect(response.body).to include('type="password"')
+      end
+
+      it '明示的な操作で開ける' do
+        receive_book(from: join('ゆうと'))
+        publish
+
+        open_result
+
+        expect(response.body).to include('表示', 'data-action="reveal#toggle"')
+      end
+
+      # 開かずに済むなら、そのほうが肩越しに覗かれる機会が少ない
+      it '伏せ字のままコピーできる' do
+        receive_book(from: join('ゆうと'))
+        publish
+
+        open_result
+
+        expect(response.body).to include('コピー', 'data-action="clipboard#copy"')
       end
 
       # ギフトコードが見えるのは登録した本人と、受け取った人だけ（docs/spec.md 8.）
@@ -95,6 +112,22 @@ RSpec.describe ResultsController do
 
         open_result
 
+        expect(response.body).not_to include('OTHERS-CODE-9999')
+      end
+
+      # 主催者に特権はない（docs/spec.md 8.）。参加者を兼ねるので自分の結果は見られるが、
+      # 見えるものは他の参加者と同じ
+      it '主催者が開いても、自分のぶんしか見えない' do
+        # 主催者は必ず参加者を兼ねる（docs/spec.md 6.9）。その参加は factory が作る
+        organizer_participation = exchange.participations.find_by!(user: organizer)
+        receive_book(from: join('はるか'), to: organizer_participation, gift_code: 'OWN-CODE-1111')
+        receive_book(from: join('ゆうと'), to: participation, gift_code: 'OTHERS-CODE-9999')
+        publish
+        log_in_as(organizer)
+
+        open_result
+
+        expect(response.body).to include('OWN-CODE-1111')
         expect(response.body).not_to include('OTHERS-CODE-9999')
       end
 
@@ -117,24 +150,44 @@ RSpec.describe ResultsController do
 
         open_result
 
-        expect(response.body).to include(I18n.l(published_at, format: :schedule))
+        expect(response.body).to include('2026年8月20日 21:04 公開')
       end
     end
 
     context '自分の本が返却されたとき' do
       before { log_in_as(viewer) }
 
-      # 誰にも渡らなかったのは相性の問題で、本の評価ではない。
-      # 事実だけを出すと、選ばれなかったことを評価として読んでしまう
-      it 'やわらかい文言で返却が伝わる' do
+      it '戻ってきた本の題名を挙げて伝える' do
         receive_book(from: join('ゆうと'))
         return_book(title: '砂の図書館')
         publish
 
         open_result
 
-        expect(response.body).to include(I18n.t('result.returned.heading_one', title: '砂の図書館'),
-                                         I18n.t('result.returned.body'))
+        expect(response.body).to include('「砂の図書館」は戻ってきました')
+      end
+
+      # 事実だけを出すと、選ばれなかったことを本の評価として読んでしまう。
+      # 「誰も希望しなかった」で終えず、それが何を意味しないかまで書く
+      it '選ばれなかったのが本の評価ではないと書き添える' do
+        return_book(title: '砂の図書館')
+        publish
+
+        open_result
+
+        expect(response.body).to include('相性の問題で、本の善し悪しではありません')
+      end
+
+      # 返却を「失った」と読ませない。何が手元に残るのかを並べる
+      it '残るもの（コード・取得枠・次の交換会）を書き添える' do
+        return_book(title: '砂の図書館')
+        publish
+
+        open_result
+
+        expect(response.body).to include('ギフトコードは未使用のまま、あなたの手元に残っています',
+                                         '返却があっても、受け取る冊数（取得枠）は減りません',
+                                         '次の交換会に、そのまま出せます')
       end
 
       # 本の詳細画面を持たないため（docs/spec.md 6.3）、誰にも渡らなかった
@@ -145,8 +198,8 @@ RSpec.describe ResultsController do
 
         open_result
 
-        expect(response.body).to include('RETURNED-CODE-3333',
-                                         I18n.t('result.gift_code.note_returned'))
+        expect(response.body).to include('RETURNED-CODE-3333', 'type="password"',
+                                         '見えるのはあなただけです')
       end
 
       it '2冊以上戻ってきたときは、冊数と題名が並ぶ' do
@@ -156,7 +209,7 @@ RSpec.describe ResultsController do
 
         open_result
 
-        expect(response.body).to include(I18n.t('result.returned.heading_many', count: 2),
+        expect(response.body).to include('出した本のうち2冊が戻ってきました',
                                          '砂の図書館', '金曜日の献立')
       end
     end
@@ -171,8 +224,8 @@ RSpec.describe ResultsController do
 
         open_result
 
-        expect(response.body).to include(I18n.t('result.empty.no_slots.heading'),
-                                         I18n.t('result.empty.no_slots.body'))
+        expect(response.body).to include('今回、受け取る本はありません',
+                                         '登録期間に1冊も登録しなかったため0冊でした')
       end
 
       # 登録はしたのに回ってこないことがある。枠が0だったのと同じ文にすると、
@@ -183,8 +236,9 @@ RSpec.describe ResultsController do
 
         open_result
 
-        expect(response.body).to include(I18n.t('result.empty.none.heading'),
-                                         I18n.t('result.empty.none.body'))
+        expect(response.body).to include('今回は本が回ってきませんでした',
+                                         '渡せる本が残らないことがあります')
+        expect(response.body).not_to include('1冊も登録しなかったため')
       end
     end
 
@@ -193,11 +247,13 @@ RSpec.describe ResultsController do
     context '結果が公開されていないとき' do
       before { log_in_as(viewer) }
 
-      it 'まだ公開されていないことを添えて 404 を返す' do
+      # 素の 404 だと、URL を間違えたのか時期が早いのかを参加者が区別できない
+      it 'まだ公開されていないことと、いま何を待っているのかを添えて 404 を返す' do
         open_result(at: '2026-08-16T00:00:00+09:00'.in_time_zone)
 
         expect(response).to have_http_status(:not_found)
-        expect(response.body).to include(I18n.t('result.unpublished.heading'))
+        expect(response.body).to include('結果はまだ公開されていません',
+                                         'いまはマッチング実行待ちです')
       end
 
       it '受け取る本の中身は出さない' do

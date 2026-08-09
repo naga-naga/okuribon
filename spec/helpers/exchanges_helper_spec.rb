@@ -63,4 +63,42 @@ RSpec.describe ExchangesHelper do
       expect(text(at - 1.second)).to eq('まもなく')
     end
   end
+
+  describe '#elapsed_time_text' do
+    let!(:at) { '2026-08-04T00:00:00+09:00'.in_time_zone }
+
+    def text(since)
+      helper.elapsed_time_text(since, at:)
+    end
+
+    # 単位の選び方は残り時間と揃える。押し忘れが何日続いているのかを
+    # 掴めればよく、日と時間を併記しても切迫度は変わらない
+    it '1日以上経っていれば日数で出す' do
+      expect(text(at - 3.days - 5.hours)).to eq('3日')
+    end
+
+    it '1日に満たなければ時間で出す' do
+      expect(text(at - 14.hours)).to eq('14時間')
+    end
+
+    it '1時間に満たなければ分で出す' do
+      expect(text(at - 59.minutes)).to eq('59分')
+    end
+
+    # 「0分」と出すと、まだ何も起きていないようにも読める。
+    # 締切を過ぎたことだけは伝わる言い方にする
+    it '1分に満たなければ数えずに知らせる' do
+      expect(text(at - 59.seconds)).to eq('1分未満')
+    end
+
+    it '締切ちょうどなら数えない' do
+      expect(text(at)).to eq('1分未満')
+    end
+
+    # 締切前に呼ぶのは呼ぶ側の誤り。「-3日」を描くと、
+    # それらしく見えて気付ける機会がなくなる
+    it '締切前でも数えない' do
+      expect(text(at + 3.days)).to eq('1分未満')
+    end
+  end
 end

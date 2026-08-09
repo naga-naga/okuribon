@@ -48,6 +48,12 @@ class Exchange < ApplicationRecord
     end
   end
 
+  # 発行の規則を作成時と再発行で1つにする。別々に書くと、
+  # 長さを見直したときに片方だけ短いトークンが出続ける
+  def self.generate_invite_token
+    SecureRandom.urlsafe_base64(INVITE_TOKEN_BYTES)
+  end
+
   belongs_to :owner, class_name: 'User', inverse_of: :owned_exchanges
 
   has_many :participations, dependent: :destroy
@@ -177,6 +183,13 @@ class Exchange < ApplicationRecord
     participations.find_by(user:)&.destroy!
   end
 
+  # 招待URLを配り直す。参加は user と交換会で結ばれていて招待トークンを持たないので、
+  # 差し替えても既存の参加者は影響を受けない。古いURLは引けなくなり 404 になる。
+  # フェーズでは閉じない。締切後に配り直しても、参加を断るのは着地画面の仕事
+  def reissue_invite_token!
+    update!(invite_token: self.class.generate_invite_token)
+  end
+
   # 書き込みを許すかどうかの判定はここだけに置く。
   # 各コントローラがフェーズを直接見て条件を手書きすると、口ごとに食い違うため。
   # 表に無い操作名は fetch が落とす。綴り間違いを黙って可否に化けさせない
@@ -189,7 +202,7 @@ class Exchange < ApplicationRecord
   # 招待トークンと乱数シードは交換会の作成時に発行する。
   # とくにシードは、マッチングの実行時に生成すると結果を作り直せてしまう
   def assign_generated_attributes
-    self.invite_token ||= SecureRandom.urlsafe_base64(INVITE_TOKEN_BYTES)
+    self.invite_token ||= self.class.generate_invite_token
     self.random_seed ||= SecureRandom.random_number(RANDOM_SEED_LIMIT)
   end
 

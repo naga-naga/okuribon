@@ -63,6 +63,16 @@ RSpec.describe Exchanges::MatchingSummary do
     expect(summary.unsubmitted_count).to eq(1)
   end
 
+  # 0冊なら取得枠も0で、実行しても何も受け取らない（docs/spec.md 6.9）。
+  # 締め出されたのではなく仕組みの結果なので、実行前に主催者へ知らせる
+  it '1冊も登録していない人数を数える' do
+    register(owner_participation, 1)
+    join
+    join
+
+    expect(summary.without_books_count).to eq(2)
+  end
+
   # 自分が登録した本は受け取れないので（docs/spec.md 3.）、1人の登録冊数が
   # ほかの全員の合計を超えた分は渡す相手がいない
   it '受け取り手のない本の冊数を出す' do
@@ -85,7 +95,7 @@ RSpec.describe Exchanges::MatchingSummary do
   # 作った直後の交換会。参加者は主催者ひとりで本も無い。
   # 確認画面はどのフェーズでも組み立てられる必要がある
   it '参加者が主催者ひとりで本も無ければ、すべて0になる' do
-    expect(summary).to have_attributes(target_count: 0, books_count: 0,
-                                       unsubmitted_count: 0, returning_count: 0)
+    expect(summary).to have_attributes(target_count: 0, books_count: 0, unsubmitted_count: 0,
+                                       without_books_count: 1, returning_count: 0)
   end
 end

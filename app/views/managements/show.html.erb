@@ -15,6 +15,13 @@
     </span>
   </div>
 
+  <%# 最上部は実行の場所にする。締切後の促しがいちばん上に来ないと、
+      下へ流し読みされて押し忘れが続く %>
+  <div class="mt-8">
+    <%= render 'matching', exchange: @exchange, summary: @matching_summary,
+                           participants_count: @participations.length, at: requested_at %>
+  </div>
+
   <%# 受け取り手のない本が出る見込みなら知らせる（docs/spec.md 6.8）。
       参加者一覧より先に置く。先に読んでもらってから、下の冊数の並びを裏付けとして見せる %>
   <% if @imbalance %>
@@ -229,6 +236,4 @@
       <%= t(@exchange.phase(at: requested_at) == :published ? 'management.schedule.note_published' : 'management.schedule.note') %>
     </p>
   </div>
-
-  <%# マッチングの実行（#31）は、その画面が入るときにここへ足す %>
 </div>

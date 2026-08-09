@@ -22,7 +22,7 @@ RSpec.describe BooksController do
       response.parsed_body.at_css("##{dom_id(book)}")
     end
 
-    # 登録者を名前で撒くための入れ物。参加を伴わない本は作れない
+    # 登録者を名前で作るための入れ物。参加を伴わない本は作れない
     def book_by(display_name, **attributes)
       registrant = create(:participation, exchange:, user: create(:user, display_name:))
       create(:book, participation: registrant, **attributes)

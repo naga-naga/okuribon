@@ -18,7 +18,7 @@ RSpec.describe ExchangesController do
 
   before { log_in_as(user) }
 
-  # フェーズも次の締切も日時から導出されるため、現在時刻を固定してから撒く
+  # フェーズも次の締切も日時から導出されるため、現在時刻を固定してから作る
   describe '#index' do
     let!(:now) { '2026-08-04T00:00:00+09:00' }
 
@@ -167,7 +167,7 @@ RSpec.describe ExchangesController do
     end
   end
 
-  # フェーズも残り時間も日時から導出されるため、現在時刻を固定してから撒く
+  # フェーズも残り時間も日時から導出されるため、現在時刻を固定してから作る
   describe '#show' do
     let!(:now) { '2026-08-04T00:00:00+09:00' }
 

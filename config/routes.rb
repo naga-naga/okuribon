@@ -64,7 +64,7 @@ Rails.application.routes.draw do
   # 副作用のある操作なので GET では受けない
   delete '/invitations/:token/participation' => 'participations#destroy'
 
-  # 開発用の裏口ログイン。seed が撒いた利用者は Google のアカウントを持たないため、
+  # 開発用の裏口ログイン。seed が作った利用者は Google のアカウントを持たないため、
   # OAuth の経路では入れない。本番には経路そのものを描かない。
   # ログイン画面のリンクも同じ条件で出し分けている（app/views/sessions/new.html.erb）
   if Rails.env.local?

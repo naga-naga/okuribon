@@ -87,7 +87,7 @@ RSpec.describe SessionsController do
     end
 
     # 開発用ログイン（docs/spec.md 11.）は URL を直に打たないと辿り着けない。
-    # 撒いた利用者へ入れ替わるたびに打つことになるので、ここに口を置く
+    # seed が作った利用者へ入れ替わるたびに打つことになるので、ここに口を置く
     context '開発用ログイン' do
       it '未ログインなら辿れる' do
         get '/login'

@@ -1,22 +1,22 @@
 # frozen_string_literal: true
 
-# 開発環境で5フェーズと状態バリエーションを一度に確かめるためのデータを撒く。
+# 開発環境で5フェーズと状態バリエーションを一度に確かめるためのデータを作る。
 #
 # 現在時刻を差し替える仕組みは持たないため（docs/spec.md 11.）、見たい状況は
-# 基準時刻からの相対で日時を撒いて作る。交換会1つにシナリオ1つを持たせ、
+# 基準時刻からの相対で日時を決めて作る。交換会1つにシナリオ1つを持たせ、
 # 何を見るための交換会かは概要に書いてある。
 #
-# 撒き直すと日時は新しい基準時刻から数え直される。「締切まで残り数時間」は
-# 放置すれば次のフェーズへ移るので、見たくなったらもう一度撒く。
+# 二度目以降は日時が新しい基準時刻から数え直される。「締切まで残り数時間」は
+# 放置すれば次のフェーズへ移るので、見たくなったらもう一度通す。
 #
-# 撒いた利用者は Google のアカウントを持たないため、本来の経路ではログインできない。
+# 作った利用者は Google のアカウントを持たないため、本来の経路ではログインできない。
 # 入れ替わりは /dev/login から行う。
 class DevelopmentSeeds
-  # 撒いた利用者の印。Google が返す provider と別にしておくと、
+  # 作った利用者の印。Google が返す provider と別にしておくと、
   # 本物のアカウントと取り違えない。uid の衝突も起きない
   PROVIDER = 'seed'
 
-  # シナリオの主役。撒いたデータは、この人として見ることを前提に組んである
+  # シナリオの主役。作ったデータは、この人として見ることを前提に組んである
   VIEWER_UID = 'you'
 
   CAST = {
@@ -74,12 +74,12 @@ class DevelopmentSeeds
      '何も起きないのに読めてしまう。文章の力です'],
   ].freeze
 
-  # 撒いた主役。/dev/login と spec が、どれが主役かを決め打ちせずに引けるようにする
+  # 作った主役。/dev/login と spec が、どれが主役かを決め打ちせずに引けるようにする
   def self.viewer
     User.find_by(provider: PROVIDER, uid: VIEWER_UID)
   end
 
-  # 基準時刻は必須にする。撒いている途中で時刻が進むと、同じ「3時間後」でも
+  # 基準時刻は必須にする。作っている途中で時刻が進むと、同じ「3時間後」でも
   # 交換会ごとに数ミリ秒ずれた日時が入り、境界を見たいときに読みにくくなる
   def initialize(at:)
     @at = at
@@ -205,7 +205,7 @@ class DevelopmentSeeds
 
   # docs/spec.md 9.「希望リストが空のまま希望提出期間の締切が迫っている」。
   # ビジュアルガイドが最重要と書いている状態なので、そこに合わせて
-  # 本12冊・取得枠2冊・希望0冊で撒く。カードが12枚並ぶ一覧はここでしか見られない
+  # 本12冊・取得枠2冊・希望0冊で作る。カードが12枚並ぶ一覧はここでしか見られない
   def wish_closing_soon
     exchange = build_exchange(
       'wish-closing',
@@ -288,14 +288,15 @@ class DevelopmentSeeds
     add_wishes(sakura, [mine.first])
     # 川井は希望を出さないまま締切を迎えた。取得枠が空くので、余り物の割当が回る
 
-    # 実行日時は撒く側で書かない。マッチングを通した結果として記録させる
+    # 実行日時はここで直に書かない。マッチングを通した結果として記録させる
     run_matching(exchange, at: @at - 19.days)
   end
 
   # 本番と同じ経路で割当を作る。返却を手で書くと本物と違う形のデータが残る。
-  # 実行できるのは一度だけなので、撒き直しても割当は作り直さない。
-  # 日時だけは新しい基準時刻から引き直す（docs/spec.md 9.1）。
-  # 実行済みのまま置くと、ほかの日時が動いたぶんだけ結果公開の日付が取り残される
+  # マッチングは一度だけ実行できるもので、二度目の db:seed は実行のやり直しでは
+  # ないため、割当は作り直さない。日時だけは新しい基準時刻から引き直す
+  # （docs/spec.md 9.1）。実行済みのまま置くと、ほかの日時が動いたぶんだけ
+  # 結果公開の日付が取り残される
   def run_matching(exchange, at:)
     return exchange.update!(matched_at: at) if exchange.matched_at.present?
 
@@ -316,9 +317,9 @@ class DevelopmentSeeds
     end
   end
 
-  # 招待トークンを撒く側で決め打ちにして、撒き直しても同じ交換会を引けるようにする。
+  # 招待トークンをここで決め打ちにして、二度目以降も同じ交換会を引けるようにする。
   # 開発中に招待URLが変わらない利点もある。乱数シードは作成時にモデルが発行し、
-  # attr_readonly なので撒き直しても動かない
+  # attr_readonly なので二度目以降も動かない
   def build_exchange(token, owner:, **attributes)
     exchange = Exchange.find_or_initialize_by(invite_token: "seed-#{token}")
     exchange.assign_attributes(owner:, **attributes)
@@ -331,8 +332,8 @@ class DevelopmentSeeds
     exchange
   end
 
-  # 締切を過ぎた交換会も撒くため join! は使えない。フェーズの検証は
-  # 利用者の書き込みを止めるためのもので、撒く側が通る道ではない
+  # 締切を過ぎた交換会も作るため join! は使えない。フェーズの検証は
+  # 利用者の書き込みを止めるためのもので、開発用データを作る道ではない
   def join(exchange, users)
     users.map { |user| exchange.participations.create_or_find_by!(user:) }
   end

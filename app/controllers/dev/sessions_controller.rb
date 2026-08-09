@@ -1,16 +1,16 @@
 # frozen_string_literal: true
 
 module Dev
-  # 開発用の裏口ログイン。OAuth を通さずに seed が撒いた利用者へ入れ替わる。
+  # 開発用の裏口ログイン。OAuth を通さずに seed が作った利用者へ入れ替わる。
   #
   # seed の利用者は Google のアカウントを持たないため、本来の経路では入れない。
   # 5フェーズと状態バリエーションは「誰として見るか」で意味が変わるので、
-  # 入れ替われないと撒いたデータの大半が確かめられない。
+  # 入れ替われないと作ったデータの大半が確かめられない。
   class SessionsController < ApplicationController
     before_action :block_outside_local
 
     def new
-      # 撒いた順に並べる。名前で並べ替えると、シナリオの主役が埋もれる
+      # 作った順に並べる。名前で並べ替えると、シナリオの主役が埋もれる
       @users = User.order(:id)
     end
 

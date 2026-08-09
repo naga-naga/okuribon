@@ -105,6 +105,14 @@ RSpec.describe ManagementsController do
         expect(response.body).to include('みずき', '0冊')
       end
 
+      # 招待URLは人に渡すものなので、貼り付けてそのまま開ける形で出す。
+      # パスだけを出すと、渡された側が自分でホストを補うことになる
+      it '招待URLがホストごと出る' do
+        travel_to(registration_phase) { get exchange_management_path(exchange) }
+
+        expect(response.body).to include(invitation_url(exchange.invite_token))
+      end
+
       # 日時が動いても開ける画面にする。締切を延ばすのも実行するのも
       # この画面の仕事なので、フェーズで閉じると主催者が入れなくなる
       it 'どのフェーズでも開ける' do

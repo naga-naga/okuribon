@@ -24,6 +24,14 @@ class ResultsController < ApplicationController
     # 取得枠は登録した冊数と同数（docs/spec.md 3.）。受け取りが0冊のとき、
     # 枠が無かったのか回ってこなかったのかを画面が言い分けるために要る
     @slots = @participation.books.count
+
+    # 全体の成立結果。誰が誰の本を受け取ったかは参加者全員に見える（docs/spec.md 8.）。
+    # 公開前に取れないことは、この手前の 404 が受け持つ
+    @result_books = @exchange.result_books
+    # 自分が出した本の行き先は、全体の一覧から絞る。別に引くと、
+    # 並びと絞り込みが2か所に分かれる
+    @given = @result_books.select { it.participation_id == @participation.id }
+    @draft_order = @exchange.draft_order.to_a
   end
 
   private

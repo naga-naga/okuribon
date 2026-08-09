@@ -154,6 +154,163 @@ RSpec.describe ResultsController do
       end
     end
 
+    # 誰が誰の本を受け取ったかは参加者全員に見える（docs/spec.md 8.）。
+    # 自分の受け取りだけでは、交換会全体で何が起きたのかが分からない
+    context '全体の成立結果' do
+      before { log_in_as(viewer) }
+
+      it '自分が関わっていない成立も、登録した人と受け取った人の名前と共に出る' do
+        riku = join('りく')
+        sayaka = join('さやか')
+        create(:assignment, book: create(:book, participation: riku, title: '石を数える人'),
+                            participation: sayaka, returned: false)
+        publish
+
+        open_result
+
+        expect(response.body).to include('石を数える人', 'りく', 'さやか')
+      end
+
+      # 返却された本を一覧から落とすと、冊数が合わずに数え直すことになる
+      it '他人の本の返却も、その旨と共に出る' do
+        kanae = join('かなえ')
+        create(:assignment, book: create(:book, participation: kanae, title: '金曜日の献立'),
+                            participation: kanae, round: nil, returned: true)
+        publish
+
+        open_result
+
+        expect(response.body).to include('金曜日の献立', '返却')
+      end
+
+      # 一覧系に絶対に含めない（CLAUDE.md「ギフトコードの可視性」）
+      it '他人どうしで成立した本のギフトコードは含まれない' do
+        riku = join('りく')
+        sayaka = join('さやか')
+        create(:assignment,
+               book: create(:book, participation: riku, gift_code: 'OVERALL-CODE-4444'),
+               participation: sayaka, returned: false)
+        publish
+
+        open_result
+
+        expect(response.body).not_to include('OVERALL-CODE-4444')
+      end
+
+      it '他人の返却された本のギフトコードも含まれない' do
+        kanae = join('かなえ')
+        create(:assignment,
+               book: create(:book, participation: kanae, gift_code: 'RETURNED-OTHERS-5555'),
+               participation: kanae, round: nil, returned: true)
+        publish
+
+        open_result
+
+        expect(response.body).not_to include('RETURNED-OTHERS-5555')
+      end
+
+      # 1冊も登録されないまま実行された交換会（docs/spec.md 9.）。
+      # 見出しと列名だけの空の表は、読む側に何も伝えない
+      it '本が1冊も登録されていなければ、この節ごと出ない' do
+        join('りく')
+        publish
+
+        open_result
+
+        expect(response.body).not_to include('全体の結果')
+      end
+
+      # 導線も出ないフェーズなので、ここへ来るのは URL を直に打った場合だけ。
+      # それでも全体の結果が漏れては、公開前に勝ち負けが分かってしまう
+      it '結果公開前には、全体の結果そのものが出ない' do
+        riku = join('りく')
+        create(:assignment, book: create(:book, participation: riku, title: '石を数える人'),
+                            participation: join('さやか'), returned: false)
+
+        open_result(at: '2026-08-16T00:00:00+09:00'.in_time_zone)
+
+        expect(response.body).not_to include('全体の結果', '石を数える人')
+      end
+    end
+
+    # 自分が出した本がどこへ行ったかは、受け取ったものと同じくらい気になる
+    context '自分が出した本の行き先' do
+      before { log_in_as(viewer) }
+
+      it '渡った先の名前が出る' do
+        mine = create(:book, participation:, title: '灯台守の一年')
+        create(:assignment, book: mine, participation: join('ゆうと'), returned: false)
+        publish
+
+        open_result
+
+        expect(response.body).to include('あなたが出した本の行き先', '灯台守の一年', 'ゆうと さんへ')
+      end
+
+      # 何番目の希望で渡ったかは出さない。受け取った人の希望リストの中身にあたるうえ
+      # （docs/spec.md 8.）、順位が低いと渡った事実より順位のほうが目に残る
+      it '受け取った人の希望の順位は出さない' do
+        mine = create(:book, participation:, title: '灯台守の一年')
+        yuto = join('ゆうと')
+        create(:wish, participation: yuto, book: mine, position: 3)
+        create(:assignment, book: mine, participation: yuto, round: 2, returned: false)
+        publish
+
+        open_result
+
+        expect(response.body).not_to include('第3希望', '第1希望')
+      end
+
+      it '1冊も登録していなければ、この節ごと出ない' do
+        receive_book(from: join('ゆうと'))
+        publish
+
+        open_result
+
+        expect(response.body).not_to include('あなたが出した本の行き先')
+      end
+    end
+
+    # 抽選順は結果公開後に見せてよい（docs/spec.md 8.）。
+    # 順序は巡ごとに逆になるので、並びを見せても有利不利の話にはならない
+    context 'ドラフトの抽選順' do
+      before { log_in_as(viewer) }
+
+      def draft(*participations)
+        participations.each_with_index { |part, index| part.update!(draft_position: index + 1) }
+      end
+
+      # 参加者の名前は全体の一覧にも出る。畳んだ抽選順の中だけを見る
+      def draft_list
+        response.body[/#{Regexp.escape(I18n.t('result.draft_order.summary'))}.*/m]
+      end
+
+      it '抽選された順に参加者が並ぶ' do
+        riku = join('りく')
+        sayaka = join('さやか')
+        receive_book(from: riku)
+        # 参加した順とは逆に抽選されている。並びが id 順に戻っていないことを見る
+        draft(sayaka, participation, riku)
+        publish
+
+        open_result
+
+        expect(draft_list.index('さやか')).to be < draft_list.index('りく')
+      end
+
+      # 抽選順の入っていない交換会は、この機能より前に実行されたもの。
+      # 見出しだけを出しても読む側には何も伝わらない
+      it '抽選順が記録されていなければ出さない' do
+        receive_book(from: join('りく'))
+        publish
+
+        open_result
+
+        expect(response.body).to include('全体の結果')
+        expect(response.body).not_to include('抽選順')
+      end
+    end
+
     context '自分の本が返却されたとき' do
       before { log_in_as(viewer) }
 

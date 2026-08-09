@@ -204,7 +204,8 @@ RSpec.describe MatchingsController do
         expect(exchange.phase(at: awaiting_matching)).to eq(:published)
       end
 
-      # 結果画面は #32 / #33 で作る。それまでの行き先は管理画面にしておく
+      # 押したのは主催者の操作なので、まず確かめたいのは実行が通ったこと。
+      # 結果は交換会トップから、参加者として見に行く
       it '管理画面へ戻り、実行したことが伝わる' do
         build_round_robin
 

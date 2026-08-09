@@ -56,8 +56,18 @@
   </dl>
 
   <%# 本を選ぶのがこのツールの中心なので、導線は面で押させる。
-      読み取りは全フェーズで開いているため、フェーズでは出し分けない %>
-  <div class="mt-8 border-t border-line pt-8">
+      読み取りは全フェーズで開いているため、本の一覧はフェーズで出し分けない %>
+  <div class="mt-8 flex flex-col gap-3 border-t border-line pt-8">
+    <%# 結果画面へ辿り着く経路はここだけ（#32）。公開されるまでは押しても
+        404 になるので出さない。松葉は成立と完了の担当なので、
+        公開後はこちらがその日の行き先になる。
+        「今なにをすべきか」の文言への置き換えは #29 が行う %>
+    <% if @exchange.published?(at: requested_at) %>
+      <%= link_to '結果を見る', exchange_result_path(@exchange),
+                  class: 'block rounded-[5px] bg-success px-5 py-4 text-center text-[14.5px] ' \
+                         'font-medium text-paper no-underline hover:bg-success-hover' %>
+    <% end %>
+
     <%= link_to '本の一覧を見る', exchange_books_path(@exchange),
                 class: 'block rounded-[5px] border border-line-strong bg-paper px-5 py-4 ' \
                        'text-center text-[14.5px] font-medium text-ink no-underline hover:bg-paper-hover' %>
@@ -71,7 +81,4 @@
       <%= link_to '主催者管理', exchange_management_path(@exchange) %>
     </p>
   <% end %>
-
-  <%# 結果画面（#32）への導線は、その画面が入るときにここへ足す。
-      「今なにをすべきか」の文言は #29 で足す %>
 </div>

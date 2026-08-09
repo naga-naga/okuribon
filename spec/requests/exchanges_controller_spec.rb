@@ -291,6 +291,23 @@ RSpec.describe ExchangesController do
       expect(response.body).not_to include('あと')
     end
 
+    # 結果画面へ辿り着く経路はここだけ。#29 が「今なにをすべきか」の文言に
+    # 置き換えるまでのあいだも、開けない期間を作らない
+    it '結果公開後は結果画面への導線が出る' do
+      exchange.update!(matched_at: '2026-08-03T00:00:00+09:00'.in_time_zone)
+
+      open_top
+
+      expect(response.body).to include(exchange_result_path(exchange))
+    end
+
+    # 押しても 404 になるリンクは見せない
+    it '結果公開前には導線が出ない' do
+      open_top
+
+      expect(response.body).not_to include(exchange_result_path(exchange))
+    end
+
     describe '交換会の規模' do
       before do
         create_list(:participation, 2, exchange:)

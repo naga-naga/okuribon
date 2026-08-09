@@ -29,6 +29,18 @@ RSpec.describe ManagementsController do
     create(:participation, exchange:, user: create(:user, display_name:))
   end
 
+  def register(display_name, count)
+    create_list(:book, count, participation: join(display_name))
+  end
+
+  # りくの5冊に対してほかの全員は合わせて2冊。自分が登録した本は受け取れないので、
+  # 差の3冊は渡す相手がいない（docs/spec.md 6.8）
+  def register_imbalanced
+    register('りく', 5)
+    register('ゆうと', 1)
+    register('はるか', 1)
+  end
+
   describe '#show' do
     context '主催者のとき' do
       before { log_in_as(owner) }
@@ -103,6 +115,77 @@ RSpec.describe ManagementsController do
 
         expect(response).to have_http_status(:ok)
         expect(response.body).to include('みずき', '0冊')
+      end
+
+      # 自分が登録した本は受け取れないので（docs/spec.md 3.）、1人の登録冊数が
+      # ほかの全員の合計を超えた分は、渡す相手がいないまま残る
+      it '受け取り手のない冊数を添えて警告する' do
+        register_imbalanced
+
+        travel_to(registration_phase) { get exchange_management_path(exchange) }
+
+        expect(response.body).to include(I18n.t('management.imbalance.heading', returning: 3))
+      end
+
+      # 誰に追加登録を促せばよいかを、一覧の冊数を見比べずに掴めるようにする
+      it '偏りの元になっている人と、ほかの全員の合計を出す' do
+        register_imbalanced
+
+        travel_to(registration_phase) { get exchange_management_path(exchange) }
+
+        expect(response.body).to include(
+          I18n.t('management.imbalance.body', name: 'りく', books: 5, others: 2, returning: 3)
+        )
+      end
+
+      # 余った本は登録者へ返る。コードが未使用のまま残ることまで書かないと、
+      # 返却された本のギフトコードがどうなるのかを主催者が探すことになる
+      it '余った本の行き先を添える' do
+        register_imbalanced
+
+        travel_to(registration_phase) { get exchange_management_path(exchange) }
+
+        expect(response.body).to include(I18n.t('management.imbalance.returned', name: 'りく'))
+      end
+
+      # 打つ手は登録期間を延ばして追加登録を促すことだけ。
+      # 日時の入力欄は交換会の編集画面に1つだけ置く（docs/spec.md 6.9）
+      it '登録期間を延ばす導線を添える' do
+        register_imbalanced
+
+        travel_to(registration_phase) { get exchange_management_path(exchange) }
+
+        expect(response.body).to include(I18n.t('management.imbalance.remedy'),
+                                         edit_exchange_path(exchange))
+      end
+
+      # 締切を過ぎてからでは主催者にできることがない（docs/spec.md 6.8）
+      it '登録の締切を過ぎたら警告が消える' do
+        register_imbalanced
+
+        travel_to(phase_times.fetch(:wish)) { get exchange_management_path(exchange) }
+
+        expect(response.body).not_to include(I18n.t('management.imbalance.eyebrow'))
+      end
+
+      # 結果公開後は日程を戻しても登録が再開しない（docs/spec.md 6.9）。
+      # 締切を動かして警告だけが戻ってきても、打つ手はもう無い
+      it '結果公開後は、日程を登録期間へ戻しても警告が出ない' do
+        register_imbalanced
+        exchange.update!(matched_at: phase_times.fetch(:published))
+
+        travel_to(registration_phase) { get exchange_management_path(exchange) }
+
+        expect(response.body).not_to include(I18n.t('management.imbalance.eyebrow'))
+      end
+
+      it '冊数が釣り合っていれば警告が出ない' do
+        register('りく', 1)
+        register('ゆうと', 1)
+
+        travel_to(registration_phase) { get exchange_management_path(exchange) }
+
+        expect(response.body).not_to include(I18n.t('management.imbalance.eyebrow'))
       end
 
       # 招待URLは人に渡すものなので、貼り付けてそのまま開ける形で出す。

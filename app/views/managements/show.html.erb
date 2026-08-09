@@ -15,6 +15,41 @@
     </span>
   </div>
 
+  <%# 受け取り手のない本が出る見込みなら知らせる（docs/spec.md 6.8）。
+      参加者一覧より先に置く。先に読んでもらってから、下の冊数の並びを裏付けとして見せる %>
+  <% if @imbalance %>
+    <% name = @imbalance.participation.user.display_name %>
+
+    <div class="mt-8 rounded-[5px] border border-line-strong border-l-[3px] border-l-accent bg-paper p-5 sm:p-[22px]">
+      <div class="font-mono text-[10.5px] tracking-[0.12em] text-accent">
+        <%= t('management.imbalance.eyebrow') %>
+      </div>
+
+      <h2 class="mt-1.5 text-[17px] font-bold leading-[1.5] text-ink">
+        <%= t('management.imbalance.heading', returning: @imbalance.returning_count) %>
+      </h2>
+
+      <p class="mt-1.5 text-[13px] leading-[1.9] text-ink">
+        <%= t('management.imbalance.body',
+              name:,
+              books: @imbalance.participation.books_count,
+              others: @imbalance.others_count,
+              returning: @imbalance.returning_count) %>
+      </p>
+
+      <%# 冊数の内訳はすぐ下の参加者一覧が持っている。ここには行き先と打つ手だけを置く %>
+      <ul class="mt-4 flex flex-col gap-1.5 border-t border-line pt-3.5 text-[12.5px] leading-[1.8] text-ink">
+        <li><%= t('management.imbalance.returned', name:) %></li>
+        <li><%= t('management.imbalance.at_least') %></li>
+        <%# 日時の入力欄は交換会の編集画面に1つだけ置く（docs/spec.md 6.9） %>
+        <li>
+          <%= t('management.imbalance.remedy') %>
+          <%= link_to t('management.imbalance.remedy_link'), edit_exchange_path(@exchange) %>
+        </li>
+      </ul>
+    </div>
+  <% end %>
+
   <div class="mt-8">
     <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
       <h2 class="text-[17px] font-bold text-ink">参加者</h2>
@@ -195,6 +230,5 @@
     </p>
   </div>
 
-  <%# 参加者の除外（#39）、登録冊数の偏りの警告（#40）、マッチングの実行（#31）は、
-      それぞれの画面が入るときにここへ足す %>
+  <%# マッチングの実行（#31）は、その画面が入るときにここへ足す %>
 </div>

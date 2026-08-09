@@ -1,0 +1,112 @@
+<%# マッチングの実行（docs/spec.md 6.8）。画面の最上部に置く。
+    締切前は静かな待機表示、締切後は朱の面に切り替えてほかの情報を下へ押しやる。
+    実行済みかどうかはフェーズから見る。日時カラムを直に読まない %>
+<% if exchange.phase(at:) == :published %>
+  <%# 押せるものはもう無い。いつ実行したかだけを残す %>
+  <div class="rounded-[6px] border border-line bg-surface-sunken p-5 sm:p-6">
+    <div class="font-mono text-[10.5px] tracking-[0.12em] text-ink-subtle">
+      <%= t('management.matching.eyebrow') %>
+    </div>
+
+    <h2 class="mt-1.5 text-[17px] font-bold leading-[1.5] text-success">
+      <%= t('management.matching.done.heading') %>
+    </h2>
+
+    <p class="mt-1.5 text-[13px] leading-[1.9] text-ink-muted">
+      <%= t('management.matching.done.body', at: l(exchange.matched_at, format: :schedule)) %>
+    </p>
+  </div>
+<% elsif summary %>
+  <%# 締切後。押し忘れが起きやすいので、画面幅いっぱいの朱の面で大きく促す %>
+  <div class="rounded-[6px] bg-accent p-6 sm:p-8">
+    <div class="flex flex-wrap items-start justify-between gap-x-8 gap-y-5">
+      <div class="min-w-0">
+        <div class="font-mono text-[10.5px] tracking-[0.14em] text-accent-soft">
+          <%= t('management.matching.awaiting.eyebrow') %>
+        </div>
+
+        <h2 class="mt-2 text-[24px] font-bold leading-[1.45] text-paper sm:text-[28px]">
+          <%= t('management.matching.awaiting.heading') %>
+        </h2>
+
+        <p class="mt-2.5 max-w-[520px] text-[13.5px] leading-[1.9] text-accent-soft">
+          <%= t('management.matching.awaiting.body',
+                at: l(exchange.wish_ends_at, format: :schedule), count: participants_count) %>
+          <b class="font-bold text-paper">
+            <%= t('management.matching.awaiting.elapsed',
+                  elapsed: elapsed_time_text(exchange.wish_ends_at, at:)) %>
+          </b>
+        </p>
+      </div>
+
+      <div class="flex flex-none flex-col items-start gap-2.5 sm:items-end">
+        <%# 押した先で確認を挟む。ここでは確定しない %>
+        <%= link_to t('management.matching.execute'),
+                    new_exchange_management_matching_path(exchange),
+                    class: 'rounded-[5px] bg-paper px-7 py-3.5 text-[15px] font-bold ' \
+                           'text-accent no-underline hover:bg-paper-hover' %>
+
+        <span class="text-[11.5px] text-accent-soft">
+          <%= t('management.matching.awaiting.note') %>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <%# 思いどおりにならない点だけを挙げる。誰がそれに当たるかは下の参加者一覧が
+      持っているので、ここでは名前を並べず人数で出す。
+      挙げるものが無いなら、実行の前に確かめることも無い %>
+  <% if summary.unsubmitted_count.positive? || summary.without_books_count.positive? %>
+    <div class="mt-4 rounded-[5px] border border-line bg-paper p-5">
+      <h3 class="text-[14px] font-bold text-ink"><%= t('management.matching.checklist.heading') %></h3>
+
+      <ul class="mt-2.5 flex flex-col gap-1.5 text-[12.5px] leading-[1.8] text-ink">
+        <% if summary.unsubmitted_count.positive? %>
+          <li><%= t('management.matching.checklist.unsubmitted', count: summary.unsubmitted_count) %></li>
+        <% end %>
+
+        <% if summary.without_books_count.positive? %>
+          <li><%= t('management.matching.checklist.without_books', count: summary.without_books_count) %></li>
+        <% end %>
+
+        <%# 日時の入力欄は交換会の編集画面に1つだけ置く（docs/spec.md 6.9） %>
+        <li>
+          <%= t('management.matching.checklist.extend') %>
+          <%= link_to t('management.matching.checklist.extend_link'), edit_exchange_path(exchange) %>
+        </li>
+      </ul>
+    </div>
+  <% end %>
+<% else %>
+  <%# 締切前。実行が主催者の仕事だと、待っているあいだに知っておいてもらう。
+      押せないボタンを残すのは、締切後に何が起きるかをその場で示すため %>
+  <div class="rounded-[6px] border border-line bg-paper p-5 sm:p-6">
+    <div class="flex flex-wrap items-center justify-between gap-x-7 gap-y-4">
+      <div class="min-w-0">
+        <div class="font-mono text-[10.5px] tracking-[0.12em] text-ink-subtle">
+          <%= t('management.matching.eyebrow') %>
+        </div>
+
+        <h2 class="mt-1.5 text-[17px] font-bold leading-[1.5] text-ink">
+          <%= t('management.matching.waiting.heading') %>
+        </h2>
+
+        <p class="mt-1.5 max-w-[520px] text-[13px] leading-[1.9] text-ink-muted">
+          <%= t('management.matching.waiting.body', at: l(exchange.wish_ends_at, format: :schedule)) %>
+        </p>
+      </div>
+
+      <div class="flex flex-none flex-col items-start gap-2 sm:items-end">
+        <%# 押しても断られる口は残さないので、リンクにはしない。
+            形だけを置いて、締切後にここが押せるようになることを示す %>
+        <span class="rounded-[5px] border border-line bg-fill px-6 py-3 text-[14px] text-ink-subtle">
+          <%= t('management.matching.execute') %>
+        </span>
+
+        <span class="tabular text-[11.5px] text-ink-subtle">
+          <%= remaining_time_text(exchange.wish_ends_at, at:) %>
+        </span>
+      </div>
+    </div>
+  </div>
+<% end %>

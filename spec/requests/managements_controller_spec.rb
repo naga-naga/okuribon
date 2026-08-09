@@ -295,6 +295,116 @@ RSpec.describe ManagementsController do
         )
       end
 
+      # 締切前でも、実行が主催者の仕事であることは伝えておく。
+      # 締切を過ぎて初めて知らせるのでは、待っているあいだ誰も動かない
+      it '締切前は、締切後に実行することと押せる日時が出る' do
+        travel_to(phase_times.fetch(:wish)) { get exchange_management_path(exchange) }
+
+        expect(response.body).to include(
+          I18n.t('management.matching.waiting.heading'),
+          I18n.t('management.matching.waiting.body',
+                 at: I18n.l(exchange.wish_ends_at, format: :schedule))
+        )
+      end
+
+      # 締切前に確認画面へ送っても、そちらが 409 を返す。
+      # 押しても断られる口は残さない（docs/spec.md 6.8）
+      it '締切前は確認画面への口が出ない' do
+        travel_to(phase_times.fetch(:wish)) { get exchange_management_path(exchange) }
+
+        expect(response.body).not_to include(new_exchange_management_matching_path(exchange))
+      end
+
+      # 押し忘れが起きやすいので大きく促す。実行するまで誰も結果を見られない
+      it '締切後は、実行を促す見出しが出る' do
+        travel_to(phase_times.fetch(:awaiting_matching)) { get exchange_management_path(exchange) }
+
+        expect(response.body).to include(I18n.t('management.matching.awaiting.heading'))
+      end
+
+      # 何日放っておいたのかを、締切の日時から数えさせない
+      it '締切後は、締切からの経過が出る' do
+        at = exchange.wish_ends_at + 14.hours
+
+        travel_to(at) { get exchange_management_path(exchange) }
+
+        expect(response.body).to include(I18n.t('management.matching.awaiting.elapsed', elapsed: '14時間'))
+      end
+
+      it '締切後は、確認画面への口が出る' do
+        travel_to(phase_times.fetch(:awaiting_matching)) { get exchange_management_path(exchange) }
+
+        expect(response.body).to include(new_exchange_management_matching_path(exchange))
+      end
+
+      # 押した先で確認が挟まることを添える。取り返しのつかない操作なので、
+      # 押した瞬間に確定すると思わせない
+      it '締切後は、押しても確定しないことを添える' do
+        travel_to(phase_times.fetch(:awaiting_matching)) { get exchange_management_path(exchange) }
+
+        expect(response.body).to include(I18n.t('management.matching.awaiting.note'))
+      end
+
+      # 希望を出していない人にも余り物が回る。実行前に、
+      # その人たちが締め出されるわけではないと分かるようにする
+      it '締切後、希望未提出の人がいれば人数とその扱いが出る' do
+        create_list(:book, 1, participation: owner_participation)
+        create(:book, participation: join('ゆうと'))
+
+        travel_to(phase_times.fetch(:awaiting_matching)) { get exchange_management_path(exchange) }
+
+        expect(response.body).to include(I18n.t('management.matching.checklist.unsubmitted', count: 2))
+      end
+
+      # 0冊は締め出しではなく仕組みの結果（docs/spec.md 6.9）
+      it '締切後、1冊も登録していない人がいれば人数が出る' do
+        create(:book, participation: owner_participation)
+        join('たける')
+
+        travel_to(phase_times.fetch(:awaiting_matching)) { get exchange_management_path(exchange) }
+
+        expect(response.body).to include(I18n.t('management.matching.checklist.without_books', count: 1))
+      end
+
+      # 実行するほかに、締切を延ばして待つ道もある。
+      # 日時の入力欄は交換会の編集画面に1つだけ置く（docs/spec.md 6.9）
+      it '締切後、気になる点があれば締切を延ばす道を添える' do
+        create(:book, participation: owner_participation)
+        join('たける')
+
+        travel_to(phase_times.fetch(:awaiting_matching)) { get exchange_management_path(exchange) }
+
+        expect(response.body).to include(I18n.t('management.matching.checklist.extend'),
+                                         edit_exchange_path(exchange))
+      end
+
+      # 未提出も0冊もいないなら、実行の前に確かめることは無い
+      it '締切後、気になる点が無ければ確認の一覧が出ない' do
+        books = create_list(:book, 1, participation: owner_participation)
+        wisher = join('ゆうと')
+        create(:book, participation: wisher)
+        create(:wish, participation: wisher, book: books.first, position: 1)
+        create(:wish, participation: owner_participation, book: wisher.books.first, position: 1)
+
+        travel_to(phase_times.fetch(:awaiting_matching)) { get exchange_management_path(exchange) }
+
+        expect(response.body).not_to include(I18n.t('management.matching.checklist.heading'))
+      end
+
+      # マッチングは一度だけ（CLAUDE.md「マッチング」）。
+      # ボタンが残っていると、二度目を押せるように見える
+      it '実行済みならボタンが消え、実行日時が出る' do
+        at = phase_times.fetch(:published)
+        exchange.update!(matched_at: at)
+
+        travel_to(at) { get exchange_management_path(exchange) }
+
+        expect(response.body).not_to include(new_exchange_management_matching_path(exchange))
+        expect(response.body).to include(I18n.t('management.matching.done.heading'),
+                                         I18n.t('management.matching.done.body',
+                                                at: I18n.l(at, format: :schedule)))
+      end
+
       # 押すと古いURLが開けなくなる。取り消せないので、押す前に断りを出す
       it '再発行には確認が挟まる' do
         travel_to(registration_phase) { get exchange_management_path(exchange) }

@@ -20,6 +20,7 @@ class ManagementsController < ApplicationController
                                .includes(:user)
                                .order(:created_at, :id)
     @imbalance = imbalance
+    @matching_summary = matching_summary
   end
 
   private
@@ -32,5 +33,15 @@ class ManagementsController < ApplicationController
     return nil unless @exchange.writable?(:book, at: requested_at)
 
     Exchanges::BookImbalance.new(@participations).call
+  end
+
+  # 実行の前に確かめることを挙げるための数。要るのは実行できるあいだだけで、
+  # 締切前は打つ手がまだ登録と希望提出のほうにあり、実行後は変えようがない。
+  # 判定は Matching::Execution が実行時に見るものと同じ表から引く。
+  # 読み込み済みの参加を渡して、冊数を数え直させない
+  def matching_summary
+    return nil unless @exchange.writable?(:matching, at: requested_at)
+
+    Exchanges::MatchingSummary.new(@participations).call
   end
 end

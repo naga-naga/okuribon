@@ -81,8 +81,8 @@
       <p class="mt-2 text-[13.5px]"><%= link_to '交換会トップを開く', exchange_path(@exchange) %></p>
 
       <%# 辞退できるのは登録の締切までで、主催者は抜けられない。押しても拒否される
-          ボタンは出さない。判定はサーバー側の Exchange#withdraw! にもあり、ここは見た目だけ %>
-      <% if @exchange.withdrawable?(current_user, at: requested_at) %>
+          ボタンは出さない。判定はサーバー側の Exchange#remove_participant! にもあり、ここは見た目だけ %>
+      <% if @exchange.removable_participant?(current_user, at: requested_at) %>
         <%# 抜けると登録した本も消える。押し間違いで戻せなくなるため確認を挟む %>
         <%= button_to '参加を取り消す',
                       invitation_participation_path(@exchange.invite_token),

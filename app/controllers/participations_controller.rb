@@ -21,7 +21,7 @@ class ParticipationsController < ApplicationController
   end
 
   def destroy
-    exchange.withdraw!(current_user, at: requested_at)
+    exchange.remove_participant!(current_user, at: requested_at)
 
     redirect_to invitation_path(exchange.invite_token), notice: t('participation.flash.withdrawn')
   end

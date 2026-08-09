@@ -23,7 +23,9 @@ module Matching
       @exchange.with_lock do
         verify_executable!
 
-        save_assignments(engine_result)
+        result = engine_result
+        save_assignments(result)
+        save_draft_order(result)
         @exchange.update!(matched_at: @at)
       end
 
@@ -74,6 +76,18 @@ module Matching
           round: assignment.round,
           returned: assignment.returned?
         )
+      end
+    end
+
+    # 抽選順は Engine が毎回返しているが、これまで捨てていた。結果公開後に見せるので
+    # （docs/spec.md 8.）、実行された事実として保存する。
+    # 読むときにシードから引き直す手もあるが、乱数の消費順という Engine の内部に
+    # 画面が依存し、Engine を変えた瞬間に保存済みの割当と表示がずれる。
+    # 参加の識別子には participation.id を渡してある（engine_result）
+    def save_draft_order(result)
+      # 数人から十数人の交換会なので（docs/spec.md 10.）、1件ずつ書いてよい
+      result.draft_order.each_with_index do |participation_id, index|
+        Participation.find(participation_id).update!(draft_position: index + 1)
       end
     end
   end

@@ -173,6 +173,40 @@ RSpec.describe Matching::Execution do
     end
   end
 
+  # 抽選順は結果公開後に見せてよい（docs/spec.md 8.）。実行のときにしか決まらないので、
+  # Engine が返した並びを参加へ書き戻す
+  describe '抽選順' do
+    it '参加者全員に1から始まる連番が入る' do
+      participations, = build_round_robin
+
+      execute
+
+      expect(participations.map { it.reload.draft_position }).to match_array(1..participations.size)
+    end
+
+    # 取得枠が0でも抽選には並ぶ。抜けた番号があると、除外された人がいるように読める
+    it '1冊も登録しなかった参加者にも入る' do
+      build_round_robin
+      empty_handed = join('はるか')
+
+      execute
+
+      expect(empty_handed.reload.draft_position).not_to be_nil
+    end
+
+    it '拒否されたら抽選順も残らない' do
+      participations, = build_round_robin
+
+      begin
+        execute(at: '2026-08-20T10:00:00+09:00'.in_time_zone)
+      rescue Exchange::PhaseViolation
+        nil
+      end
+
+      expect(participations.map { it.reload.draft_position }).to all(be_nil)
+    end
+  end
+
   describe 'マッチング実行待ちより前' do
     before { build_round_robin }
 

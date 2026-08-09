@@ -19,5 +19,18 @@ class ManagementsController < ApplicationController
                                .with_counts
                                .includes(:user)
                                .order(:created_at, :id)
+    @imbalance = imbalance
+  end
+
+  private
+
+  # 偏りの警告を出すのは、本を登録できるあいだだけ（docs/spec.md 6.8）。
+  # 締切を過ぎてからでは、追加登録を促す先がもう無い。求めているのは
+  # 「まだ冊数を動かせるフェーズか」そのものなので、日時の比較を書き足さず
+  # フェーズの表から引く。読み込み済みの参加を渡して、冊数を数え直させない
+  def imbalance
+    return nil unless @exchange.writable?(:book, at: requested_at)
+
+    Exchanges::BookImbalance.new(@participations).call
   end
 end

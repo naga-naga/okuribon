@@ -396,6 +396,27 @@ RSpec.describe Exchange do
       end
     end
 
+    describe '#period' do
+      it '期間ごとの範囲を返す' do
+        expect(exchange.period(:registration))
+          .to eq(exchange.registration_starts_at...exchange.registration_ends_at)
+        expect(exchange.period(:wish)).to eq(exchange.wish_starts_at...exchange.wish_ends_at)
+      end
+
+      # 各期間は終了時刻を含まない（docs/spec.md 4.）。締切ちょうどは期間の外で、
+      # ここが含む範囲になると phase の判定と1点だけ食い違う
+      it '終了時刻を含まない' do
+        expect(exchange.period(:registration)).not_to cover(exchange.registration_ends_at)
+        expect(exchange.period(:registration)).to cover(exchange.registration_starts_at)
+      end
+
+      # 主催者が動かせるのは登録期間と希望提出期間だけ。
+      # 結果公開は主催者の実行で起きて日時では決まらないため、期間を持たない
+      it '期間に無い名前では落ちる' do
+        expect { exchange.period(:published) }.to raise_error(KeyError)
+      end
+    end
+
     describe '#schedule_state' do
       it '準備中はどの段もまだ始まっていない' do
         at = '2026-07-25T00:00:00+09:00'.in_time_zone

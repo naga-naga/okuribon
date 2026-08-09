@@ -22,6 +22,10 @@ class Exchange < ApplicationRecord
   # マッチング実行待ちに当たる段は無く、希望提出が終わって結果公開を待っている状態にあたる
   SCHEDULE_STEPS = { registration: 0, wish: 1, published: 2 }.freeze
 
+  # 主催者管理画面が並べる期間。招待画面の日程（SCHEDULE_STEPS）は結果公開を含むが、
+  # あれは主催者の実行で起きて日時では決まらない。ここには動かせる期間だけを並べる
+  PERIODS = [:registration, :wish].freeze
+
   # フェーズを段の位置に読み替える。準備中はまだ1段目も始まっていないので、
   # 登録期間と同じ位置に置く。進行中かどうかは位置ではなくフェーズ名の一致で見るため、
   # 同じ位置に2つ並べても取り違えない
@@ -146,6 +150,16 @@ class Exchange < ApplicationRecord
       registration: registration_starts_at,
       wish: wish_starts_at,
       published: wish_ends_at,
+    }.fetch(step)
+  end
+
+  # 期間の範囲。段の名前と日時カラムの対応を schedule_starts_at と同じくここに集める。
+  # 終端を含まない範囲にするのは、各期間が終了時刻を含まないため（docs/spec.md 4.）。
+  # fetch で落として、綴り間違いを黙って nil に化けさせない
+  def period(step)
+    {
+      registration: registration_starts_at...registration_ends_at,
+      wish: wish_starts_at...wish_ends_at,
     }.fetch(step)
   end
 

@@ -39,6 +39,12 @@ RSpec.describe DevelopmentSeeds do
       expect { sow(at:) }.not_to change(Exchange, :count)
     end
 
+    # マッチングは一度だけ実行でき、再実行できない（CLAUDE.md「マッチング」）。
+    # 撒き直しは実行し直しではないので、割当はそのまま残す
+    it '撒き直しても割当は作り直されない' do
+      expect { sow(at:) }.not_to change(Assignment, :count)
+    end
+
     # 「締切まで残り数時間」は実時刻からの相対で撒くため、放置すれば次のフェーズへ移る。
     # 撒き直しで足りる範囲とするので、撒き直したら数え直されること自体は固定する
     it '撒き直すと締切が撒いた時刻から数え直される' do
@@ -46,6 +52,15 @@ RSpec.describe DevelopmentSeeds do
 
       expect { sow(at: later) }
         .to change { deadline_within(6.hours, at: later) }.from(be_empty).to(be_present)
+    end
+
+    # 実行日時だけ据え置くと、ほかの日時が動いたぶんだけ結果公開の日付が取り残される
+    it '撒き直すとマッチング実行日時も数え直される' do
+      later = at + 3.days
+      matched = Exchange.where.not(matched_at: nil).to_a
+      matched_at = -> { matched.map { |exchange| exchange.reload.matched_at } }
+
+      expect { sow(at: later) }.to change(&matched_at)
     end
   end
 

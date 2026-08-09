@@ -275,8 +275,7 @@ class DevelopmentSeeds
       owner: member('mochida'),
       registration_starts_at: @at - 40.days,
       registration_ends_at: @at - 30.days,
-      wish_ends_at: @at - 20.days,
-      matched_at: @at - 19.days
+      wish_ends_at: @at - 20.days
     )
 
     you, sakura, takeru = join(exchange, [viewer, member('mochida'), member('kawai')])
@@ -289,29 +288,18 @@ class DevelopmentSeeds
     add_wishes(sakura, [mine.first])
     # 川井は希望を出さないまま締切を迎えた。取得枠が空くので、余り物の割当が回る
 
-    run_matching(exchange)
+    # 実行日時は撒く側で書かない。マッチングを通した結果として記録させる
+    run_matching(exchange, at: @at - 19.days)
   end
 
-  # マッチングの実行サービス（#30）はまだ無い。返却を手で書くと本物と違う形の
-  # データが撒かれるため、エンジンを通した結果をそのまま保存する。
-  # #30 が入ったらそちらへ寄せる
-  def run_matching(exchange)
-    participations = exchange.participations.to_a
-    result = Matching::Engine.new(
-      participants: participations.map(&:id),
-      books: exchange.books.map { |book| Matching::Book.new(id: book.id, owner_id: book.participation_id) },
-      wishes: participations.to_h { |part| [part.id, part.wishes.order(:position).pluck(:book_id)] },
-      seed: exchange.random_seed
-    ).call
+  # 本番と同じ経路で割当を作る。返却を手で書くと本物と違う形のデータが残る。
+  # 実行できるのは一度だけなので、撒き直しても割当は作り直さない。
+  # 日時だけは新しい基準時刻から引き直す（docs/spec.md 9.1）。
+  # 実行済みのまま置くと、ほかの日時が動いたぶんだけ結果公開の日付が取り残される
+  def run_matching(exchange, at:)
+    return exchange.update!(matched_at: at) if exchange.matched_at.present?
 
-    # 1冊につき割当は1つ。撒き直しても増えない
-    result.assignments.each do |assignment|
-      Assignment.find_or_create_by!(book_id: assignment.book_id) do |record|
-        record.participation_id = assignment.participant_id
-        record.round = assignment.round
-        record.returned = assignment.returned?
-      end
-    end
+    Matching::Execution.new(exchange:, at:).call
   end
 
   def viewer

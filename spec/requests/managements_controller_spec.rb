@@ -113,6 +113,13 @@ RSpec.describe ManagementsController do
         expect(response.body).to include(invitation_url(exchange.invite_token))
       end
 
+      # 押すと古いURLが開けなくなる。取り消せないので、押す前に断りを出す
+      it '再発行には確認が挟まる' do
+        travel_to(registration_phase) { get exchange_management_path(exchange) }
+
+        expect(response.body).to include('data-turbo-confirm', I18n.t('management.invite_url.reissue_confirm'))
+      end
+
       # 日時が動いても開ける画面にする。締切を延ばすのも実行するのも
       # この画面の仕事なので、フェーズで閉じると主催者が入れなくなる
       it 'どのフェーズでも開ける' do

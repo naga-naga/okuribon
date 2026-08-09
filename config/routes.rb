@@ -37,9 +37,14 @@ Rails.application.routes.draw do
     resource :wish_list, only: [:update]
 
     # 主催者管理画面。1つの交換会に管理画面は1つなので単数で置く。
-    # 招待URLの再発行（#37）、日時の変更（#38）、参加者の除外（#39）、
-    # マッチングの実行（#31）は、この下に別のリソースとして並べる
-    resource :management, only: [:show]
+    # 日時の変更（#38）、参加者の除外（#39）、マッチングの実行（#31）は、
+    # この下に別のリソースとして並べる
+    resource :management, only: [:show] do
+      # 招待トークンの再発行。1つの交換会が持つトークンは1つなので単数で置く。
+      # 作り直すのではなく差し替えなので create ではなく update で受ける。
+      # 管理画面の下に置くのは、主催者以外に触らせない経路だから
+      resource :invite_token, only: [:update]
+    end
   end
 
   # 招待URL。交換会の id ではなく招待トークンで引く。

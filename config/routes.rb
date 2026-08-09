@@ -36,6 +36,10 @@ Rails.application.routes.draw do
     # 本の下ではなく交換会の直下に置く。1人が持つ希望リストは1つなので単数
     resource :wish_list, only: [:update]
 
+    # 結果画面。1つの交換会が出す結果は1つなので単数で置く。
+    # 見えるものは開いた人によって変わるが、それは結果の切り口であって別のリソースではない
+    resource :result, only: [:show]
+
     # 主催者管理画面。1つの交換会に管理画面は1つなので単数で置く
     resource :management, only: [:show] do
       # 招待トークンの再発行。1つの交換会が持つトークンは1つなので単数で置く。

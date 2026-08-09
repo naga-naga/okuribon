@@ -295,6 +295,39 @@ RSpec.describe Exchange do
     end
   end
 
+  describe '#published?' do
+    let!(:exchange) do
+      build(
+        :exchange,
+        registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
+        registration_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
+        wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone
+      )
+    end
+
+    it 'マッチングを実行していなければ、締切を過ぎていても偽になる' do
+      expect(exchange).not_to be_published(at: '2026-08-20T00:00:00+09:00'.in_time_zone)
+    end
+
+    it 'マッチング実行日時が入っていれば真になる' do
+      exchange.matched_at = '2026-08-16T00:00:00+09:00'.in_time_zone
+
+      expect(exchange).to be_published(at: '2026-08-20T00:00:00+09:00'.in_time_zone)
+    end
+
+    # フェーズはマッチングを実行したかどうかで決まる（docs/spec.md 4.）。
+    # 結果公開後に主催者が日程を戻しても、公開済みであることは変わらない
+    it '実行後に日程を戻しても真のままになる' do
+      exchange.matched_at = '2026-08-16T00:00:00+09:00'.in_time_zone
+
+      expect(exchange).to be_published(at: '2026-08-04T00:00:00+09:00'.in_time_zone)
+    end
+
+    it '基準時刻を省略すると呼べない' do
+      expect { exchange.published? }.to raise_error(ArgumentError)
+    end
+  end
+
   describe '#next_deadline' do
     let!(:exchange) do
       build(

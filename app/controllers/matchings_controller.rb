@@ -22,7 +22,9 @@ class MatchingsController < ApplicationController
   def create
     Matching::Execution.new(exchange: @exchange, at: requested_at).call
 
-    # 結果画面は #32 / #33 で作る。それまでの行き先は管理画面にしておく
+    # 行き先は結果画面ではなく管理画面にする。押したのは主催者の操作で、
+    # まず確かめたいのは実行が通ったこと。管理画面は実行日時を残すので、
+    # そこで確かめられる。結果は交換会トップから、参加者として見に行く
     redirect_to exchange_management_path(@exchange),
                 notice: t('management.flash.matching_executed')
   end

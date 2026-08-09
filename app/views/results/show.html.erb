@@ -1,0 +1,57 @@
+<% content_for :title, "結果 — #{@exchange.name}" %>
+
+<%# 受け取りが0冊のとき、枠が無かったのか回ってこなかったのかを言い分ける。
+    締め出されたのではなく仕組みの結果なので、そのことを画面に書く %>
+<% empty_state = @slots.zero? ? 'no_slots' : 'none' %>
+
+<div class="mx-auto w-full max-w-[880px] px-4 py-10 sm:px-6">
+  <%# 戻り先は交換会トップだけにする。この画面へ来る入口がそこしかない %>
+  <p class="text-[12px]"><%= link_to @exchange.name, exchange_path(@exchange) %></p>
+
+  <div class="mt-4 overflow-hidden rounded-[6px] border border-line bg-surface">
+    <%# 松葉の面はこの画面だけ。数週間ずっと朱（締切）だった画面が緑に変わることが、
+        公開の合図になる。祝祭は装飾ではなく面と色で作る %>
+    <div class="bg-success px-6 py-9 sm:px-10">
+      <p class="tabular font-mono text-[11px] tracking-[0.16em] text-success-mute">
+        <%= t('result.published_at', at: l(@exchange.matched_at, format: :schedule)) %>
+      </p>
+
+      <h1 class="mt-2.5 text-[28px] font-bold leading-[1.4] text-paper sm:text-[34px]">
+        <% if @received.any? %>
+          <%= t('result.heading', count: @received.size) %>
+        <% else %>
+          <%= t("result.empty.#{empty_state}.heading") %>
+        <% end %>
+      </h1>
+
+      <%# 誰から贈られたかを、本を読む前に見出しの直後で言う。お礼を伝えるため %>
+      <% if @received.any? %>
+        <p class="mt-2.5 text-[14px] leading-[1.85] text-success-mute">
+          <%= t('result.senders', names: result_sender_names(@received)) %>
+        </p>
+      <% end %>
+    </div>
+
+    <div class="flex flex-col gap-7 px-4 py-8 sm:px-10">
+      <% if @received.any? %>
+        <% @received.each_with_index do |assignment, index| %>
+          <%= render 'results/received', assignment:, index: index + 1, total: @received.size %>
+        <% end %>
+      <% else %>
+        <%# 見出しは松葉の面が言っているので、ここでは事情だけを書く %>
+        <div class="rounded-[6px] border border-line bg-paper px-5 py-6 sm:px-7">
+          <p class="max-w-[560px] text-[13.5px] leading-[1.95] text-ink">
+            <%= t("result.empty.#{empty_state}.body") %>
+          </p>
+        </div>
+      <% end %>
+
+      <% if @returned.any? %>
+        <%= render 'results/returned', returned: @returned %>
+      <% end %>
+
+      <%# 全体の成立結果（誰が誰の本を受け取ったか）と、自分が出した本の行き先は
+          #33 でこの下に足す %>
+    </div>
+  </div>
+</div>

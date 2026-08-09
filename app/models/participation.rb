@@ -33,6 +33,26 @@ class Participation < ApplicationRecord
   has_many :wishes, -> { order(:position) }, dependent: :destroy, inverse_of: :participation
   has_many :assignments, dependent: :destroy
 
+  # 結果画面に並べる、他人から受け取った本。返却は誰にも渡せなかった本が
+  # 登録者へ戻ることなので、受け取りには数えない（Book#recipient? と同じ扱い）。
+  # ドラフトで取れた順に並べ、余り物の割当（巡が nil）は最後に置く。
+  # NULLS LAST は明示する。省くと、NULL をどちらの端へ置くかが DBMS の既定任せになり、
+  # 並び順が暗黙の前提の上に乗る
+  def received_assignments
+    assignments.where(returned: false)
+               .order(Assignment.arel_table[:round].asc.nulls_last, :id)
+               .includes(book: [:registrant, :assignment, :exchange])
+  end
+
+  # 返却された自分の本。マッチングは返却の割当を登録者の参加に紐づけるので、
+  # 受け取った本と同じ関連から引ける。
+  # 本の詳細画面を持たないため（docs/spec.md 6.3）、誰にも渡らなかった
+  # ギフトコードの取り出し口はここしかない
+  def returned_assignments
+    assignments.where(returned: true).order(:id)
+               .includes(book: [:registrant, :assignment, :exchange])
+  end
+
   # 希望リストの末尾に1冊足す。
   # 二重の希望は一意インデックスに任せる。先に exists? で調べても、その隙に入られると防げない。
   # 二度押しで例外にせず同じ希望を返すのは、Exchange#join! と同じ理由

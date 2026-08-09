@@ -125,6 +125,44 @@ RSpec.describe Participation do
     end
   end
 
+  describe '#received_assignments と #returned_assignments' do
+    let!(:exchange) { create(:exchange) }
+    let!(:participation) { create(:participation, exchange:) }
+    let!(:other) { create(:participation, exchange:) }
+
+    def receive_from(owner, round:)
+      book = create(:book, participation: owner)
+      create(:assignment, book:, participation:, round:, returned: false)
+    end
+
+    it '受け取った本と、返却された自分の本を分けて引く' do
+      received = receive_from(other, round: 1)
+      mine = create(:book, participation:)
+      returned = create(:assignment, book: mine, participation:, round: nil, returned: true)
+
+      expect(participation.received_assignments).to contain_exactly(received)
+      expect(participation.returned_assignments).to contain_exactly(returned)
+    end
+
+    it '他人の割当は引かない' do
+      book = create(:book, participation:)
+      create(:assignment, book:, participation: other, returned: false)
+
+      expect(participation.received_assignments).to be_empty
+      expect(participation.returned_assignments).to be_empty
+    end
+
+    # 余り物の割当は巡を持たない。ドラフトで取れた本のあとに並べないと、
+    # 希望の上位から順に並んでいるという読み方が崩れる
+    it '受け取った本はドラフトの巡の順に並び、余り物の割当は最後になる' do
+      leftover = receive_from(other, round: nil)
+      second = receive_from(other, round: 2)
+      first = receive_from(other, round: 1)
+
+      expect(participation.received_assignments).to eq([first, second, leftover])
+    end
+  end
+
   describe '希望リストの操作' do
     let!(:exchange) do
       create(

@@ -24,6 +24,8 @@
 
   --color-success: #4a6152; /* 松葉。成立と完了 */
   --color-success-hover: #3c5044;
+  --color-success-soft: #e4ebe5; /* 松葉の面。贈り主の帯など。朱に対する accent-soft と同じ役 */
+  --color-success-mute: #dde6df; /* 松葉の面に載せる補助文字。地が濃いので墨の濃淡は使えない */
 
   --color-line: #ded6c8; /* 境界線 */
   --color-line-strong: #c9bfad; /* 押せるものの輪郭 */

@@ -113,6 +113,24 @@ class Exchange < ApplicationRecord
     participations.exists?(user:)
   end
 
+  # 結果画面の下部に並べる、全体の成立結果。誰が誰の本を受け取ったかは参加者全員に
+  # 見える（docs/spec.md 8.）。見せてよいフェーズかどうかは呼ぶ側が決める。
+  # 成立を先に、返却を最後に置く。混ぜると、成立した冊数を読む側が数え直すことになる。
+  # sort_by は同じ値どうしの順序を保証しないため、分けてから連結する
+  def result_books
+    ordered = books.includes(:registrant, assignment: { participation: :user })
+                   .order(:participation_id, :id).to_a
+
+    matched, returned = ordered.partition { it.assignment.nil? || !it.assignment.returned? }
+    matched + returned
+  end
+
+  # スネークドラフトの抽選順。マッチングを実行して初めて決まるので、
+  # 実行前は空になる（Matching::Execution#save_draft_order）
+  def draft_order
+    participations.where.not(draft_position: nil).order(:draft_position).includes(:user)
+  end
+
   # 未ログインの人も着地画面を見るため、participant? と同じく nil に答える
   def owner?(user)
     return false if user.nil?

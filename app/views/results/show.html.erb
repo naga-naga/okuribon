@@ -50,8 +50,16 @@
         <%= render 'results/returned', returned: @returned %>
       <% end %>
 
-      <%# 全体の成立結果（誰が誰の本を受け取ったか）と、自分が出した本の行き先は
-          #33 でこの下に足す %>
+      <%# 1冊も登録しなかった人には、行き先を並べる本が無い %>
+      <% if @given.any? %>
+        <%= render 'results/given', given: @given %>
+      <% end %>
+
+      <%# 1冊も登録されないまま実行された交換会（docs/spec.md 9.）では、
+          見出しと列名だけの表が残る。並べるものが無ければ節ごと畳む %>
+      <% if @result_books.any? %>
+        <%= render 'results/overall', result_books: @result_books, draft_order: @draft_order %>
+      <% end %>
     </div>
   </div>
 </div>

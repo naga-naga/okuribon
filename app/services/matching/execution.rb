@@ -51,9 +51,11 @@ module Matching
         participants: participations.map(&:id),
         # Engine が見るのは識別子だけ。Book のレコードを読み込むと、暗号化された
         # ギフトコードまで一緒に運ばれてくる。取得経路は1つに限る（CLAUDE.md）ので、
-        # ここでは必要な2列だけを受け取る
+        # 必要な2列だけを取り出して Matching::Book へ詰め替える。
+        # この module の中では Book と書くと Matching::Book が先に見つかるため、
+        # レコードのほうと読み違えないよう名前空間ごと書く
         books: @exchange.books.order(:id).pluck(:id, :participation_id)
-                        .map { |id, owner_id| Book.new(id:, owner_id:) },
+                        .map { |id, owner_id| Matching::Book.new(id:, owner_id:) },
         # 希望リストは順序が意味を持つ。association の order をあてにせず、
         # ここでも順位で並べ直す
         wishes: participations.to_h { |part| [part.id, part.wishes.order(:position).pluck(:book_id)] },

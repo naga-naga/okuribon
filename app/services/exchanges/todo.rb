@@ -48,15 +48,22 @@ module Exchanges
 
     private
 
+    # フェーズごとの枝はすべて同じ名前のメソッドに預ける。1行で済むものを
+    # ここへ書き下すと、どのフェーズが分岐を持つのかが並びから読めなくなる。
     # @return [Array(Symbol, Hash)] 文言のキーと、そこへ差し込む値
     def statement
       case @exchange.phase(at: @at)
-      when :preparing then [:preparing, { at: schedule(@exchange.registration_starts_at) }]
+      when :preparing then preparing
       when :registration then registration
       when :wish then wish
-      when :awaiting_matching then [:awaiting_matching, { at: schedule(@exchange.wish_ends_at) }]
+      when :awaiting_matching then awaiting_matching
       when :published then published
       end
+    end
+
+    # 待っているのは締切ではなく開始。登録期間がいつ始まるかを出す
+    def preparing
+      [:preparing, { at: schedule(@exchange.registration_starts_at) }]
     end
 
     # 登録した冊数がそのまま取得枠になる。0冊のままだと受け取る権利が無いので、
@@ -73,6 +80,12 @@ module Exchanges
       count = @participation.wishes.count
 
       count.zero? ? [:wish_empty, {}] : [:wish, { count: }]
+    end
+
+    # 次に動くのは主催者の操作で、日時では決まらない。待つべき日時が無いので、
+    # 締め切った日時のほうを出して、受付が終わったことを言う
+    def awaiting_matching
+      [:awaiting_matching, { at: schedule(@exchange.wish_ends_at) }]
     end
 
     def published

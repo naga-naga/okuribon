@@ -23,21 +23,33 @@
       <% @cards.each do |card| %>
         <% exchange = card.exchange %>
         <li class="rounded-[5px] border border-line bg-paper px-5 py-5">
-          <%# 狭い画面では交換会名とフェーズが縦に折り返る %>
-          <div class="flex flex-wrap items-baseline gap-x-3 gap-y-2">
-            <%# 押しどころは交換会名だけにする。カード全体をリンクにすると、
-                中に置いたフェーズや日時まで押せるように見えてしまう。
-                朱と下線はリンクの既定のまま。朱は押すものの担当でもある %>
-            <h2 class="text-[17px] font-bold leading-[1.5]">
-              <%= link_to exchange.name, exchange_path(exchange) %>
-            </h2>
-
+          <%# フェーズと素性を1行にまとめ、交換会名の上に置く。狭い画面では折り返る %>
+          <div class="flex flex-wrap items-center gap-x-2.5 gap-y-2">
             <%# 松葉は成立と完了の担当。終わった交換会だけ色を変える %>
             <span class="rounded-[3px] bg-fill px-2 py-1 text-[12px] font-medium
                          <%= exchange.phase(at: requested_at) == :published ? 'text-success' : 'text-ink-muted' %>">
               <%= exchange.phase_name(at: requested_at) %>
             </span>
+
+            <%# いくつも参加していると、名前だけではどれがどの会だったか思い出せない。
+                誰が仕切っていて何人いるのかが、いちばん短い手がかりになる %>
+            <span class="text-[12px] text-ink-subtle">
+              主催 <%= exchange_owner_name(exchange, current_user) %>
+              ／ <span class="tabular"><%= card.participants_count %>人</span>
+            </span>
           </div>
+
+          <%# 押しどころは交換会名だけにする。カード全体をリンクにすると、
+              中に置いたフェーズや日時まで押せるように見えてしまう。
+              朱と下線はリンクの既定のまま。朱は押すものの担当でもある %>
+          <h2 class="mt-2.5 text-[17px] font-bold leading-[1.5]">
+            <%= link_to exchange.name, exchange_path(exchange) %>
+          </h2>
+
+          <%# フェーズと締切だけでは、この会で自分が何をすればよいかまでは分からない。
+              交換会トップの「あなたがすること」と同じ置き場所から引く。
+              2か所で別々に組むと、片方だけが古い言い方で残る %>
+          <p class="mt-2 text-[13px] leading-[1.7] text-ink"><%= card.headline %></p>
 
           <%# 次の節目が無いフェーズでは、行ごと出さない %>
           <% if (deadline = exchange.next_deadline(at: requested_at)) %>

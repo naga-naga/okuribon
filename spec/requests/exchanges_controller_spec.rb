@@ -92,6 +92,39 @@ RSpec.describe ExchangesController do
       expect(response.body).to include(exchange_path(exchange))
     end
 
+    # 誰が仕切っている会なのかが分からないと、いくつも参加したときに
+    # どれがどれだか見分けられない
+    it '主催者名と参加人数が出る' do
+      exchange = registration_exchange(owner: create(:user, display_name: 'みずき'))
+      create(:participation, exchange:)
+
+      travel_to(now) { get exchanges_path }
+
+      expect(response.body).to include('主催 みずき')
+      # 主催者・自分・足した1人で3人
+      expect(response.body).to include('3人')
+    end
+
+    # 自分の名前を「主催」の横に出しても、誰のことか読み替える手間が増えるだけ
+    it '自分が主催なら「あなた」と出る' do
+      registration_exchange(owner: user)
+
+      travel_to(now) { get exchanges_path }
+
+      expect(response.body).to include('主催 あなた')
+    end
+
+    # フェーズと締切だけでは、この会で自分が何をすればよいかまでは分からない。
+    # 文言は交換会トップと同じ置き場所（Exchanges::Todo）から引く
+    it '自分の状態に応じた「すべきこと」の1行が出る' do
+      exchange = registration_exchange
+      create(:book, participation: exchange.participations.find_by!(user:))
+
+      travel_to(now) { get exchanges_path }
+
+      expect(response.body).to include('本を登録する')
+    end
+
     it '次の締切が出る' do
       registration_exchange
 

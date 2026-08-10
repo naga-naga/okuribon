@@ -23,6 +23,12 @@ module ExchangesHelper
     TODO_TONE_STYLES.fetch(tone).fetch(part)
   end
 
+  # 交換会一覧のカードに出す主催者。自分が主催なら名前ではなく「あなた」と書く。
+  # 自分の名前を出しても、誰のことか読み替える手間が増えるだけ
+  def exchange_owner_name(exchange, viewer)
+    exchange.owner?(viewer) ? 'あなた' : exchange.owner.display_name
+  end
+
   # 締切までの残り。基準時刻は呼ぶ側から渡す。ここで現在時刻を読むと、
   # 同じ画面に並んだフェーズと残り時間が別々の時刻を指しうる
   def remaining_time_text(deadline, at:)

@@ -4,6 +4,7 @@
     描いている途中で締切をまたいだときに1つの画面の中で出し分けが食い違う %>
 <% registering = @exchange.writable?(:book, at: requested_at) %>
 <% wishing = @exchange.writable?(:wish, at: requested_at) %>
+<% published = @exchange.published?(at: requested_at) %>
 
 <%# 自分の本は取得枠の数でもあり、絞り込みの行き先でもある。
     読み込み済みの一覧から選ぶので、カードごとに COUNT が飛ばない %>
@@ -23,8 +24,16 @@
     <div>
       <div class="flex flex-wrap items-baseline gap-x-3 gap-y-2">
         <h1 class="text-[26px] font-bold leading-[1.45] text-ink">みんなの本</h1>
+        <%# 結果が出たあとは、まだ登録していない人が何人残っているかを数える用が無い。
+            人数の代わりに成立と返却の内訳を出す。絞り込んでも交換会全体のまま %>
         <span class="tabular text-[15px] font-medium text-ink-subtle">
-          <%= @books.size %>冊 ／ <%= @participant_count %>人
+          <% if published %>
+            <% returned_count = @books.count { it.assignment.nil? || it.assignment.returned? } %>
+            <%= @books.size %>冊 ／
+            <%= t('result.overall.counts', matched: @books.size - returned_count, returned: returned_count) %>
+          <% else %>
+            <%= @books.size %>冊 ／ <%= @participant_count %>人
+          <% end %>
         </span>
       </div>
 
@@ -50,6 +59,14 @@
                     class: 'rounded-[5px] bg-accent px-5 py-2.5 text-[14px] font-medium ' \
                            'text-paper no-underline hover:bg-accent-hover' %>
       <% end %>
+
+      <%# ギフトコードの取り出し口は結果画面だけ（docs/spec.md 6.3）。
+          カードから渡った先を見た人がそのまま向かえるよう、ここに口を置く %>
+      <% if published %>
+        <%= link_to t('book.result.link'), exchange_result_path(@exchange),
+                    class: 'rounded-[5px] bg-success px-5 py-2.5 text-[14px] font-medium ' \
+                           'text-paper no-underline hover:bg-success-hover' %>
+      <% end %>
     </div>
   </div>
 
@@ -59,7 +76,8 @@
     <div class="min-w-0 flex-1">
       <%= render 'books/grid', exchange: @exchange, books: @mine_only ? my_books : @books,
                                participation: @participation, wishes: @wishes,
-                               registering:, wishing:, slots: my_books.size, mine_only: @mine_only %>
+                               registering:, wishing:, published:,
+                               slots: my_books.size, mine_only: @mine_only %>
     </div>
 
     <% if wishing %>

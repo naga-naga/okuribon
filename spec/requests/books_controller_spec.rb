@@ -137,12 +137,14 @@ RSpec.describe BooksController do
         end
       end
 
-      it '結果公開後は結果が出ていることが分かる' do
+      # ギフトコードが一覧に並ばないことは、期待して探しに来る人がいるので毎回書く
+      it '結果公開後は誰に渡ったかを読む画面だと分かる' do
         exchange.update!(matched_at: 1.day.ago)
 
         open_list
 
-        expect(response.body).to include('交換の結果が公開されています')
+        expect(response.body).to include('誰の本が誰に渡ったかを見られます')
+        expect(response.body).to include('ギフトコードは自分に関係する本だけ、結果画面で開けます')
       end
     end
 
@@ -698,6 +700,173 @@ RSpec.describe BooksController do
 
         expect(response.body).not_to include(edit_exchange_book_path(exchange, mine))
         expect(response.body).not_to include('登録を取り消します')
+      end
+    end
+
+    describe '結果公開後' do
+      # 公開は matched_at で決まる。日時カラムを戻しても公開済みであることは変わらない
+      def publish!
+        exchange.update!(matched_at: 1.day.ago)
+      end
+
+      # 成立した割当。受け取る人は本の登録者とは別の参加になる
+      def matched(book, recipient_name)
+        recipient = create(:participation, exchange:, user: create(:user, display_name: recipient_name))
+        create(:assignment, book:, participation: recipient)
+      end
+
+      # 返却は誰にも渡せなかった本が登録者へ戻ること。割当は登録者の参加に付く
+      def returned(book)
+        create(:assignment, book:, participation: book.participation, round: nil, returned: true)
+      end
+
+      it '成立した本に誰から誰へ渡ったかが出る' do
+        book = book_by('佐藤 花子', title: '十三番目の便り')
+        matched(book, '鈴木 一郎')
+        publish!
+
+        open_list
+
+        expect(card_for(book).text).to include('佐藤 花子 さん → 鈴木 一郎 さん')
+      end
+
+      # 十数枚並ぶ中から自分の名前を探し直さずに済むようにする（結果画面と同じ扱い）
+      it '自分が出した本は自分の側が「あなた」になる' do
+        book = create(:book, participation:, title: '灯台守の一年')
+        matched(book, '鈴木 一郎')
+        publish!
+
+        open_list
+
+        expect(card_for(book).text).to include('あなた → 鈴木 一郎 さん')
+      end
+
+      it '自分が受け取った本は受け取る側が「あなた」になる' do
+        book = book_by('佐藤 花子', title: '波打ち際の観測所')
+        create(:assignment, book:, participation:)
+        publish!
+
+        open_list
+
+        expect(card_for(book).text).to include('佐藤 花子 さん → あなた')
+      end
+
+      # 渡った先は松葉で示す。返却と同じ色で並べると、成立を数え直すことになる
+      it '自分が受け取った本には印が付く' do
+        book = book_by('佐藤 花子', title: '波打ち際の観測所')
+        create(:assignment, book:, participation:)
+        publish!
+
+        open_list
+
+        expect(card_for(book).text).to include('あなたへ')
+      end
+
+      it '成立していても他人が受け取った本には印が付かない' do
+        book = book_by('佐藤 花子', title: '十三番目の便り')
+        matched(book, '鈴木 一郎')
+        publish!
+
+        open_list
+
+        expect(card_for(book).text).not_to include('あなたへ')
+      end
+
+      it '返却された自分の本には戻ってきたことが出る' do
+        book = create(:book, participation:, title: '砂の図書館')
+        returned(book)
+        publish!
+
+        open_list
+
+        expect(card_for(book).text).to include('あなたに返却されました')
+      end
+
+      it '返却された他人の本には登録者へ戻ったことが出る' do
+        book = book_by('佐藤 花子', title: '金曜日の献立')
+        returned(book)
+        publish!
+
+        open_list
+
+        expect(card_for(book).text).to include('佐藤 花子 さんに返却')
+      end
+
+      # 選ばれなかったことを本の評価として読ませない（docs/spec.md 6.5）。
+      # 戻った理由は結果画面が引き受ける
+      it '返却の理由は書かない' do
+        book = book_by('佐藤 花子', title: '金曜日の献立')
+        returned(book)
+        publish!
+
+        open_list
+
+        expect(card_for(book).text).not_to include('希望した人がいませんでした')
+      end
+
+      # 冊数だけでは、何冊が渡って何冊が戻ったのかを数え直すことになる
+      it '見出しに成立と返却の内訳が出る' do
+        matched(book_by('佐藤 花子'), '鈴木 一郎')
+        returned(book_by('田中 太郎'))
+        publish!
+
+        open_list
+
+        expect(response.body).to include('2冊')
+        expect(response.body).to include('成立1冊・返却1冊')
+      end
+
+      # ギフトコードの取り出し口は結果画面だけ（docs/spec.md 6.3）
+      it '結果画面への導線が出る' do
+        publish!
+
+        open_list
+
+        expect(response.body).to include('自分の結果を見る')
+        expect(response.body).to include(exchange_result_path(exchange))
+      end
+
+      it '結果公開前には結果画面への導線が出ない' do
+        open_list
+
+        expect(response.body).not_to include(exchange_result_path(exchange))
+      end
+
+      # 希望を出す期間は終わっている。押しても通らない口を残さない
+      it '希望に追加する口が消える' do
+        book = book_by('佐藤 花子', title: '十三番目の便り')
+        matched(book, '鈴木 一郎')
+        publish!
+
+        open_list
+
+        expect(response.body).not_to include('希望に追加')
+        expect(response.body).not_to include(exchange_book_wish_path(exchange, book))
+      end
+
+      # 見えるのは登録した本人と受け取った人だけ。一覧はどちらの経路でもない
+      it 'ギフトコードが含まれない' do
+        mine = create(:book, participation:, gift_code: 'MYOWNGIFTCODE')
+        theirs = book_by('佐藤 花子', gift_code: 'OTHERGIFTCODE')
+        create(:assignment, book: theirs, participation:)
+        returned(mine)
+        publish!
+
+        open_list
+
+        expect(response.body).not_to include('MYOWNGIFTCODE')
+        expect(response.body).not_to include('OTHERGIFTCODE')
+      end
+
+      # 公開前は割当が無い。フェーズを見ずに割当の有無だけで出すと、
+      # 主催者が実行した瞬間に、まだ公開の合図を受けていない画面へ結果が出る
+      it '結果公開前には渡った先が出ない' do
+        book = book_by('佐藤 花子', title: '十三番目の便り')
+        matched(book, '鈴木 一郎')
+
+        open_list
+
+        expect(card_for(book).text).not_to include('鈴木 一郎 さん')
       end
     end
   end

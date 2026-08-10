@@ -12,6 +12,35 @@ module BooksHelper
       at: deadline && l(deadline, format: :schedule))
   end
 
+  # 結果公開後、カードの下段に出す1行（docs/spec.md 6.2）。渡った先だけを書く。
+  # 何番目の希望で渡ったかは書かない。受け取った人の希望リストの中身にあたるうえ、
+  # 順位が低いと渡った事実より順位のほうが目に残る（docs/spec.md 6.5）。
+  # 割当を持たない本は返却として扱い、結果画面の全体一覧と読み方を揃える
+  def book_result_line(book, viewer:)
+    assignment = book.assignment
+    registrant = book.registrant
+
+    if assignment.nil? || assignment.returned?
+      return t('book.result.returned_to_you') if registrant == viewer
+
+      return t('book.result.returned', name: result_person_label(registrant, viewer:))
+    end
+
+    t('book.result.handover',
+      from: result_person_label(registrant, viewer:),
+      to: result_person_label(assignment.participation.user, viewer:))
+  end
+
+  # カードの面と輪郭。選べない本と返却された本は沈め、自分が受け取った本だけを
+  # 松葉の輪郭で立てる。返却は失敗ではないので、取り消し線や禁止記号は使わない。
+  # 自分の本は登録期間を過ぎても輪郭で見分けられるようにする
+  def book_card_tone(dimmed:, received:, mine:)
+    return 'border-line bg-surface-sunken' if dimmed
+    return 'border-success bg-paper' if received
+
+    "bg-paper #{mine ? 'border-line-strong' : 'border-line'}"
+  end
+
   # 絞り込みの1区画。今どちらを見ているかを面で示す。
   # 文字の色だけで分けると、2つ並んだときにどちらが効いているのか読み取れない
   def book_filter_segment_class(selected)

@@ -48,23 +48,6 @@ RSpec.describe SessionsController do
       expect(providers).to contain_exactly('google_oauth2')
     end
 
-    # レイアウトを持つ画面がまだログインだけなので、ここで押さえる。
-    # 他の画面が入ったら、共通の置き場へ移す
-    context 'レイアウト' do
-      it '書体を読み込む' do
-        get '/login'
-
-        expect(response.body).to include('Zen+Kaku+Gothic+New')
-      end
-
-      it '地の色と書体を body に当てる' do
-        get '/login'
-
-        expect(response.body).to include('bg-surface')
-        expect(response.body).to include('font-sans')
-      end
-    end
-
     # 「ログインして参加する」から送られてきた人に、何のためのログインかを見せる。
     # 交換会の名前が無いと、押したはずの参加とこの画面が結び付かない
     it '参加しようとしている交換会の名前を出す' do
@@ -77,28 +60,22 @@ RSpec.describe SessionsController do
       expect(response.body).to include('参加するには')
     end
 
-    it 'ログイン済みなら表示名とログアウトを出す' do
+    # ログアウトの口は共通ヘッダーが全画面に持つようになった。ログイン済みでこの画面を
+    # 開けるようにしていたのは、追い返すと抜けられなくなるためだったので、
+    # その理由ごと畳んで行き先のある画面へ送る
+    it 'ログイン済みなら交換会一覧へ送る' do
       get '/auth/google_oauth2/callback'
 
       get '/login'
 
-      expect(response.body).to include('贈本 太郎')
-      expect(response.body).to include('ログアウト')
+      expect(response).to redirect_to(root_path)
     end
 
     # 開発用ログイン（docs/spec.md 11.）は URL を直に打たないと辿り着けない。
-    # seed が作った利用者へ入れ替わるたびに打つことになるので、ここに口を置く
+    # seed が作った利用者へ入れ替わるたびに打つことになるので、ここに口を置く。
+    # ログイン済みで入れ替わるときは、共通ヘッダーのログアウトを通ってこの画面へ来る
     context '開発用ログイン' do
       it '未ログインなら辿れる' do
-        get '/login'
-
-        expect(response.body).to include(dev_login_path)
-      end
-
-      # ログイン済みでも出す。入れ替わりたいのは、たいていもう誰かで入っているとき
-      it 'ログイン済みでも辿れる' do
-        get '/auth/google_oauth2/callback'
-
         get '/login'
 
         expect(response.body).to include(dev_login_path)

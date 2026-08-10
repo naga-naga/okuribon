@@ -1,0 +1,55 @@
+<%# 全画面に出る共通ヘッダー。ログアウトの口はここにしかないので、
+    ログイン済みで開ける画面からは必ず出る。
+
+    左は現在地までの祖先だけを並べる。現在地そのものは入れない。
+    画面の名前は h1 にあるので、ここにも並べると同じ名が1画面に2か所出る。
+
+    残り時間も置かない。締切を大きく出すのは交換会トップの仕事
+    （docs/spec.md 6.1）で、ここにも出すと同じ数字が並ぶ。
+    ビジュアルガイドとの差は docs/spec.md 10.2 にある %>
+<header class="border-b border-line bg-paper">
+  <%# 内側の幅は画面の中でいちばん広い本の一覧に合わせる。
+      ここだけ地の端まで伸ばすと、下の本文と左右の位置が揃わない %>
+  <div class="mx-auto flex w-full max-w-[1180px] flex-wrap items-center justify-between
+              gap-x-4 gap-y-2 px-4 py-3.5 sm:px-6">
+    <nav aria-label="パンくずリスト">
+      <ol class="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] leading-[1.6]">
+        <li>
+          <%# 交換会一覧そのものと、そこへ行けない未ログインの画面ではリンクにしない。
+              押しても同じ画面が返るだけのものを、行き先があるように見せない。
+              root も交換会一覧を描くので、両方の URL を見る %>
+          <% if logged_in? && !current_page?(exchanges_path) && !current_page?(root_path) %>
+            <%= link_to '読書交換会', exchanges_path %>
+          <% else %>
+            <%# 未ログインのときは現在地ではなく、ただ行けないだけなので aria-current を付けない %>
+            <%= tag.span '読書交換会', class: 'font-bold text-ink',
+                         aria: { current: ('page' if logged_in?) } %>
+          <% end %>
+        </li>
+
+        <%= yield :breadcrumb %>
+      </ol>
+    </nav>
+
+    <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+      <%# 交換会をつくる口のように、その画面にしか無い行き先が入る %>
+      <%= yield :header_action %>
+
+      <% if logged_in? %>
+        <div class="flex items-center gap-2">
+          <% if current_user.avatar_url.present? %>
+            <%= image_tag current_user.avatar_url, alt: '',
+                          class: 'h-[26px] w-[26px] flex-none rounded-full border border-line bg-fill' %>
+          <% end %>
+          <span class="text-[12.5px] text-ink-muted"><%= current_user.display_name %></span>
+        </div>
+
+        <%# 副作用のある操作なのでリンクでは置かない。GET で踏めると、
+            外部サイトの画像やリンクだけでログアウトさせられる %>
+        <%= button_to 'ログアウト', logout_path, method: :delete,
+                      class: 'cursor-pointer text-[12.5px] text-accent underline ' \
+                             'underline-offset-2 hover:opacity-70' %>
+      <% end %>
+    </div>
+  </div>
+</header>

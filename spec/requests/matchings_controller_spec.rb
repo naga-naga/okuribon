@@ -57,6 +57,15 @@ RSpec.describe MatchingsController do
         travel_to(at) { get new_exchange_management_matching_path(exchange) }
       end
 
+      # 直前にいた画面は主催者管理なので、そこまでを祖先として並べる
+      it 'パンくずから交換会トップと主催者管理へ戻れる' do
+        open_confirmation
+
+        expect(breadcrumb).to eq('読書交換会' => exchanges_path,
+                                 exchange.name => exchange_path(exchange),
+                                 '主催者管理' => exchange_management_path(exchange))
+      end
+
       # 取り返しがつかない操作なので、ブラウザのダイアログではなく
       # 画面を1枚挟む（docs/spec.md 6.8）
       it '締切後は、やり直せないことを添えた確認画面が開く' do

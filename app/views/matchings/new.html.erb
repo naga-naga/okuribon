@@ -1,11 +1,13 @@
 <% content_for :title, "マッチングを実行 — #{@exchange.name}" %>
 
-<div class="mx-auto w-full max-w-[560px] px-4 py-10 sm:px-6">
-  <%# 戻り先は管理画面だけにする。この画面へ来る入口がそこしかない %>
-  <p class="text-[12px]"><%= link_to '主催者管理', exchange_management_path(@exchange) %></p>
+<% content_for :breadcrumb do %>
+  <%= breadcrumb_ancestor @exchange.name, exchange_path(@exchange) %>
+  <%= breadcrumb_ancestor '主催者管理', exchange_management_path(@exchange) %>
+<% end %>
 
+<div class="mx-auto w-full max-w-[560px] px-4 py-10 sm:px-6">
   <%# 朱の縁で、ほかの画面と扱いが違うことを枠のうちに示す %>
-  <div class="mt-4 rounded-[6px] border border-line-strong bg-paper p-6 sm:p-7">
+  <div class="rounded-[6px] border border-line-strong bg-paper p-6 sm:p-7">
     <div class="font-mono text-[10.5px] tracking-[0.12em] text-accent">
       <%= t('management.matching.confirm.eyebrow') %>
     </div>

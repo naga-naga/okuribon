@@ -3,9 +3,12 @@
 class SessionsController < ApplicationController
   include PendingParticipation
 
-  # ログイン画面。ログイン済みでも開ける。ログアウトの口がここにしかなく、
-  # 追い返すと抜けられなくなる
+  # ログイン画面。ログイン済みなら追い返す。以前は開けるようにしていたが、
+  # それはログアウトの口がここにしかなく、追い返すと抜けられなくなるため
+  # だった。共通ヘッダーが全画面でログアウトを持つので、その理由は無くなった
   def new
+    return redirect_to root_path if logged_in?
+
     # 参加の途中で送られてきた人には、何のためのログインかを見せる
     @pending_participation = pending_participation
   end

@@ -1,11 +1,12 @@
 <% content_for :title, "#{@exchange.name}の管理" %>
 
-<div class="mx-auto w-full max-w-[900px] px-4 py-10 sm:px-6">
-  <%# 戻り先は交換会トップだけにする。この画面へ来る入口がそこしかない %>
-  <p class="text-[12px]"><%= link_to @exchange.name, exchange_path(@exchange) %></p>
+<% content_for :breadcrumb do %>
+  <%= breadcrumb_ancestor @exchange.name, exchange_path(@exchange) %>
+<% end %>
 
+<div class="mx-auto w-full max-w-[900px] px-4 py-10 sm:px-6">
   <%# 狭い画面では見出しとフェーズが縦に折り返る %>
-  <div class="mt-4 flex flex-wrap items-baseline gap-x-3 gap-y-2">
+  <div class="flex flex-wrap items-baseline gap-x-3 gap-y-2">
     <h1 class="text-[26px] font-bold leading-[1.45] text-ink">主催者管理</h1>
 
     <%# 松葉は成立と完了の担当。終わった交換会だけ色を変える %>

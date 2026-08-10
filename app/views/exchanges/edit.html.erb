@@ -1,5 +1,12 @@
 <% content_for :title, "#{@exchange.name}の設定" %>
 
+<%# この画面へ来る入口は主催者管理だけ（日程の変更と偏りの警告）。
+    交換会トップからは辿れないので、祖先も管理画面までを並べる %>
+<% content_for :breadcrumb do %>
+  <%= breadcrumb_ancestor @exchange.name, exchange_path(@exchange) %>
+  <%= breadcrumb_ancestor '主催者管理', exchange_management_path(@exchange) %>
+<% end %>
+
 <div class="mx-auto w-full max-w-[640px] px-4 py-10 sm:px-6">
   <h1 class="text-[26px] font-bold leading-[1.45] text-ink"><%= @exchange.name %></h1>
   <p class="mt-2 text-[13.5px] leading-[1.9] text-ink-muted">

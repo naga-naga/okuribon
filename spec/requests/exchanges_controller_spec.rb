@@ -37,6 +37,16 @@ RSpec.describe ExchangesController do
                     **attributes)
     end
 
+    # #new はどこからもリンクされておらず、URL を直に打つ以外に辿り着けなかった。
+    # 作成の口は交換会一覧の共通ヘッダーが持つ（docs/spec.md 6.6）。
+    # 交換会が1つも無い人にも要るので、一覧の中身ではなくヘッダーに置く
+    it '共通ヘッダーから交換会をつくれる' do
+      get exchanges_path
+
+      expect(response.parsed_body.at_css("header a[href='#{new_exchange_path}']").text)
+        .to eq('交換会をつくる')
+    end
+
     it '参加している交換会が並ぶ' do
       registration_exchange(name: '夏の交換会')
 
@@ -645,6 +655,15 @@ RSpec.describe ExchangesController do
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include('春の交換会')
+    end
+
+    # この画面へ来る入口は主催者管理だけなので、そこまでを祖先として並べる
+    it 'パンくずから交換会トップと主催者管理へ戻れる' do
+      get edit_exchange_path(exchange)
+
+      expect(breadcrumb).to eq('読書交換会' => exchanges_path,
+                               '春の交換会' => exchange_path(exchange),
+                               '主催者管理' => exchange_management_path(exchange))
     end
 
     # UTC で描かれると9時間ずれた値が既定で入り、開くたびに日程が巻き戻る

@@ -50,6 +50,16 @@ RSpec.describe ResultsController do
     context '結果が公開されているとき' do
       before { log_in_as(viewer) }
 
+      # 交換会トップへ戻る口は共通ヘッダーのパンくずが持つ。画面の中には置かない
+      it 'パンくずから交換会トップへ戻れる' do
+        publish
+
+        open_result
+
+        expect(breadcrumb).to eq('読書交換会' => exchanges_path,
+                                 exchange.name => exchange_path(exchange))
+      end
+
       # 取得枠は登録した冊数と同数（docs/spec.md 3.）。
       # 受け取った本がその冊数だけ並ぶ
       it '受け取った本が取得枠の冊数だけ並ぶ' do
@@ -403,6 +413,14 @@ RSpec.describe ResultsController do
     # ここへ来るのは URL を直に打った場合だけ
     context '結果が公開されていないとき' do
       before { log_in_as(viewer) }
+
+      # 404 でも共通ヘッダーは出る。行き止まりにすると、参加者が自分の交換会で戻れなくなる
+      it 'パンくずから交換会トップへ戻れる' do
+        open_result(at: '2026-08-16T00:00:00+09:00'.in_time_zone)
+
+        expect(breadcrumb).to eq('読書交換会' => exchanges_path,
+                                 exchange.name => exchange_path(exchange))
+      end
 
       # 素の 404 だと、URL を間違えたのか時期が早いのかを参加者が区別できない
       it 'まだ公開されていないことと、いま何を待っているのかを添えて 404 を返す' do

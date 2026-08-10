@@ -1,10 +1,12 @@
 <% content_for :title, "本を登録 — #{@exchange.name}" %>
 
-<div class="mx-auto w-full max-w-[640px] px-4 py-10 sm:px-6">
-  <%# 戻り先は本の一覧だけにする。この画面へ来る入口がそこしかない %>
-  <p class="text-[12px]"><%= link_to '本の一覧', exchange_books_path(@exchange) %></p>
+<% content_for :breadcrumb do %>
+  <%= breadcrumb_ancestor @exchange.name, exchange_path(@exchange) %>
+  <%= breadcrumb_ancestor '本の一覧', exchange_books_path(@exchange) %>
+<% end %>
 
-  <h1 class="mt-4 text-[26px] font-bold leading-[1.45] text-ink">本を登録する</h1>
+<div class="mx-auto w-full max-w-[640px] px-4 py-10 sm:px-6">
+  <h1 class="text-[26px] font-bold leading-[1.45] text-ink">本を登録する</h1>
 
   <%# 登録した冊数がそのまま取得枠になる。何冊でも登録できることを最初に伝える %>
   <p class="mt-3 text-[13px] leading-[1.85] text-ink-muted">

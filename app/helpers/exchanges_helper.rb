@@ -18,9 +18,54 @@ module ExchangesHelper
             headline: 'text-ink', detail: 'text-ink-muted' },
   }.freeze
 
+  # 締切を朱の面で急かす範囲。今日中に手を動かさないと間に合わない長さにする。
+  # 一覧に何枚並んでも、朱の面になるのはこの範囲に入ったものだけなので、
+  # ざっと見て1枚だけが目に飛び込む
+  CARD_URGENT_WITHIN = 1.day
+
+  # 交換会一覧のカードの描き分け（docs/spec.md 6.6）。
+  # 朱＝押すものと締切、松葉＝成立と完了の担当なので、締切が迫ったものを朱、
+  # 結果公開を松葉にし、待つだけのものは生成りへ沈める。
+  # 面が濃いと墨の濃淡が読めなくなるため、文字の色まで組で持つ
+  CARD_TONE_STYLES = {
+    urgent: { card: 'border-line bg-paper', badge: 'border border-accent bg-accent text-paper',
+              aside: 'bg-accent', label: 'text-accent-soft', value: 'text-paper',
+              note: 'text-accent-soft' },
+    soon: { card: 'border-line bg-paper', badge: 'border border-accent text-accent',
+            aside: 'border-t border-line sm:border-t-0 sm:border-l', label: 'text-ink-subtle',
+            value: 'text-accent', note: 'text-ink-muted' },
+    quiet: { card: 'border-line bg-surface-sunken', badge: 'border border-fill bg-fill text-ink-subtle',
+             aside: 'border-t border-line sm:border-t-0 sm:border-l', label: 'text-ink-subtle',
+             value: 'text-ink-muted', note: 'text-ink-subtle' },
+    idle: { card: 'border-line bg-paper', badge: 'border border-fill bg-fill text-ink-muted',
+            aside: 'border-t border-line sm:border-t-0 sm:border-l', label: 'text-ink-subtle',
+            value: 'text-ink-muted', note: 'text-ink-subtle' },
+    done: { card: 'border-success bg-paper', badge: 'border border-success bg-success text-paper',
+            aside: 'border-t border-line sm:border-t-0 sm:border-l', label: 'text-ink-subtle',
+            value: 'text-ink-muted', note: 'text-ink-muted' },
+  }.freeze
+
   # fetch で落として、綴り間違いを黙って既定の見た目に化けさせない
   def exchange_todo_style(tone, part)
     TODO_TONE_STYLES.fetch(tone).fetch(part)
+  end
+
+  def exchange_card_style(tone, part)
+    CARD_TONE_STYLES.fetch(tone).fetch(part)
+  end
+
+  # カード1枚の強さ。締切の近さを3段階で出し分け、待つ日時を持たない
+  # フェーズはそれぞれの姿を持つ。基準時刻は呼ぶ側から渡す
+  def exchange_card_tone(exchange, at:)
+    case exchange.phase(at:)
+    when :published then :done
+    # 待っているのは主催者の操作で、日時では動かない
+    when :awaiting_matching then :idle
+    # 待っているのは締切ではなく開始。急いでも早められないので、
+    # 開始が迫っていても目を引かせる用がない
+    when :preparing then :quiet
+    else exchange.next_deadline(at:) - at < CARD_URGENT_WITHIN ? :urgent : :soon
+    end
   end
 
   # 交換会一覧のカードに出す主催者。自分が主催なら名前ではなく「あなた」と書く。

@@ -101,4 +101,49 @@ RSpec.describe ExchangesHelper do
       expect(text(at + 3.days)).to eq('1分未満')
     end
   end
+
+  # 交換会一覧のカードの描き分け（docs/spec.md 6.6）。
+  # 一覧の中で1枚だけが目を引くように、今日中に迫ったものだけを朱の面にする
+  describe '#exchange_card_tone' do
+    let!(:at) { '2026-08-04T00:00:00+09:00'.in_time_zone }
+
+    def tone(**attributes)
+      helper.exchange_card_tone(build(:exchange, **attributes), at:)
+    end
+
+    def registration(**attributes)
+      { registration_starts_at: at - 3.days, registration_ends_at: at + 6.days,
+        wish_ends_at: at + 13.days, **attributes }
+    end
+
+    it '締切まで24時間を切っていれば朱の面にする' do
+      expect(tone(**registration(registration_ends_at: at + 4.hours))).to eq(:urgent)
+    end
+
+    # 境目はどちらかに倒す。ちょうど24時間はまだ今日中ではない
+    it 'ちょうど24時間なら朱の文字にする' do
+      expect(tone(**registration(registration_ends_at: at + 1.day))).to eq(:soon)
+    end
+
+    it '数日先なら朱の文字にする' do
+      expect(tone(**registration)).to eq(:soon)
+    end
+
+    # 待っているのは締切ではなく開始で、急いでも早められない。
+    # 残りが短くても、一覧の中で目を引かせる用がない
+    it '準備中は開始が迫っていても生成りにする' do
+      expect(tone(registration_starts_at: at + 4.hours, registration_ends_at: at + 7.days,
+                  wish_ends_at: at + 14.days)).to eq(:quiet)
+    end
+
+    it 'マッチング実行待ちは生成りにする' do
+      expect(tone(registration_starts_at: at - 20.days, registration_ends_at: at - 10.days,
+                  wish_ends_at: at - 3.days)).to eq(:idle)
+    end
+
+    # 松葉は成立と完了の担当
+    it '結果公開は松葉にする' do
+      expect(tone(**registration(matched_at: at - 1.day))).to eq(:done)
+    end
+  end
 end

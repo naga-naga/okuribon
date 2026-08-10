@@ -147,6 +147,15 @@ RSpec.describe ExchangesController do
       expect(response.body).to include('2026年8月20日 00:00')
     end
 
+    # 日付だけでは、それが今日中なのか来週なのかを毎回読み解くことになる
+    it '締切までの残りが出る' do
+      registration_exchange(registration_ends_at: '2026-08-04T04:00:00+09:00'.in_time_zone)
+
+      travel_to(now) { get exchanges_path }
+
+      expect(response.body).to include('あと4時間')
+    end
+
     # 終わった交換会に締切を出すと、まだ何かできるように読める
     it '結果公開には次の締切を出さない' do
       registration_exchange(matched_at: '2026-08-03T00:00:00+09:00'.in_time_zone)
@@ -158,8 +167,19 @@ RSpec.describe ExchangesController do
       expect(response.body).not_to include('2026年8月8日 00:00')
     end
 
-    # 待っているのは主催者の操作で、日時では動かない
-    it 'マッチング実行待ちには次の締切を出さない' do
+    # 結果公開はもう終わっている。締切の欄が空くので、その日の行き先を代わりに置く
+    it '結果公開には結果画面への導線と公開日時が出る' do
+      exchange = registration_exchange(matched_at: '2026-08-03T00:00:00+09:00'.in_time_zone)
+
+      travel_to(now) { get exchanges_path }
+
+      expect(response.body).to include(exchange_result_path(exchange))
+      expect(response.body).to include('2026年8月3日 00:00')
+    end
+
+    # 待っているのは主催者の操作で、日時では動かない。欄ごと消すと、
+    # 締切を見落としたのか、そもそも無いのかが読み取れない
+    it 'マッチング実行待ちには締切の代わりに「なし」を出す' do
       participating(registration_starts_at: '2026-07-01T00:00:00+09:00'.in_time_zone,
                     registration_ends_at: '2026-07-10T00:00:00+09:00'.in_time_zone,
                     wish_ends_at: '2026-07-20T00:00:00+09:00'.in_time_zone)
@@ -167,7 +187,8 @@ RSpec.describe ExchangesController do
       travel_to(now) { get exchanges_path }
 
       expect(response.body).to include('マッチング実行待ち')
-      expect(response.body).not_to include('締切')
+      expect(response.body).to include('することはありません')
+      expect(response.body).not_to include('2026年7月20日 00:00')
     end
 
     # 何も無い画面を白紙で返すと、壊れているのか参加していないのか区別がつかない

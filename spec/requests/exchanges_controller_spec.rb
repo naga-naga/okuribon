@@ -145,8 +145,9 @@ RSpec.describe ExchangesController do
       expect(response.body).to include('まだ参加している交換会はありません')
     end
 
-    # 並び順を決めないと、開くたびにカードの位置が入れ替わる
-    it '日程の新しいものから並ぶ' do
+    # 並び順を決めないと、開くたびにカードの位置が入れ替わる。
+    # 細かい規則は Exchanges::Listing の spec が持つ
+    it '次の締切が近いものから並ぶ' do
       registration_exchange(name: '夏の交換会')
       participating(name: '秋の交換会',
                     registration_starts_at: '2026-09-01T00:00:00+09:00'.in_time_zone,
@@ -155,7 +156,7 @@ RSpec.describe ExchangesController do
 
       travel_to(now) { get exchanges_path }
 
-      expect(response.body.index('秋の交換会')).to be < response.body.index('夏の交換会')
+      expect(response.body.index('夏の交換会')).to be < response.body.index('秋の交換会')
     end
 
     it 'ログインしていなければログイン画面へ送る' do

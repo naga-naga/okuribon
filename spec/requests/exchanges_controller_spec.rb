@@ -163,7 +163,8 @@ RSpec.describe ExchangesController do
       travel_to(now) { get exchanges_path }
 
       expect(response.body).to include('結果公開')
-      expect(response.body).not_to include('締切')
+      # 見出しの下の一文が並び順の説明で「締切」に触れるので、カードの中だけを見る
+      expect(response.parsed_body.at_css('li').text).not_to include('締切')
       expect(response.body).not_to include('2026年8月8日 00:00')
     end
 
@@ -191,12 +192,56 @@ RSpec.describe ExchangesController do
       expect(response.body).not_to include('2026年7月20日 00:00')
     end
 
-    # 何も無い画面を白紙で返すと、壊れているのか参加していないのか区別がつかない
-    it '1つも参加していなければその旨を出す' do
+    # 交換会が何件あるかより先に、そのうち何件が自分の番かを知りたい
+    it '見出しの下に、いま動いている件数が出る' do
+      registration_exchange
+      participating(registration_starts_at: '2026-08-20T00:00:00+09:00'.in_time_zone,
+                    registration_ends_at: '2026-08-27T00:00:00+09:00'.in_time_zone,
+                    wish_ends_at: '2026-09-03T00:00:00+09:00'.in_time_zone)
+
       travel_to(now) { get exchanges_path }
 
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to include('まだ参加している交換会はありません')
+      expect(response.body).to include('あなたの交換会')
+      # 件数は等幅の span で包むため、地の文とつなげて読む。準備中はまだ動いていない
+      expect(response.parsed_body.text).to include('いま動いているのは1つ')
+    end
+
+    # 「いま動いているのは0つ」では、待てばよいのか誘われ待ちなのか読み取れない
+    it '動いているものが無ければ、その旨を出す' do
+      participating(registration_starts_at: '2026-08-20T00:00:00+09:00'.in_time_zone,
+                    registration_ends_at: '2026-08-27T00:00:00+09:00'.in_time_zone,
+                    wish_ends_at: '2026-09-03T00:00:00+09:00'.in_time_zone)
+
+      travel_to(now) { get exchanges_path }
+
+      expect(response.body).to include('いま動いている交換会はありません')
+    end
+
+    # 何も無い画面を白紙で返すと、壊れているのか参加していないのか区別がつかない
+    describe '1つも参加していないとき' do
+      before { travel_to(now) { get exchanges_path } }
+
+      it '参加していないことを見出しで言う' do
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include('まだどこにも参加していません')
+      end
+
+      # 参加の入口は招待URLしかない
+      it '招待URLから参加できることを書く' do
+        expect(response.body).to include('招待URL')
+      end
+
+      # 主催をはじめる道はこの画面にしかない。共通ヘッダーの口は小さく、
+      # 本文が真っ白なこの画面でこそ、押してよいものだと分かる必要がある
+      it '本文からも交換会をつくれる' do
+        expect(response.parsed_body.at_css("main a[href='#{new_exchange_path}']")).to be_present
+      end
+
+      # 何人でどれくらいの期間かの見当が付かないと、つくる側は日時を決められない
+      it '主催するときの目安を出す' do
+        expect(response.body).to include('3人から十数人')
+        expect(response.body).to include('登録に2週間')
+      end
     end
 
     # 並び順を決めないと、開くたびにカードの位置が入れ替わる。

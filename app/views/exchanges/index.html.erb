@@ -9,18 +9,45 @@
 <%# カードが左右2列に分かれるので、他の画面より広く取る。
     640px のままだと締切の欄に「あと6日」が収まらず、行ごと折り返る %>
 <div class="mx-auto w-full max-w-[900px] px-4 py-10 sm:px-6">
-  <h1 class="text-[26px] font-bold leading-[1.45] text-ink">交換会</h1>
-
   <% if @cards.empty? %>
     <%# 白紙で返すと、壊れているのか参加していないのか区別がつかない。
-        参加の入口は招待URLしかないので、次にどうすればよいかまで書く %>
-    <div class="mt-6 rounded-[5px] border border-line bg-paper px-5 py-6">
-      <p class="text-[14.5px] font-medium text-ink">まだ参加している交換会はありません。</p>
-      <p class="mt-2 text-[13px] leading-[1.85] text-ink-muted">
-        主催者から届いた招待URLを開くと参加できます。
+        見出しから状態を言い切る。並ぶものが無いので、数える一文も置かない。
+        カードが無いぶん幅を狭める。900px のまま読ませると1行が長すぎる %>
+    <div class="max-w-[560px]">
+      <h1 class="text-[26px] font-bold leading-[1.45] text-ink">まだどこにも参加していません</h1>
+      <p class="mt-2 text-[13.5px] leading-[1.9] text-ink-muted">
+        交換会は招待URLから参加します。誘われたURLを開くか、自分で交換会をつくって仲間に配ってください。
       </p>
+
+      <%# つくる側は、何人でどれくらいの期間かの見当が付かないと日時を決められない。
+          数字は docs/spec.md 10.（少人数向け）と 6.9 の想定から採る %>
+      <div class="mt-6 rounded-[5px] border border-dashed border-line-strong px-5 py-4">
+        <p class="text-[13px] font-bold text-ink">主催するときの目安</p>
+        <p class="mt-1.5 text-[12.5px] leading-[1.8] text-ink-muted">
+          3人から十数人くらい。登録に2週間、希望提出に1週間ほど取ると、みんなが忘れずに参加できます。
+        </p>
+      </div>
+
+      <%# 主催をはじめる道はこの画面にしかない。共通ヘッダーにも口はあるが小さく、
+          本文が真っ白なこの画面でこそ、押してよいものだと分かる必要がある %>
+      <%= link_to '交換会をつくる', new_exchange_path,
+                  class: 'mt-6 inline-block rounded-[5px] bg-accent px-6 py-3 text-[14px] ' \
+                         'font-medium text-paper no-underline hover:bg-accent-hover' %>
     </div>
   <% else %>
+    <h1 class="text-[26px] font-bold leading-[1.45] text-ink">あなたの交換会</h1>
+
+    <%# 何件あるかより先に知りたいのは、そのうち何件が自分の番か。
+        「0つ」と書くと、待てばよいのか誘われ待ちなのか読み取れないので言い方を変える %>
+    <% active = @cards.count(&:active) %>
+    <p class="mt-1.5 text-[13px] text-ink-muted">
+      <% if active.zero? %>
+        いま動いている交換会はありません。締切の近いものから並びます。
+      <% else %>
+        いま動いているのは<span class="tabular"><%= active %></span>つ。締切の近いものから並びます。
+      <% end %>
+    </p>
+
     <ul class="mt-6 flex flex-col gap-3">
       <% @cards.each do |card| %>
         <% exchange = card.exchange %>

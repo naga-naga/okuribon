@@ -16,8 +16,9 @@ module Exchanges
     # @param tone [Symbol] 面の強さ。:urgent は朱、:done は松葉、:normal は生成り
     Statement = Data.define(:headline, :detail, :tone)
 
-    # 朱を置くのは、放っておくと受け取れる本が減る状態だけに絞る。
-    # 期間中ずっと朱が出ていると、締切間際に強めようがなくなる
+    # 朱を置くのは、放っておくと受け取る本が0冊になる状態だけに絞る。
+    # 締切の近さでは変えない。残りの長さは締切の段が別に出しており、
+    # 状態と時間の2つを同じ朱で表すと、どちらの意味の朱なのか読み分けられない
     TONES = {
       registration_none: :urgent,
       wish_empty: :urgent,
@@ -77,17 +78,18 @@ module Exchanges
     def published
       # 返却は誰にも渡せなかった本が登録者へ戻ることで、受け取りには数えない
       received = @participation.assignments.where(returned: false)
+      count = received.count
 
       # 受け取りが0冊になる理由は2つある。1冊も登録しなかったか、取得枠はあったが
       # 割り当てられる本が残らなかったか。前者は本人に心当たりがあり、後者は無い
-      return [slots.zero? ? :published_without_slots : :published_none, {}] if received.empty?
+      return [slots.zero? ? :published_without_slots : :published_none, {}] if count.zero?
 
       # ギフトコードは結果画面の1経路からしか取らない（CLAUDE.md）。
       # 贈り主の名前だけが要るので、Book を読み込まずに名前を引く。
       # 同じ人から2冊届くことがあるので重複を落とす
       givers = received.joins(book: :registrant).distinct.pluck(:display_name)
 
-      [:published, { count: received.count, givers: givers.map { "#{it} さん" }.to_sentence }]
+      [:published, { count:, givers: givers.map { "#{it} さん" }.to_sentence }]
     end
 
     # 取得枠は登録した冊数と同数（docs/spec.md 3.）

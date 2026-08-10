@@ -18,6 +18,9 @@ class ExchangesController < ApplicationController
   def show
     @participation = current_user.participations.find_by!(exchange_id: params.expect(:id))
     @exchange = @participation.exchange
+    # この画面でいちばん上に出る「あなたがすること」。フェーズだけでは決まらず
+    # 自分の状態で変わるので、組み立てはサービスに置く（#94 も同じ文言を並べる）
+    @todo = Exchanges::Todo.new(@participation, at: requested_at).call
   end
 
   def new

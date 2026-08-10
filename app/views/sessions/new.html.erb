@@ -14,43 +14,27 @@
       </p>
     </div>
 
-    <% if logged_in? %>
-      <div class="flex flex-col gap-2.5">
-        <div class="flex items-center gap-3 rounded-[5px] border border-line bg-paper px-5 py-4">
-          <% if current_user.avatar_url.present? %>
-            <%= image_tag current_user.avatar_url, alt: '',
-                          class: 'h-10 w-10 rounded-full border border-line bg-fill' %>
-          <% end %>
-          <span class="text-[14.5px] font-medium text-ink"><%= current_user.display_name %></span>
-        </div>
-
-        <%= button_to 'ログアウト', logout_path, method: :delete,
-                      form_class: 'w-full',
-                      class: 'w-full cursor-pointer rounded-[5px] border border-line-strong bg-paper ' \
-                             'px-5 py-3.5 text-left text-[14.5px] font-medium text-ink hover:bg-paper-hover' %>
-      </div>
-    <% else %>
-      <% if @pending_participation.present? %>
-        <p class="rounded-[5px] border border-line bg-paper px-5 py-4 text-[13.5px] leading-[1.9] text-ink">
-          <%= t('participation.login_required', name: @pending_participation.name) %>
-        </p>
-      <% end %>
-
-      <%# デザインには Google / GitHub / Discord が並ぶが、docs/spec.md 11 により Google だけにする %>
-      <%# 認証開始は POST に限る。GET で踏めると、外部サイトに置いた
-          画像やリンクだけで認証をやり直させられる %>
-      <%= button_to 'Google でログイン', '/auth/google_oauth2', method: :post,
-                    form_class: 'w-full',
-                    class: 'w-full cursor-pointer rounded-[5px] border border-line-strong bg-paper ' \
-                           'px-5 py-3.5 text-left text-[14.5px] font-medium text-ink hover:bg-paper-hover' %>
-
-      <p class="border-t border-line pt-5 text-[12px] leading-[1.85] text-ink-subtle">
-        受け取るのは表示名とアイコンだけです。メールアドレスは保存しません。
+    <%# ここへ来るのは未ログインの人だけ。ログイン済みは交換会一覧へ送られる %>
+    <% if @pending_participation.present? %>
+      <p class="rounded-[5px] border border-line bg-paper px-5 py-4 text-[13.5px] leading-[1.9] text-ink">
+        <%= t('participation.login_required', name: @pending_participation.name) %>
       </p>
     <% end %>
 
-    <%# 開発用の裏口ログイン（docs/spec.md 11.）。ログイン済みかどうかによらず出す。
-        入れ替わりたいのは、たいていもう誰かで入っているとき。
+    <%# デザインには Google / GitHub / Discord が並ぶが、docs/spec.md 11 により Google だけにする %>
+    <%# 認証開始は POST に限る。GET で踏めると、外部サイトに置いた
+        画像やリンクだけで認証をやり直させられる %>
+    <%= button_to 'Google でログイン', '/auth/google_oauth2', method: :post,
+                  form_class: 'w-full',
+                  class: 'w-full cursor-pointer rounded-[5px] border border-line-strong bg-paper ' \
+                         'px-5 py-3.5 text-left text-[14.5px] font-medium text-ink hover:bg-paper-hover' %>
+
+    <p class="border-t border-line pt-5 text-[12px] leading-[1.85] text-ink-subtle">
+      受け取るのは表示名とアイコンだけです。メールアドレスは保存しません。
+    </p>
+
+    <%# 開発用の裏口ログイン（docs/spec.md 11.）。ログイン済みで利用者を
+        入れ替えるときは、帯のログアウトを通ってこの画面へ来る。
         条件は config/routes.rb と揃えること。片方だけ変えると、
         押せば404になるリンクが残る %>
     <% if Rails.env.local? %>

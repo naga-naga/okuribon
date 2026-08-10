@@ -16,8 +16,9 @@
       <ol class="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] leading-[1.6]">
         <li>
           <%# 交換会一覧そのものと、そこへ行けない未ログインの画面ではリンクにしない。
-              押しても同じ画面が返るだけのものを、行き先があるように見せない %>
-          <% if logged_in? && !current_page?(exchanges_path) %>
+              押しても同じ画面が返るだけのものを、行き先があるように見せない。
+              root も交換会一覧を描くので、両方の URL を見る %>
+          <% if logged_in? && !current_page?(exchanges_path) && !current_page?(root_path) %>
             <%= link_to '読書交換会', exchanges_path %>
           <% else %>
             <span class="font-bold text-ink"

@@ -50,6 +50,15 @@ RSpec.describe ApplicationController do
         expect(header.at_css('[aria-current="page"]').text).to eq('読書交換会')
       end
 
+      # root も交換会一覧を描く。URL が違うだけで同じ画面なので、
+      # 現在地の判定を exchanges_path だけで書くと、root で開いたときに
+      # 自分自身へのリンクが出る
+      it 'root でもサービス名をリンクにしない' do
+        get root_path
+
+        expect(header.at_css("a[href='#{exchanges_path}']")).to be_nil
+      end
+
       it 'ログイン中の利用者を出す' do
         get exchanges_path
 

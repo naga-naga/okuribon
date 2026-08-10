@@ -12,8 +12,12 @@ module BookListing
   # 参加から引かなければ、参加していない交換会の本まで読めてしまう
   def load_book_listing
     # 冊数の表示と空の判定にも同じ本を使うので、その場で読み込む。
-    # 関連のままだと、並べる前に COUNT と EXISTS が別々に飛ぶ
-    @books = @exchange.books.includes(:registrant).order(:created_at, :id).load
+    # 関連のままだと、並べる前に COUNT と EXISTS が別々に飛ぶ。
+    # 割当は結果公開後のカードにだけ出るが、フェーズで分けずに常に連れてくる。
+    # 割当ができるのはマッチングの実行時だけなので、公開前はどの本も空で返り、
+    # 読み込みを分けても省けるのは1往復にとどまる
+    @books = @exchange.books.includes(:registrant, assignment: { participation: :user })
+                      .order(:created_at, :id).load
 
     # 見出しの「N冊 ／ M人」に使う。冊数だけでは、まだ1冊も登録していない人が
     # どれだけ残っているかが分からない

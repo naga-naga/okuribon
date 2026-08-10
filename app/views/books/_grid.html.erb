@@ -29,13 +29,19 @@
       <% books.each do |book| %>
         <% mine = book.participation_id == participation.id %>
         <% actions = registering && mine %>
+        <%# 渡った先を出すかどうかはフェーズで決める。割当の有無で決めると、
+            主催者が実行した瞬間に、公開の合図を受けていない画面へ結果が出る %>
+        <% assignment = published ? book.assignment : nil %>
+        <% returned = published && (assignment.nil? || assignment.returned?) %>
+        <% received = published && !returned && assignment.participation_id == participation.id %>
         <%# 希望を選ぶ間、自分の本だけは選べない。輪郭も文字も落として、
-            押せないことをボタンの有無だけに頼らず示す %>
-        <% dimmed = wishing && mine %>
+            押せないことをボタンの有無だけに頼らず示す。
+            返却された本も同じだけ沈める。渡らなかったことを線や記号で示さない %>
+        <% dimmed = (wishing && mine) || returned %>
         <% position = positions[book.id] %>
         <li id="<%= dom_id(book) %>" data-controller="book-card"
             class="group flex flex-col gap-4 rounded-[5px] border p-6 data-open:col-span-full
-                   <%= dimmed ? 'border-line bg-surface-sunken' : "bg-paper #{mine ? 'border-line-strong' : 'border-line'}" %>">
+                   <%= book_card_tone(dimmed:, received:, mine:) %>">
           <%# 開くと本文と脇の2段組みになる。閉じている間は本文だけを縦に積む %>
           <div class="flex flex-1 flex-col gap-3.5 group-data-open:flex-row group-data-open:gap-8">
             <div class="flex flex-1 flex-col gap-3.5">
@@ -49,7 +55,11 @@
 
                   <%# 自分の本は取得枠の数でもある。編集・削除の導線だけで見分けさせると、
                       登録期間を過ぎたとたんにどれが自分の本か分からなくなる %>
-                  <% if mine %>
+                  <% if received %>
+                    <span class="flex-none rounded-[3px] bg-success px-2 py-0.5 text-[11px] text-paper">
+                      <%= t('book.result.recipient_badge') %>
+                    </span>
+                  <% elsif mine %>
                     <span class="flex-none rounded-[3px] bg-fill px-2 py-0.5 text-[11px] text-ink-muted">自分の本</span>
                   <% end %>
                 </div>
@@ -106,12 +116,20 @@
 
           <%# 開いている間、この段の中身が無くなる本もある。線だけが残らないよう畳む %>
           <footer class="mt-auto flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-line pt-3.5
-                         <%= 'group-data-open:hidden' unless actions || wishing %>">
+                         <%= 'group-data-open:hidden' unless actions || wishing || published %>">
             <button type="button" data-action="book-card#toggle" data-book-card-target="toggle"
                     aria-expanded="false"
                     class="cursor-pointer text-[12.5px] text-accent underline group-data-open:hidden">
               続きを読む ↓
             </button>
+
+            <% if published %>
+              <%# 渡った先は松葉で、返却は沈めた文字で書く。同じ色で並べると、
+                  成立した冊数を読む側が数え直すことになる %>
+              <span class="ml-auto text-[13px] <%= returned ? 'text-ink-subtle' : 'text-success' %>">
+                <%= book_result_line(book, viewer: participation.user) %>
+              </span>
+            <% end %>
 
             <% if actions %>
               <%= link_to '編集', edit_exchange_book_path(exchange, book), class: 'text-[12.5px]' %>

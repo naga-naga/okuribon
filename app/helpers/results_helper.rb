@@ -22,4 +22,12 @@ module ResultsHelper
   def result_person_name(user, viewer:)
     user == viewer ? t('result.overall.you') : user.display_name
   end
+
+  # 敬称を付けた名前。表は列が人を示すので敬称を落とすが、文の中に並べるときは要る。
+  # 「あなた」に敬称は付かないので、その分岐を呼ぶ側それぞれに書かせない
+  def result_person_label(user, viewer:)
+    return t('result.overall.you') if user == viewer
+
+    t('result.person', name: user.display_name)
+  end
 end

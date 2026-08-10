@@ -100,6 +100,15 @@ RSpec.describe BooksController do
       expect(response.body).to include('まだ本は登録されていません')
     end
 
+    # 交換会トップへ戻る口は帯のパンくずが持つ。画面の中には置かない。
+    # 見出しは「みんなの本」で交換会名を名乗らないので、どの交換会の一覧かも帯が言う
+    it 'パンくずから交換会トップへ戻れる' do
+      open_list
+
+      expect(breadcrumb).to eq('読書交換会' => exchanges_path,
+                               '夏の交換会' => exchange_path(exchange))
+    end
+
     describe '見出し' do
       # 冊数だけでは、まだ登録していない人がどれだけ残っているかが分からない
       it '冊数と参加人数が出る' do
@@ -890,6 +899,15 @@ RSpec.describe BooksController do
       expect(response).to have_http_status(:ok)
     end
 
+    # 直前にいた画面は本の一覧なので、そこまでを祖先として並べる
+    it 'パンくずから交換会トップと本の一覧へ戻れる' do
+      open_form
+
+      expect(breadcrumb).to eq('読書交換会' => exchanges_path,
+                               '夏の交換会' => exchange_path(exchange),
+                               '本の一覧' => exchange_books_path(exchange))
+    end
+
     # 押しても通らないフォームを開かせない（docs/spec.md 6.4）
     it '登録期間外は開けない' do
       outside_registration
@@ -1074,6 +1092,14 @@ RSpec.describe BooksController do
       open_form
 
       expect(response).to have_http_status(:ok)
+    end
+
+    it 'パンくずから交換会トップと本の一覧へ戻れる' do
+      open_form
+
+      expect(breadcrumb).to eq('読書交換会' => exchanges_path,
+                               '夏の交換会' => exchange_path(exchange),
+                               '本の一覧' => exchange_books_path(exchange))
     end
 
     it '登録期間外は開けない' do

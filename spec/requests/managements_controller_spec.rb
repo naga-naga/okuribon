@@ -45,6 +45,14 @@ RSpec.describe ManagementsController do
     context '主催者のとき' do
       before { log_in_as(owner) }
 
+      # 交換会トップへ戻る口は帯のパンくずが持つ。画面の中には置かない
+      it 'パンくずから交換会トップへ戻れる' do
+        travel_to(registration_phase) { get exchange_management_path(exchange) }
+
+        expect(breadcrumb).to eq('読書交換会' => exchanges_path,
+                                 '冬の読書交換会' => exchange_path(exchange))
+      end
+
       it '参加者の名前と登録冊数が並ぶ' do
         create_list(:book, 2, participation: owner_participation)
         create(:book, participation: join('ゆうと'))

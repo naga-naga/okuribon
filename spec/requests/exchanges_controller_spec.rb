@@ -647,6 +647,15 @@ RSpec.describe ExchangesController do
       expect(response.body).to include('春の交換会')
     end
 
+    # この画面へ来る入口は主催者管理だけなので、そこまでを祖先として並べる
+    it 'パンくずから交換会トップと主催者管理へ戻れる' do
+      get edit_exchange_path(exchange)
+
+      expect(breadcrumb).to eq('読書交換会' => exchanges_path,
+                               '春の交換会' => exchange_path(exchange),
+                               '主催者管理' => exchange_management_path(exchange))
+    end
+
     # UTC で描かれると9時間ずれた値が既定で入り、開くたびに日程が巻き戻る
     it '日時の入力欄に JST の値が入る' do
       dated = create(:exchange, owner: user,

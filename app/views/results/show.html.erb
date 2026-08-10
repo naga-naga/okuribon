@@ -4,11 +4,12 @@
     締め出されたのではなく仕組みの結果なので、そのことを画面に書く %>
 <% empty_state = @slots.zero? ? 'no_slots' : 'none' %>
 
-<div class="mx-auto w-full max-w-[880px] px-4 py-10 sm:px-6">
-  <%# 戻り先は交換会トップだけにする。この画面へ来る入口がそこしかない %>
-  <p class="text-[12px]"><%= link_to @exchange.name, exchange_path(@exchange) %></p>
+<% content_for :breadcrumb do %>
+  <%= breadcrumb_crumb @exchange.name, exchange_path(@exchange) %>
+<% end %>
 
-  <div class="mt-4 overflow-hidden rounded-[6px] border border-line bg-surface">
+<div class="mx-auto w-full max-w-[880px] px-4 py-10 sm:px-6">
+  <div class="overflow-hidden rounded-[6px] border border-line bg-surface">
     <%# 松葉の面はこの画面だけ。数週間ずっと朱（締切）だった画面が緑に変わることが、
         公開の合図になる。祝祭は装飾ではなく面と色で作る %>
     <div class="bg-success px-6 py-9 sm:px-10">

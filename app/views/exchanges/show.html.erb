@@ -4,11 +4,9 @@
     どのフェーズでも各段の位置を動かさない。数週間ぶりに開いても、
     目の置き場所を覚え直さずに済むことがこの画面の狙い %>
 <div class="mx-auto w-full max-w-[640px] px-4 py-10 sm:px-6">
-  <%# 戻り先は交換会一覧だけにする。招待URLは参加していない人のための入口で、
-      参加を終えた人がここから辿るものではない %>
-  <p class="text-[12px]"><%= link_to '交換会一覧', exchanges_path %></p>
-
-  <h1 class="mt-4 text-[26px] font-bold leading-[1.45] text-ink"><%= @exchange.name %></h1>
+  <%# 戻り先は帯のパンくずが持つ。招待URLは参加していない人のための入口で、
+      参加を終えた人がここから辿るものではないので、祖先は交換会一覧だけ %>
+  <h1 class="text-[26px] font-bold leading-[1.45] text-ink"><%= @exchange.name %></h1>
 
   <%# フェーズ帯。交換会名の横の小さな印から独立した段へ上げる。
       松葉は成立と完了の担当なので、終わった交換会だけ色を変える %>

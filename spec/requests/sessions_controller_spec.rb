@@ -48,23 +48,6 @@ RSpec.describe SessionsController do
       expect(providers).to contain_exactly('google_oauth2')
     end
 
-    # レイアウトを持つ画面がまだログインだけなので、ここで押さえる。
-    # 他の画面が入ったら、共通の置き場へ移す
-    context 'レイアウト' do
-      it '書体を読み込む' do
-        get '/login'
-
-        expect(response.body).to include('Zen+Kaku+Gothic+New')
-      end
-
-      it '地の色と書体を body に当てる' do
-        get '/login'
-
-        expect(response.body).to include('bg-surface')
-        expect(response.body).to include('font-sans')
-      end
-    end
-
     # 「ログインして参加する」から送られてきた人に、何のためのログインかを見せる。
     # 交換会の名前が無いと、押したはずの参加とこの画面が結び付かない
     it '参加しようとしている交換会の名前を出す' do

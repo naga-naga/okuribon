@@ -345,6 +345,87 @@ RSpec.describe ExchangesController do
       expect(response.body).to include(exchange_books_path(exchange))
     end
 
+    # 数週間ぶりに開いた人が、その日なにをすればよいかをここだけで掴む。
+    # 文言そのものは spec/services/exchanges/todo_spec.rb が押さえる。
+    # ここで見るのは、5つのフェーズすべてで出ることと、並びが動かないこと
+    describe 'あなたがすること' do
+      # 準備中・登録期間・希望提出期間・マッチング実行待ちの4つは日時で決まる。
+      # 結果公開だけは matched_at が入っているかどうかで決まる
+      {
+        '2026-07-25T00:00:00+09:00' => 'いまは待つだけです',
+        '2026-08-04T00:00:00+09:00' => '本を登録する',
+        '2026-08-10T00:00:00+09:00' => '希望リスト',
+        '2026-08-20T00:00:00+09:00' => '結果を待ちます',
+      }.each do |at, headline|
+        it "#{at} には「#{headline}」が出る" do
+          open_top(at:)
+
+          expect(response.body).to include('あなたがすること')
+          expect(response.body).to include(headline)
+        end
+      end
+
+      it '結果公開には受け取った冊数が出る' do
+        exchange.update!(matched_at: '2026-08-03T00:00:00+09:00'.in_time_zone)
+        create(:assignment, participation:, book: create(:book, participation: create(:participation, exchange:)))
+
+        open_top
+
+        expect(response.body).to include('あなたに1冊届いています')
+      end
+
+      # 1冊も登録していない人は受け取る権利が無い。
+      # 締切を過ぎてからでは取り返せないので、期間中に伝える
+      it '1冊も登録していなければ、受け取れる本が0冊になることが分かる' do
+        open_top
+
+        expect(response.body).to include('受け取れる本が0冊になります')
+      end
+
+      # 希望を出さなくても受け取る権利は失わないが、選べるものが余り物だけになる
+      it '希望リストが空なら、そのことが分かる' do
+        create(:book, participation:)
+
+        open_top(at: '2026-08-10T00:00:00+09:00')
+
+        expect(response.body).to include('希望リストがまだ空です')
+      end
+    end
+
+    # 資料が狙っているのは、フェーズが変わっても目の置き場所が動かないこと。
+    # 締切だけは次の節目が無いフェーズで消えるので、位置ではなく前後関係で見る
+    describe '画面の並び' do
+      def positions(body, phase_name)
+        { phase: body.index(phase_name), todo: body.index('あなたがすること'),
+          stats: body.index('取得枠'), links: body.index(exchange_books_path(exchange)) }
+      end
+
+      {
+        '2026-07-25T00:00:00+09:00' => '準備中',
+        '2026-08-04T00:00:00+09:00' => '登録期間',
+        '2026-08-10T00:00:00+09:00' => '希望提出期間',
+        '2026-08-20T00:00:00+09:00' => 'マッチング実行待ち',
+      }.each do |at, phase_name|
+        it "#{at} でも フェーズ帯 → あなたがすること → 状況の数字 → 導線 の順に並ぶ" do
+          open_top(at:)
+
+          found = positions(response.body, phase_name)
+          expect(found.values).to all(be_present)
+          expect(found.values).to eq(found.values.sort)
+        end
+      end
+
+      # 締切は「あなたがすること」と状況の数字のあいだに入る。
+      # 数字より上に置くと、まず読むべき行動から目が離れる
+      it '締切は「あなたがすること」と状況の数字のあいだに出る' do
+        open_top
+
+        found = positions(response.body, '登録期間')
+        deadline = response.body.index('登録の締切')
+        expect(deadline).to be_between(found[:todo], found[:stats])
+      end
+    end
+
     # 見えるのは登録した本人と、成立後の受取人だけ。トップはどちらの経路でもない
     it 'ギフトコードが含まれない' do
       create(:book, participation:, gift_code: 'MYOWNGIFTCODE')

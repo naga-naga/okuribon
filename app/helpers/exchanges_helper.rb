@@ -6,6 +6,23 @@ module ExchangesHelper
   # 桁を増やすと、久しぶりに開いた人が読み解く手間が増える
   DURATION_UNITS = [[1.day.to_i, '日'], [1.hour.to_i, '時間'], [1.minute.to_i, '分']].freeze
 
+  # 「あなたがすること」の面の描き分け。朱＝押すものと締切、松葉＝成立と完了なので、
+  # 放っておくと受け取れる本が減る状態だけを朱で塗り、結果公開を松葉にする。
+  # 面が濃いと墨の濃淡が読めなくなるため、文字の色まで組で持つ
+  TODO_TONE_STYLES = {
+    normal: { panel: 'border-line bg-paper', eyebrow: 'text-ink-subtle',
+              headline: 'text-ink', detail: 'text-ink-muted' },
+    urgent: { panel: 'border-accent bg-accent', eyebrow: 'text-accent-soft',
+              headline: 'text-paper', detail: 'text-accent-soft' },
+    done: { panel: 'border-success bg-paper', eyebrow: 'text-success',
+            headline: 'text-ink', detail: 'text-ink-muted' },
+  }.freeze
+
+  # fetch で落として、綴り間違いを黙って既定の見た目に化けさせない
+  def exchange_todo_style(tone, part)
+    TODO_TONE_STYLES.fetch(tone).fetch(part)
+  end
+
   # 締切までの残り。基準時刻は呼ぶ側から渡す。ここで現在時刻を読むと、
   # 同じ画面に並んだフェーズと残り時間が別々の時刻を指しうる
   def remaining_time_text(deadline, at:)

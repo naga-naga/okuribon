@@ -165,6 +165,23 @@ RSpec.describe ExchangesController do
       expect(response).to have_http_status(:ok)
       expect(response.body).to include('夏の交換会')
     end
+
+    # 見えるのは登録した本人と、成立後の受取人だけ。一覧はどちらの経路でもない。
+    # 自分が登録した本と受け取った本を並べて、gift_code_for が値を返す状態で確かめる。
+    # 結果公開にするのは matched_at で、日時に関わらずフェーズが決まる
+    it 'ギフトコードが含まれない' do
+      exchange = registration_exchange(matched_at: '2026-08-03T00:00:00+09:00'.in_time_zone)
+      participation = exchange.participations.find_by!(user:)
+      create(:book, participation:, gift_code: 'MYOWNGIFTCODE')
+      received = create(:book, participation: create(:participation, exchange:),
+                               gift_code: 'RECEIVEDGIFTCODE')
+      create(:assignment, book: received, participation:)
+
+      travel_to(now) { get exchanges_path }
+
+      expect(response.body).not_to include('MYOWNGIFTCODE')
+      expect(response.body).not_to include('RECEIVEDGIFTCODE')
+    end
   end
 
   # フェーズも残り時間も日時から導出されるため、現在時刻を固定してから作る

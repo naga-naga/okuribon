@@ -1,5 +1,11 @@
 <% content_for :title, '交換会一覧' %>
 
+<%# 主催をはじめる口はここにしかない。一覧の中身に置くと、まだ1つも
+    交換会を持たない人に出す先が無くなる %>
+<% content_for :header_action do %>
+  <%= link_to '交換会をつくる', new_exchange_path, class: 'text-[12.5px]' %>
+<% end %>
+
 <div class="mx-auto w-full max-w-[640px] px-4 py-10 sm:px-6">
   <h1 class="text-[26px] font-bold leading-[1.45] text-ink">交換会</h1>
 

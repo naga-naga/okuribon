@@ -38,9 +38,9 @@ RSpec.describe ExchangesController do
     end
 
     # #new はどこからもリンクされておらず、URL を直に打つ以外に辿り着けなかった。
-    # 作成の口は交換会一覧の帯が持つ（ビジュアルガイド「04 交換会一覧」）。
-    # 交換会が1つも無い人にも要るので、一覧の中身ではなく帯に置く
-    it '帯から交換会をつくれる' do
+    # 作成の口は交換会一覧の共通ヘッダーが持つ（docs/spec.md 6.6）。
+    # 交換会が1つも無い人にも要るので、一覧の中身ではなくヘッダーに置く
+    it '共通ヘッダーから交換会をつくれる' do
       get exchanges_path
 
       expect(response.parsed_body.at_css("header a[href='#{new_exchange_path}']").text)

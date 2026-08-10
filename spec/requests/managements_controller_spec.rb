@@ -45,7 +45,7 @@ RSpec.describe ManagementsController do
     context '主催者のとき' do
       before { log_in_as(owner) }
 
-      # 交換会トップへ戻る口は帯のパンくずが持つ。画面の中には置かない
+      # 交換会トップへ戻る口は共通ヘッダーのパンくずが持つ。画面の中には置かない
       it 'パンくずから交換会トップへ戻れる' do
         travel_to(registration_phase) { get exchange_management_path(exchange) }
 

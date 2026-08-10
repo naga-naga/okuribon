@@ -3,12 +3,12 @@
 require 'rails_helper'
 
 # 全画面が同じ枠組みを共有していることを、ここ1か所で押さえる。
-# 画面ごとの spec に散らすと、あとから増えた画面だけ帯を持たない形が通ってしまう
+# 画面ごとの spec に散らすと、あとから増えた画面だけ共通ヘッダーを持たない形が通ってしまう
 RSpec.describe ApplicationController do
   let!(:user) { create(:user, display_name: '贈本 太郎') }
 
-  # 帯の中だけを見る。ページ全体の文字列を見ると、本文に同じ字があったときに
-  # 帯が持っているのかどうかを見分けられない
+  # 共通ヘッダーの中だけを見る。ページ全体の文字列を見ると、本文に同じ字があったときに
+  # ヘッダーが持っているのかどうかを見分けられない
   def header
     response.parsed_body.at_css('header')
   end
@@ -65,7 +65,7 @@ RSpec.describe ApplicationController do
         expect(header.text).to include('贈本 太郎')
       end
 
-      # ログアウトの口が全画面にあることが、この帯を入れる第一の理由。
+      # ログアウトの口が全画面にあることが、共通ヘッダーを入れる第一の理由。
       # 副作用のある操作なので GET では出さない
       it 'ログアウトできる' do
         get exchanges_path
@@ -77,9 +77,9 @@ RSpec.describe ApplicationController do
     end
 
     context '未ログイン' do
-      # 招待URLは参加していない人が着地する画面で、帯そのものは出す。
+      # 招待URLは参加していない人が着地する画面で、共通ヘッダーそのものは出す。
       # 出せないのはアカウントの口だけ
-      it '招待URL着地では帯を出し、アカウントの口を出さない' do
+      it '招待URL着地では共通ヘッダーを出し、アカウントの口を出さない' do
         exchange = create(:exchange)
 
         get invitation_path(exchange.invite_token)
@@ -88,9 +88,9 @@ RSpec.describe ApplicationController do
         expect(header.at_css("form[action='#{logout_path}']")).to be_nil
       end
 
-      # ログイン画面はまだ誰でもなく、行き先もログアウトも無い。
-      # サービス名は画面自身が大きく名乗るので、帯を重ねると同じ名が2つ並ぶ
-      it 'ログイン画面には帯を出さない' do
+      # ログイン画面はまだ誰でもなく、行き先もログアウトも無い。加えて、
+      # この画面はサービス名を見出しに大きく出すので、重ねると同じ名が2つ並ぶ
+      it 'ログイン画面には共通ヘッダーを出さない' do
         get login_path
 
         expect(header).to be_nil

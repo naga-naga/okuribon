@@ -50,7 +50,7 @@ RSpec.describe ResultsController do
     context '結果が公開されているとき' do
       before { log_in_as(viewer) }
 
-      # 交換会トップへ戻る口は帯のパンくずが持つ。画面の中には置かない
+      # 交換会トップへ戻る口は共通ヘッダーのパンくずが持つ。画面の中には置かない
       it 'パンくずから交換会トップへ戻れる' do
         publish
 
@@ -414,7 +414,7 @@ RSpec.describe ResultsController do
     context '結果が公開されていないとき' do
       before { log_in_as(viewer) }
 
-      # 404 でも帯は出る。行き止まりにすると、参加者が自分の交換会で戻れなくなる
+      # 404 でも共通ヘッダーは出る。行き止まりにすると、参加者が自分の交換会で戻れなくなる
       it 'パンくずから交換会トップへ戻れる' do
         open_result(at: '2026-08-16T00:00:00+09:00'.in_time_zone)
 

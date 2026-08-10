@@ -3,7 +3,7 @@
 <%# 結果はまだ無いので 404 で返すが、行き止まりにはしない。
     素の 404 だと、URL を間違えたのか時期が早いのかを参加者が区別できない %>
 <% content_for :breadcrumb do %>
-  <%= breadcrumb_crumb @exchange.name, exchange_path(@exchange) %>
+  <%= breadcrumb_ancestor @exchange.name, exchange_path(@exchange) %>
 <% end %>
 
 <div class="mx-auto w-full max-w-[560px] px-4 py-10 sm:px-6">

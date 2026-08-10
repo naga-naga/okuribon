@@ -14,7 +14,7 @@ module ApplicationHelper
 
   # 帯のパンくずに祖先を1つ足す。根の「読書交換会」は帯が自分で置くので、
   # ここへ渡すのはその先だけ。現在地は渡さない（h1 が名乗る）
-  def breadcrumb_crumb(label, path)
+  def breadcrumb_ancestor(label, path)
     tag.li(class: 'flex items-center gap-x-2') do
       safe_join([tag.span('／', class: 'text-ink-subtle', aria: { hidden: true }),
                  link_to(label, path)])

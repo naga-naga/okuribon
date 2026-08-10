@@ -21,8 +21,9 @@
           <% if logged_in? && !current_page?(exchanges_path) && !current_page?(root_path) %>
             <%= link_to '読書交換会', exchanges_path %>
           <% else %>
-            <span class="font-bold text-ink"
-                  <%= 'aria-current="page"'.html_safe if logged_in? %>>読書交換会</span>
+            <%# 未ログインのときは現在地ではなく、ただ行けないだけなので aria-current を付けない %>
+            <%= tag.span '読書交換会', class: 'font-bold text-ink',
+                         aria: { current: ('page' if logged_in?) } %>
           <% end %>
         </li>
 

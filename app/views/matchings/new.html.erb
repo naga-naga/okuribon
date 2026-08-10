@@ -1,8 +1,8 @@
 <% content_for :title, "マッチングを実行 — #{@exchange.name}" %>
 
 <% content_for :breadcrumb do %>
-  <%= breadcrumb_crumb @exchange.name, exchange_path(@exchange) %>
-  <%= breadcrumb_crumb '主催者管理', exchange_management_path(@exchange) %>
+  <%= breadcrumb_ancestor @exchange.name, exchange_path(@exchange) %>
+  <%= breadcrumb_ancestor '主催者管理', exchange_management_path(@exchange) %>
 <% end %>
 
 <div class="mx-auto w-full max-w-[560px] px-4 py-10 sm:px-6">

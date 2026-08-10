@@ -1,7 +1,7 @@
 <% content_for :title, "#{@exchange.name}の本" %>
 
 <% content_for :breadcrumb do %>
-  <%= breadcrumb_crumb @exchange.name, exchange_path(@exchange) %>
+  <%= breadcrumb_ancestor @exchange.name, exchange_path(@exchange) %>
 <% end %>
 
 <%# 登録・希望の可否は1回だけ引く。カードごとに引き直すと、

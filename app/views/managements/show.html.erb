@@ -1,7 +1,7 @@
 <% content_for :title, "#{@exchange.name}の管理" %>
 
 <% content_for :breadcrumb do %>
-  <%= breadcrumb_crumb @exchange.name, exchange_path(@exchange) %>
+  <%= breadcrumb_ancestor @exchange.name, exchange_path(@exchange) %>
 <% end %>
 
 <div class="mx-auto w-full max-w-[900px] px-4 py-10 sm:px-6">

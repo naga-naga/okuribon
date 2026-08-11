@@ -354,10 +354,10 @@ RSpec.describe ExchangesController do
       card_for(book).at_css('div')
     end
 
-    # まだ開いていないカードで見えているもの。開くまで伏せてあるものは
-    # hidden か invisible を持つ。開閉で見た目がどれだけ動くかは、この差でしか見られない
+    # まだ開いていないカードで見えているもの。伏せてあるものは hidden か invisible を
+    # 持つ。開閉で見た目がどれだけ動くかは、この差でしか見られない
     def closed_card(book)
-      card_for(book).dup.tap { |card| card.css('.hidden, .invisible').each(&:remove) }
+      card_for(book).dup.tap { |card| card.css('.hidden, .invisible, [hidden]').each(&:remove) }
     end
 
     # 登録者を名前で作るための入れ物。参加を伴わない本は作れない
@@ -1122,6 +1122,18 @@ RSpec.describe ExchangesController do
         expect(toggle.text).to include('続きを読む').and include('閉じる')
       end
 
+      # 折って隠れている本文が無ければ、押しても何も起きない口になる。
+      # 何行に折れるかはブラウザでしか測れないので、伏せて出しておき、
+      # 測ってから出す。JavaScript が無ければ出ないままにする
+      it '開く口は伏せて出し、折られているかを測ってから出す' do
+        book = create(:book, participation:)
+
+        open_page
+
+        expect(closed_card(book).text).not_to include('続きを読む')
+        expect(card_for(book).at_css('[data-book-card-target~="toggle"]')).to be_present
+      end
+
       # 開く前と後で、増えるのは折りたたまれていた本文だけにする。
       # 見出しや口がそのとき初めて現れると、同じカードが別の顔で出てくる
       it 'おすすめポイントとあらすじの見出しが開く前から出ている' do
@@ -1180,6 +1192,17 @@ RSpec.describe ExchangesController do
 
         expect(closed_card(book).to_html).to include('https://example.com/books/1')
         expect(closed_card(book).text).to include('ストアで見る')
+      end
+
+      # 下段に置くと、折られていない本のカードでは開く口が消えるぶん左へ寄る。
+      # 本文より上なら、下段に何が出ていようと同じ場所にある
+      it 'ストアへのリンクが本文より上に出る' do
+        book = book_by('佐藤 花子', url: 'https://example.com/books/1', recommendation: 'おすすめの本文')
+
+        open_page
+
+        html = card_for(book).to_html
+        expect(html.index('ストアで見る')).to be < html.index('おすすめの本文')
       end
 
       it 'URL が無ければストアへのリンクは出ない' do

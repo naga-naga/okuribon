@@ -69,15 +69,25 @@
                     <%= book.title %>
                   </h2>
 
-                  <%# 自分の本は取得枠の数でもある。編集・削除の導線だけで見分けさせると、
-                      登録期間を過ぎたとたんにどれが自分の本か分からなくなる %>
-                  <% if received %>
-                    <span class="flex-none rounded-[3px] bg-success px-2 py-0.5 text-[11px] text-paper">
-                      <%= t('book.result.recipient_badge') %>
-                    </span>
-                  <% elsif mine %>
-                    <span class="flex-none rounded-[3px] bg-fill px-2 py-0.5 text-[11px] text-ink-muted">自分の本</span>
-                  <% end %>
+                  <div class="flex flex-none items-center gap-2.5">
+                    <%# 自分の本は取得枠の数でもある。編集・削除の導線だけで見分けさせると、
+                        登録期間を過ぎたとたんにどれが自分の本か分からなくなる %>
+                    <% if received %>
+                      <span class="rounded-[3px] bg-success px-2 py-0.5 text-[11px] text-paper">
+                        <%= t('book.result.recipient_badge') %>
+                      </span>
+                    <% elsif mine %>
+                      <span class="rounded-[3px] bg-fill px-2 py-0.5 text-[11px] text-ink-muted">自分の本</span>
+                    <% end %>
+
+                    <%# 買う先を見るのに本文を開かせる理由が無いので、閉じている間も出す。
+                        下段に置くと、開く口が出ない本のカードでは左へ寄ってしまう。
+                        本文より上なら、下段に何が並んでも同じ場所にある %>
+                    <% if (store_url = book_store_url(book)) %>
+                      <%= link_to 'ストアで見る ↗', store_url, target: '_blank', rel: 'noopener noreferrer',
+                                  class: 'whitespace-nowrap text-[12.5px]' %>
+                    <% end %>
+                  </div>
                 </div>
                 <p class="mt-1.5 text-[12px] text-ink-muted"><%= book.registrant.display_name %></p>
               </div>
@@ -92,7 +102,8 @@
                   <p class="text-[10.5px] tracking-[0.12em] text-accent">おすすめポイント</p>
                   <%# 改行を活かすので、タグの内側で折り返さない。
                       pre-line はタグ直後の改行も1行として残す %>
-                  <p class="mt-1.5 line-clamp-2 whitespace-pre-line text-[13px] leading-[1.9]
+                  <p data-book-card-target="folded"
+                     class="mt-1.5 line-clamp-2 whitespace-pre-line text-[13px] leading-[1.9]
                             group-data-open:line-clamp-none
                             <%= dimmed ? 'text-ink-muted' : 'text-ink' %>"><%= book.recommendation %></p>
                 </div>
@@ -106,32 +117,30 @@
               <% if book.summary.present? %>
                 <div>
                   <p class="text-[10.5px] tracking-[0.12em] text-ink-subtle">あらすじ</p>
-                  <p class="mt-1.5 line-clamp-1 whitespace-pre-line text-[12.5px] leading-[1.85]
+                  <p data-book-card-target="folded"
+                     class="mt-1.5 line-clamp-1 whitespace-pre-line text-[12.5px] leading-[1.85]
                             text-ink-muted group-data-open:line-clamp-none"><%= book.summary %></p>
                 </div>
               <% end %>
             </div>
           </div>
 
-          <%# 口はすべてこの段に集める。開閉で出入りするものが無いので、
-              フェーズや開き具合にかかわらず、この段はいつも中身を持つ %>
-          <footer class="mt-auto flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-line pt-3.5">
+          <%# この本に対してできることを集める段。開く口だけが伏せて出るので、
+              中身が全部伏せられたときは段ごと消す。空の段を残すと、
+              罫線だけが引かれた面が十数枚ぶん並ぶ %>
+          <footer class="mt-auto flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-line pt-3.5
+                         [&:not(:has(>*:not([hidden])))]:hidden">
             <%# 開く口と閉じる口は同じ1つ。文字だけを差し替える。
                 別々のボタンにすると、押した指の先で口が入れ替わる。
                 2つの文字は重ねて置く。長いほうの幅で場所が決まるので、
-                短い「閉じる」に変わっても隣のストアの口が寄ってこない %>
+                短い「閉じる」に変わっても隣に並ぶ口が寄ってこない。
+                折られている本文があるかどうかは controller が測って出す %>
             <button type="button" data-action="book-card#toggle" data-book-card-target="toggle"
-                    aria-expanded="false"
+                    aria-expanded="false" hidden
                     class="grid cursor-pointer text-[12.5px] text-accent underline">
               <span class="col-start-1 row-start-1 text-left group-data-open:invisible">続きを読む ↓</span>
               <span class="invisible col-start-1 row-start-1 text-left group-data-open:visible">閉じる ↑</span>
             </button>
-
-            <%# 買う先を見るのに本文を開かせる理由が無いので、閉じている間も出す %>
-            <% if (store_url = book_store_url(book)) %>
-              <%= link_to 'ストアで見る ↗', store_url, target: '_blank', rel: 'noopener noreferrer',
-                          class: 'text-[12.5px]' %>
-            <% end %>
 
             <% if published %>
               <%# 渡った先は松葉で、返却は沈めた文字で書く。同じ色で並べると、

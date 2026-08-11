@@ -350,6 +350,13 @@ RSpec.describe ExchangesController do
       create(:book, participation: registrant, **attributes)
     end
 
+    # 状況の3つの数字。枠の位置は動かさず中身だけがフェーズで入れ替わるので、
+    # ラベルと値を組で読む。値だけを見ると、入れ替わったのか数が変わったのかが分からない
+    def stats
+      response.parsed_body.css('dl[aria-label="状況"] > div')
+              .map { |cell| cell.css('dt, dd').map { it.text.strip } }
+    end
+
     it '参加者は開ける' do
       open_page
 
@@ -606,11 +613,6 @@ RSpec.describe ExchangesController do
         create(:book, participation: create(:participation, exchange:))
       end
 
-      def stats
-        response.parsed_body.css('dl[aria-label="状況"] > div')
-                .map { |cell| cell.css('dt, dd').map { it.text.strip } }
-      end
-
       {
         '2026-07-25T00:00:00+09:00' => ['参加者', '本', '取得枠'],
         '2026-08-04T00:00:00+09:00' => ['参加者', '本', '取得枠'],
@@ -810,6 +812,56 @@ RSpec.describe ExchangesController do
 
           expect(response.body).to include('十三番目の便り')
         end
+      end
+    end
+
+    # 並ぶ本がまだ無いフェーズ（docs/spec.md 6.2）。空白のまま落とすと、
+    # 読み込みに失敗したのか、まだ誰も登録していないのかが読み取れない
+    describe '準備中' do
+      def open_preparing
+        open_page(at: preparing_at)
+      end
+
+      def placeholders
+        response.parsed_body.css('ul[aria-label="本の入る場所"] > li')
+      end
+
+      # 枠の数と大きさを登録期間のカードに合わせておくと、
+      # 登録が始まった瞬間にここが埋まることが形で分かる
+      it 'カードの入る場所を空の枠で示す' do
+        open_preparing
+
+        expect(placeholders.size).to eq(3)
+      end
+
+      it 'ここに何が並ぶのかを書く' do
+        open_preparing
+
+        expect(placeholders.first.text).to include('登録された本は、おすすめポイントつきでここに並びます')
+      end
+
+      it 'いつまで空のままなのかを添える' do
+        open_preparing
+
+        expect(response.parsed_body.at_css('#book_grid').text).to include('登録期間が始まるまで')
+      end
+
+      # 登録が始まってからも空の枠を出し続けると、誰かが登録すれば埋まることが
+      # 伝わらない。ここから先は「まだ誰も登録していない」と言うほうが正しい
+      it '登録期間に入ったら空の枠は出ない' do
+        open_page
+
+        expect(placeholders).to be_empty
+        expect(response.body).to include('まだ本は登録されていません')
+      end
+
+      # 取得枠に0冊と書くと受け取れないと読めるが、まだ登録が始まっていないだけ
+      it '状況の数字は参加者と0冊と — になる' do
+        create_list(:participation, 2, exchange:)
+
+        open_preparing
+
+        expect(stats).to eq([['参加者', '4人'], ['本', '0冊'], ['取得枠', '—']])
       end
     end
 

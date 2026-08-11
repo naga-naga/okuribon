@@ -11,6 +11,7 @@
                                                 registering: @exchange.writable?(:book, at: requested_at),
                                                 wishing: @exchange.writable?(:wish, at: requested_at),
                                                 published: @exchange.published?(at: requested_at),
+                                                preparing: @exchange.phase(at: requested_at) == :preparing,
                                                 slots: my_books.size,
                                                 mine_only: @mine_only } %>
 

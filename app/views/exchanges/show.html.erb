@@ -13,6 +13,11 @@
 <% wishing = @exchange.writable?(:wish, at: requested_at) %>
 <% published = @exchange.published?(at: requested_at) %>
 
+<%# 何が並ぶかはフェーズそのもので決まる。登録が始まるより前の一覧が空なのは、
+    まだ誰も登録していないからではなく、登録できる人がまだ居ないため。
+    書き込みの可否から引くと、実行待ちと区別が付かない %>
+<% preparing = phase == :preparing %>
+
 <%# 自分の本は取得枠の数でもあり、絞り込みの行き先でもある。
     読み込み済みの一覧から選ぶので、カードごとに COUNT が飛ばない %>
 <% my_books = @books.select { it.participation_id == @participation.id } %>
@@ -217,7 +222,7 @@
     <div class="min-w-0 flex-1">
       <%= render 'books/grid', exchange: @exchange, books: listed,
                                participation: @participation, wishes: @wishes,
-                               registering:, wishing:, published:,
+                               registering:, wishing:, published:, preparing:,
                                slots: my_books.size, mine_only: @mine_only %>
     </div>
 

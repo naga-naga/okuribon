@@ -179,7 +179,7 @@ RSpec.describe WishListsController do
       reorder(books.reverse.map(&:id), **turbo)
 
       expect(response.media_type).to eq(Mime[:turbo_stream].to_s)
-      expect(response.body).to include('target="book_grid"')
+      expect(response.body).to include('target="book_list"')
       expect(response.body).to include('target="wish_list"')
     end
 

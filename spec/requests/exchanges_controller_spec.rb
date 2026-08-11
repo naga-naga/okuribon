@@ -344,6 +344,22 @@ RSpec.describe ExchangesController do
       response.parsed_body.at_css("##{dom_id(book)}")
     end
 
+    # カードを積む器。並べ方はここの class にしか現れない
+    def card_stack
+      response.parsed_body.at_css('#book_list > ul')
+    end
+
+    # 本文を束ねる段。開いた形はここの class で決まる
+    def card_body(book)
+      card_for(book).at_css('div')
+    end
+
+    # まだ開いていないカードで見えているもの。伏せてあるものは hidden か invisible を
+    # 持つ。開閉で見た目がどれだけ動くかは、この差でしか見られない
+    def closed_card(book)
+      card_for(book).dup.tap { |card| card.css('.hidden, .invisible, [hidden]').each(&:remove) }
+    end
+
     # 登録者を名前で作るための入れ物。参加を伴わない本は作れない
     def book_by(display_name, **attributes)
       registrant = create(:participation, exchange:, user: create(:user, display_name:))
@@ -961,8 +977,8 @@ RSpec.describe ExchangesController do
         open_page(at: preparing_at)
       end
 
-      def grid
-        response.parsed_body.at_css('#book_grid')
+      def book_list
+        response.parsed_body.at_css('#book_list')
       end
 
       # 空なのは、まだ誰も登録していないからではなく、登録できる人がまだ居ないため。
@@ -970,15 +986,15 @@ RSpec.describe ExchangesController do
       it '登録が始まれば並ぶことを書く' do
         open_preparing
 
-        expect(grid.text).to include('まだ本は登録されていません')
-        expect(grid.text).to include('登録期間が始まると、ここに並びます')
+        expect(book_list.text).to include('まだ本は登録されていません')
+        expect(book_list.text).to include('登録期間が始まると、ここに並びます')
       end
 
       it '登録期間に入ったら誰かの登録を待つ言い方に変わる' do
         open_page
 
-        expect(grid.text).to include('誰かが登録すると、ここに並びます')
-        expect(grid.text).not_to include('登録期間が始まると')
+        expect(book_list.text).to include('誰かが登録すると、ここに並びます')
+        expect(book_list.text).not_to include('登録期間が始まると')
       end
 
       # 取得枠に0冊と書くと受け取れないと読めるが、まだ登録が始まっていないだけ
@@ -1064,14 +1080,78 @@ RSpec.describe ExchangesController do
     end
 
     describe 'カード' do
-      # 一覧をざっと眺めるための密度で並べる。1列に積むと、
-      # 12冊で画面を何度もめくることになる
-      it '3カラムで並ぶ' do
+      # カードは縦1列に積む。横に並べると、1枚開いたときに以降のカードが
+      # マスの中で総入れ替えになり、読み比べの途中でどこまで見たかを見失う
+      it '1列に積まれる' do
         create(:book, participation:)
 
         open_page
 
-        expect(response.body).to include('lg:grid-cols-3')
+        expect(card_stack['class'].split).not_to include(a_string_matching(/grid-cols/))
+      end
+
+      # 開いた1枚が他のカードの居場所に触れると、読み比べの列がその場で崩れる。
+      # 開いても伸びるのは自分の高さだけにする
+      it '開いてもカードの居場所が変わらない' do
+        book = create(:book, participation:)
+
+        open_page
+
+        expect(card_for(book)['class'].split).not_to include(a_string_matching(/col-span/))
+      end
+
+      # 本文の脇に段を作ると、その段は幅を譲らないので狭い画面で本文が削られる。
+      # 開いても本文の置き場所は動かさない
+      it '開いても本文の脇に段が出ない' do
+        book = create(:book, participation:)
+
+        open_page
+
+        expect(card_body(book)['class'].split).not_to include(a_string_matching(/flex-row/))
+      end
+
+      # 開く口が消えて別の場所に閉じる口が現れると、押した指の先で口が入れ替わる。
+      # 同じ1つの口の文字だけを差し替える
+      it '開く口と閉じる口が同じ場所にある' do
+        book = create(:book, participation:)
+
+        open_page
+
+        toggle = card_for(book).css('[data-book-card-target="toggle"]')
+        expect(toggle.size).to eq(1)
+        expect(toggle.text).to include('続きを読む').and include('閉じる')
+      end
+
+      # 折って隠れている本文が無ければ、押しても何も起きない口になる。
+      # 何行に折れるかはブラウザでしか測れないので、伏せて出しておき、
+      # 測ってから出す。JavaScript が無ければ出ないままにする
+      it '開く口は伏せて出し、折られているかを測ってから出す' do
+        book = create(:book, participation:)
+
+        open_page
+
+        expect(closed_card(book).text).not_to include('続きを読む')
+        expect(card_for(book).at_css('[data-book-card-target~="toggle"]')).to be_present
+      end
+
+      # 開く前と後で、増えるのは折りたたまれていた本文だけにする。
+      # 見出しや口がそのとき初めて現れると、同じカードが別の顔で出てくる
+      it 'おすすめポイントとあらすじの見出しが開く前から出ている' do
+        book = book_by('佐藤 花子', summary: 'あらすじの本文', recommendation: 'おすすめの本文')
+
+        open_page
+
+        expect(closed_card(book).text).to include('おすすめポイント').and include('あらすじ')
+      end
+
+      # 題が大きくなると折り返しの位置まで変わり、同じ本を読み直すことになる
+      it '開いても文字の大きさが変わらない' do
+        book = book_by('佐藤 花子')
+
+        open_page
+
+        resized = card_for(book).css('*').select { it['class'].to_s.include?('group-data-open:text-') }
+        expect(resized).to be_empty
       end
 
       # 交換会の楽しみどころはおすすめポイント。あらすじを先に置くと、
@@ -1103,13 +1183,26 @@ RSpec.describe ExchangesController do
         expect(response.body).to include('おすすめポイントが未記入です')
       end
 
-      it '開くとストアへのリンクが出る' do
-        book_by('佐藤 花子', url: 'https://example.com/books/1')
+      # 買う先を見るのに、まず本文を開かせる理由が無い。
+      # 開いて初めて出てくると、閉じたカードを眺めている側からは口が無いように見える
+      it 'ストアへのリンクは開く前から出ている' do
+        book = book_by('佐藤 花子', url: 'https://example.com/books/1')
 
         open_page
 
-        expect(response.body).to include('https://example.com/books/1')
-        expect(response.body).to include('ストアで見る')
+        expect(closed_card(book).to_html).to include('https://example.com/books/1')
+        expect(closed_card(book).text).to include('ストアで見る')
+      end
+
+      # 下段に置くと、折られていない本のカードでは開く口が消えるぶん左へ寄る。
+      # 本文より上なら、下段に何が出ていようと同じ場所にある
+      it 'ストアへのリンクが本文より上に出る' do
+        book = book_by('佐藤 花子', url: 'https://example.com/books/1', recommendation: 'おすすめの本文')
+
+        open_page
+
+        html = card_for(book).to_html
+        expect(html.index('ストアで見る')).to be < html.index('おすすめの本文')
       end
 
       it 'URL が無ければストアへのリンクは出ない' do
@@ -1570,15 +1663,14 @@ RSpec.describe ExchangesController do
         expect(card_for(wanted).text).to eq(card_for(ignored).text)
       end
 
-      # 希望リストが同じ幅を取り続けるので、カードの列も同じ数のまま。
+      # 希望リストが同じ幅を取り続けるので、カードの並べ方も変わらない。
       # 締切をまたいだ瞬間に大きさが変わると、読み比べていた並びを覚え直すことになる
-      it '希望提出期間と同じ幅でカードが並ぶ' do
+      it '希望提出期間と同じ並べ方でカードが並ぶ' do
         book_by('佐藤 花子')
 
         open_awaiting
 
-        expect(response.parsed_body.at_css('#book_grid > ul')['class']).to include('sm:grid-cols-2')
-        expect(response.parsed_body.at_css('#book_grid > ul')['class']).not_to include('lg:grid-cols-3')
+        expect(card_stack['class'].split).not_to include(a_string_matching(/grid-cols/))
       end
     end
 

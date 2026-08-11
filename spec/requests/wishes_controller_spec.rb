@@ -198,7 +198,7 @@ RSpec.describe WishesController do
       add(book_by_other, **turbo)
 
       expect(response.media_type).to eq(Mime[:turbo_stream].to_s)
-      expect(response.body).to include('target="book_grid"')
+      expect(response.body).to include('target="book_list"')
       expect(response.body).to include('target="wish_list"')
     end
 
@@ -208,7 +208,7 @@ RSpec.describe WishesController do
 
       remove(book, **turbo)
 
-      expect(response.body).to include('target="book_grid"')
+      expect(response.body).to include('target="book_list"')
       expect(response.body).to include('target="wish_list"')
     end
 

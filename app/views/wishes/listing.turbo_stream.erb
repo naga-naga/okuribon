@@ -3,7 +3,7 @@
     開閉の状態を持つシートの外枠は含めない %>
 <% my_books = @books.select { it.participation_id == @participation.id } %>
 
-<%= turbo_stream.replace 'book_grid', partial: 'books/grid',
+<%= turbo_stream.replace 'book_list', partial: 'books/list',
                                       locals: { exchange: @exchange,
                                                 books: @mine_only ? my_books : @books,
                                                 participation: @participation,

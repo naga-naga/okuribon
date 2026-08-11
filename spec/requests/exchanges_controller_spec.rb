@@ -1436,14 +1436,14 @@ RSpec.describe ExchangesController do
       end
 
       # 自分の本は希望に入れようがない。「希望には入れていません」と書くと、
-      # 入れ忘れたようにも読める
-      it '自分の本には行き先がいつ分かるのかが出る' do
+      # 入れ忘れたようにも読める。書くことが無いので下段そのものを持たない
+      it '自分の本には希望の状態を書かない' do
         mine = create(:book, participation:, title: '自分の本')
 
         open_awaiting
 
-        expect(card_for(mine).text).to include('行き先は結果公開で分かります')
         expect(card_for(mine).text).not_to include('希望には入れていません')
+        expect(card_for(mine).text).not_to include('希望に入れた')
       end
 
       # 何人がその本を希望しているかは誰にも見せない（docs/spec.md 8.）。

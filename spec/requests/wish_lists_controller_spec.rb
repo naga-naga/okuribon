@@ -57,17 +57,17 @@ RSpec.describe WishListsController do
       expect(participation.wishes.reload.pluck(:position)).to eq([1, 2, 3])
     end
 
-    it '一覧へ戻る' do
+    it '交換会ページへ戻る' do
       reorder(books.reverse.map(&:id))
 
-      expect(response).to redirect_to(exchange_books_path(exchange))
+      expect(response).to redirect_to(exchange_path(exchange))
     end
 
     # 絞り込みは URL に残る（docs/spec.md 6.2）
     it '絞り込みを保ったまま戻る' do
       reorder(books.reverse.map(&:id), params: { filter: 'mine' })
 
-      expect(response).to redirect_to(exchange_books_path(exchange, filter: 'mine'))
+      expect(response).to redirect_to(exchange_path(exchange, filter: 'mine'))
     end
 
     it '並びを送らなければ受け付けない' do

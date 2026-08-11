@@ -3,6 +3,8 @@
 require 'rails_helper'
 
 RSpec.describe ExchangesController do
+  include ActionView::RecordIdentifier
+
   let!(:user) { create(:user) }
 
   let!(:attributes) do
@@ -294,7 +296,8 @@ RSpec.describe ExchangesController do
     end
   end
 
-  # フェーズも残り時間も日時から導出されるため、現在時刻を固定してから作る
+  # フェーズも残り時間も日時から導出されるため、現在時刻を固定してから作る。
+  # 交換会ページは状態ヘッダー（docs/spec.md 6.1）と本の一覧（6.2）を1枚で出す
   describe '#show' do
     let!(:now) { '2026-08-04T00:00:00+09:00' }
 
@@ -307,35 +310,63 @@ RSpec.describe ExchangesController do
 
     let!(:participation) { create(:participation, user:, exchange:) }
 
-    def open_top(at: now)
+    # 5つのフェーズの中の1点ずつ。フェーズは日時から導出されるので時刻で作る。
+    # 結果公開だけは matched_at が入っているかどうかで決まる（publish!）。
+    # 覚えさせる値ではないので let! ではなくメソッドで持つ
+    def preparing_at
+      '2026-07-25T00:00:00+09:00'
+    end
+
+    def wishing_at
+      '2026-08-10T00:00:00+09:00'
+    end
+
+    def awaiting_at
+      '2026-08-20T00:00:00+09:00'
+    end
+
+    def open_page(at: now)
       travel_to(at) { get exchange_path(exchange) }
     end
 
+    def open_mine(at: now)
+      travel_to(at) { get exchange_path(exchange, filter: :mine) }
+    end
+
+    # 公開は matched_at で決まる。日時カラムを戻しても公開済みであることは変わらない
+    def publish!
+      exchange.update!(matched_at: '2026-08-03T00:00:00+09:00'.in_time_zone)
+    end
+
+    # 印や導線はカード単位で確かめる。ページ全体の文字列を見ると、
+    # 隣のカードや見出しに同じ字があったときに見分けがつかない
+    def card_for(book)
+      response.parsed_body.at_css("##{dom_id(book)}")
+    end
+
+    # 登録者を名前で作るための入れ物。参加を伴わない本は作れない
+    def book_by(display_name, **attributes)
+      registrant = create(:participation, exchange:, user: create(:user, display_name:))
+      create(:book, participation: registrant, **attributes)
+    end
+
     it '参加者は開ける' do
-      open_top
+      open_page
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include('夏の交換会')
-    end
-
-    # 対応ストアや価格帯の目安が書かれている。本を選ぶ前に読む必要がある
-    it '概要が出る' do
-      open_top
-
-      expect(response.body).to include('Kindle のみ。1000円前後を目安に。')
     end
 
     # 403 だと、招待されていない交換会の実在が URL を試すだけで確かめられる
     it '参加していなければ見つからない' do
       log_in_as(create(:user))
 
-      open_top
+      open_page
 
       expect(response).to have_http_status(:not_found)
     end
 
-    # 主催者は必ず参加者を兼ねるので、自分の交換会のトップを開ける。
-    # 主催者管理画面への導線はこの画面が持つ
+    # 主催者は必ず参加者を兼ねるので、自分の交換会を開ける
     it '主催者も開ける' do
       owned = create(:exchange, owner: user, name: '主催した交換会')
 
@@ -345,7 +376,25 @@ RSpec.describe ExchangesController do
       expect(response.body).to include('主催した交換会')
     end
 
-    # 主催者管理画面へ辿り着く経路はここだけ。交換会一覧は主催と参加を
+    it 'ログインしていなければログイン画面へ送る' do
+      log_out
+
+      open_page
+
+      expect(response).to redirect_to(login_path)
+    end
+
+    # 読み取りは5フェーズすべてで開いている。止めるのは書き込みだけ
+    # （docs/spec.md 4. フェーズ）
+    it '結果公開でも開ける' do
+      publish!
+
+      open_page
+
+      expect(response).to have_http_status(:ok)
+    end
+
+    # 主催者管理画面へ辿り着く経路はこのページだけ。交換会一覧は主催と参加を
     # 区別せずに並べるので（6.6）、ここに無いと入口を持てない
     it '主催者には主催者管理画面への導線が出る' do
       owned = create(:exchange, owner: user)
@@ -358,118 +407,78 @@ RSpec.describe ExchangesController do
     # 押しても 404 になるリンクを見せない。主催者以外にはその画面の
     # 存在自体を知らせない（docs/spec.md 8.）
     it '主催者以外には導線が出ない' do
-      open_top
+      open_page
 
       expect(response.body).not_to include(exchange_management_path(exchange))
     end
 
-    it 'ログインしていなければログイン画面へ送る' do
-      log_out
+    # 交換会名と主催者名はこの画面が持つ。共通ヘッダーは画面をまたいで
+    # 中身を変えないので、現在地の名前はパンくずに入らない
+    it 'パンくずは交換会一覧までで、この画面は入らない' do
+      open_page
 
-      open_top
-
-      expect(response).to redirect_to(login_path)
+      expect(breadcrumb).to eq('読書交換会' => exchanges_path)
     end
 
-    it '現在のフェーズが出る' do
-      open_top
+    it '主催者名が出る' do
+      exchange.owner.update!(display_name: '佐藤 花子')
 
-      expect(response.body).to include('登録期間')
+      open_page
+
+      expect(response.body).to include('主催 佐藤 花子')
     end
 
-    it '次の締切が出る' do
-      open_top
+    # 自分の名前を出しても、誰のことか読み替える手間が増えるだけ
+    it '自分が主催なら「あなた」と書く' do
+      owned = create(:exchange, owner: user)
 
-      expect(response.body).to include('登録の締切')
-      expect(response.body).to include('2026年8月8日 00:00')
+      travel_to(now) { get exchange_path(owned) }
+
+      expect(response.body).to include('主催 あなた')
     end
 
-    # 久しぶりに開く人が最初に知りたいのは、日付そのものより残りの長さ
-    it '次の締切までの残りが出る' do
-      open_top
-
-      expect(response.body).to include('あと4日')
-    end
-
-    # 締切当日に「あと0日」と出ても、今日中なのかどうか読み取れない
-    it '締切まで残り数時間なら時間で出る' do
-      open_top(at: '2026-08-07T19:00:00+09:00')
-
-      expect(response.body).to include('あと5時間')
-    end
-
-    # 待っているのは主催者の操作で、日時では動かない
-    it 'マッチング実行待ちには締切も残りも出さない' do
-      open_top(at: '2026-08-20T00:00:00+09:00')
-
-      expect(response.body).to include('マッチング実行待ち')
-      expect(response.body).not_to include('締切')
-      expect(response.body).not_to include('あと')
-    end
-
-    # 終わった交換会に残りを出すと、まだ何かできるように読める
-    it '結果公開には締切も残りも出さない' do
-      exchange.update!(matched_at: '2026-08-03T00:00:00+09:00'.in_time_zone)
-
-      open_top
-
-      expect(response.body).to include('結果公開')
-      expect(response.body).not_to include('締切')
-      expect(response.body).not_to include('あと')
-    end
-
-    # 結果画面へ辿り着く経路はここだけ。#29 が「今なにをすべきか」の文言に
-    # 置き換えるまでのあいだも、開けない期間を作らない
-    it '結果公開後は結果画面への導線が出る' do
-      exchange.update!(matched_at: '2026-08-03T00:00:00+09:00'.in_time_zone)
-
-      open_top
-
-      expect(response.body).to include(exchange_result_path(exchange))
-    end
-
-    # 押しても 404 になるリンクは見せない
-    it '結果公開前には導線が出ない' do
-      open_top
-
-      expect(response.body).not_to include(exchange_result_path(exchange))
-    end
-
-    describe '交換会の規模' do
-      before do
-        create_list(:participation, 2, exchange:)
-        create_list(:book, 2, participation:)
-        create(:book, participation: create(:participation, exchange:))
+    # 現在のフェーズ名だけを出すと、それが5つのうちのどこで、次に何が来るのかが
+    # 読み取れない。数週間かかるツールで、道のりを覚えている前提は置けない
+    describe 'フェーズ帯' do
+      def band
+        response.parsed_body.css('ol[aria-label="フェーズ"] li')
       end
 
-      it '参加者数が出る' do
-        open_top
+      it '5つのフェーズが順に並ぶ' do
+        open_page
 
-        expect(response.body).to include('参加者')
-        expect(response.body).to include('5人')
+        expect(band.map { it.text.strip })
+          .to eq(['準備中', '登録期間', '希望提出期間', 'マッチング実行待ち', '結果公開'])
       end
 
-      it '本の総数が出る' do
-        open_top
+      {
+        '2026-07-25T00:00:00+09:00' => '準備中',
+        '2026-08-04T00:00:00+09:00' => '登録期間',
+        '2026-08-10T00:00:00+09:00' => '希望提出期間',
+        '2026-08-20T00:00:00+09:00' => 'マッチング実行待ち',
+      }.each do |at, phase_name|
+        it "#{at} には「#{phase_name}」に印が付く" do
+          open_page(at:)
 
-        expect(response.body).to include('3冊')
+          expect(band.select { it['aria-current'] == 'step' }.map { it.text.strip }).to eq([phase_name])
+        end
       end
 
-      # 登録した冊数がそのまま受け取れる冊数になる。
-      # 全体の冊数と並べないと、自分が何冊登録したのか確かめる先が無い
-      it '自分の取得枠が出る' do
-        open_top
+      it '結果公開にも印が付く' do
+        publish!
 
-        expect(response.body).to include('取得枠')
-        expect(response.body).to include('2冊')
+        open_page
+
+        expect(band.select { it['aria-current'] == 'step' }.map { it.text.strip }).to eq(['結果公開'])
       end
-    end
 
-    # 導線が無いと、URL を直打ちしないと開けない画面になる
-    it '本の一覧への導線がある' do
-      open_top
+      # フェーズは日時から導出されるもので、選べる先ではない（docs/spec.md 4.）。
+      # タブの形に寄せると押せると読まれる
+      it 'リンクにも button にもならない' do
+        open_page
 
-      expect(response.body).to include(exchange_books_path(exchange))
+        expect(response.parsed_body.css('ol[aria-label="フェーズ"] a, ol[aria-label="フェーズ"] button')).to be_empty
+      end
     end
 
     # 数週間ぶりに開いた人が、その日なにをすればよいかをここだけで掴む。
@@ -485,7 +494,7 @@ RSpec.describe ExchangesController do
         '2026-08-20T00:00:00+09:00' => '結果を待ちます',
       }.each do |at, headline|
         it "#{at} には「#{headline}」が出る" do
-          open_top(at:)
+          open_page(at:)
 
           expect(response.body).to include('あなたがすること')
           expect(response.body).to include(headline)
@@ -493,10 +502,10 @@ RSpec.describe ExchangesController do
       end
 
       it '結果公開には受け取った冊数が出る' do
-        exchange.update!(matched_at: '2026-08-03T00:00:00+09:00'.in_time_zone)
+        publish!
         create(:assignment, participation:, book: create(:book, participation: create(:participation, exchange:)))
 
-        open_top
+        open_page
 
         expect(response.body).to include('あなたに1冊届いています')
       end
@@ -504,7 +513,7 @@ RSpec.describe ExchangesController do
       # 1冊も登録していない人は受け取る権利が無い。
       # 締切を過ぎてからでは取り返せないので、期間中に伝える
       it '1冊も登録していなければ、受け取れる本が0冊になることが分かる' do
-        open_top
+        open_page
 
         expect(response.body).to include('受け取れる本が0冊になります')
       end
@@ -513,18 +522,199 @@ RSpec.describe ExchangesController do
       it '希望リストが空なら、そのことが分かる' do
         create(:book, participation:)
 
-        open_top(at: '2026-08-10T00:00:00+09:00')
+        open_page(at: wishing_at)
 
         expect(response.body).to include('希望リストがまだ空です')
+      end
+
+      # 導線は「あなたがすること」の直下に置き、独立した段を作らない。
+      # 押せる期間は writable? から引く。フェーズ名で条件を書き直すと、
+      # 押しても断られるボタンがどこかのフェーズに残る
+      it '登録期間には本を登録する口が出る' do
+        open_page
+
+        expect(response.body).to include(new_exchange_book_path(exchange))
+      end
+
+      [['準備中', '2026-07-25T00:00:00+09:00'],
+       ['希望提出期間', '2026-08-10T00:00:00+09:00'],
+       ['マッチング実行待ち', '2026-08-20T00:00:00+09:00']].each do |phase_name, at|
+        it "#{phase_name}には本を登録する口が出ない" do
+          open_page(at:)
+
+          expect(response.body).not_to include(new_exchange_book_path(exchange))
+        end
+      end
+    end
+
+    describe '締切' do
+      it '次の締切が出る' do
+        open_page
+
+        expect(response.body).to include('登録の締切')
+        expect(response.body).to include('2026年8月8日 00:00')
+      end
+
+      # 久しぶりに開く人が最初に知りたいのは、日付そのものより残りの長さ
+      it '次の締切までの残りが出る' do
+        open_page
+
+        expect(response.body).to include('あと4日')
+      end
+
+      # 締切当日に「あと0日」と出ても、今日中なのかどうか読み取れない
+      it '締切まで残り数時間なら時間で出る' do
+        open_page(at: '2026-08-07T19:00:00+09:00')
+
+        expect(response.body).to include('あと5時間')
+      end
+
+      # 待っているのは主催者の操作で、日時では動かない。枠を空けると、
+      # 締切を見落としたのか、そもそも無いのかが読み取れない
+      it 'マッチング実行待ちは締切が無いことを書く' do
+        open_page(at: awaiting_at)
+
+        expect(response.body).to include('ありません')
+        expect(response.body).to include('することはもうありません')
+        expect(response.body).not_to include('あと')
+      end
+
+      # 結果公開は締切の枠を、公開日時と結果画面への入口に差し替える
+      it '結果公開には公開日時と結果への入口が出る' do
+        publish!
+
+        open_page
+
+        expect(response.body).to include('2026年8月3日 00:00')
+        expect(response.body).to include('結果を見る')
+        expect(response.body).to include(exchange_result_path(exchange))
+      end
+
+      # 押しても 404 になるリンクは見せない
+      it '結果公開前には結果への入口が出ない' do
+        open_page
+
+        expect(response.body).not_to include(exchange_result_path(exchange))
+      end
+    end
+
+    # 枠の位置は動かさず、中身だけをフェーズで入れ替える（docs/spec.md 6.1 の表）
+    describe '状況の数字' do
+      before do
+        create_list(:participation, 2, exchange:)
+        create_list(:book, 2, participation:)
+        create(:book, participation: create(:participation, exchange:))
+      end
+
+      def stats
+        response.parsed_body.css('dl[aria-label="状況"] > div')
+                .map { |cell| cell.css('dt, dd').map { it.text.strip } }
+      end
+
+      {
+        '2026-07-25T00:00:00+09:00' => ['参加者', '本', '取得枠'],
+        '2026-08-04T00:00:00+09:00' => ['参加者', '本', '取得枠'],
+        '2026-08-10T00:00:00+09:00' => ['本', '取得枠', '希望'],
+        '2026-08-20T00:00:00+09:00' => ['本', '取得枠', '提出した希望'],
+      }.each do |at, labels|
+        it "#{at} には #{labels.join(' ／ ')} が並ぶ" do
+          open_page(at:)
+
+          expect(stats.map(&:first)).to eq(labels)
+        end
+      end
+
+      # 登録した冊数がそのまま受け取れる冊数になる。全体の冊数と並べておかないと、
+      # 自分が何冊登録したのかを確かめる先がどこにも無い
+      it '登録期間には参加者数・冊数・取得枠が入る' do
+        open_page
+
+        expect(stats).to eq([['参加者', '5人'], ['本', '3冊'], ['取得枠', '2冊']])
+      end
+
+      # まだ登録が始まっていないだけで、受け取れないわけではない。
+      # 0冊と書くと、締め出されているようにも読める
+      it '準備中の取得枠は0冊ではなく — と書く' do
+        open_page(at: preparing_at)
+
+        expect(stats.last).to eq(['取得枠', '—'])
+      end
+
+      # 登録の締切を過ぎたら、まだ登録していない人が何人残っているかを数える用が無い。
+      # 代わりに、取得枠に対して足りているかを確かめられる数を出す
+      it '希望提出期間には自分の希望冊数が入る' do
+        create(:wish, participation:, book: book_by('佐藤 花子'), position: 1)
+
+        open_page(at: wishing_at)
+
+        expect(stats).to eq([['本', '4冊'], ['取得枠', '2冊'], ['希望', '1冊']])
+      end
+
+      # 結果が出たあとに数えるのは、何冊が渡って何冊が戻ったか
+      it '結果公開は成立と返却の内訳になる' do
+        received = book_by('佐藤 花子')
+        create(:assignment, book: received, participation:)
+        publish!
+
+        open_page
+
+        expect(stats).to eq([['本', '4冊'], ['成立', '1冊'], ['返却', '3冊']])
+      end
+
+      # 絞り込みで動かすと、登録がどこまで進んだのかが読めなくなる
+      it '自分の本に絞っても交換会全体のまま' do
+        open_mine
+
+        expect(stats).to eq([['参加者', '5人'], ['本', '3冊'], ['取得枠', '2冊']])
+      end
+    end
+
+    # 読むのは本を登録する直前なので、畳まずに出したままにする
+    describe '概要と日程' do
+      def overview
+        response.parsed_body.at_css('section[aria-label="概要と日程"]')
+      end
+
+      # 押す直前に1クリック挟ませない。畳む口そのものを持たない
+      it '畳まずに出す' do
+        open_page
+
+        expect(overview).to be_present
+        expect(overview.at_css('details, summary')).to be_nil
+      end
+
+      # 対応ストアや価格帯の目安が書かれている。本を選ぶ前に読む必要がある
+      it '概要が入る' do
+        open_page
+
+        expect(overview.text).to include('Kindle のみ。1000円前後を目安に。')
+      end
+
+      # 概要は自由記述で長さに上限が無い。状態ヘッダーの中に入れると、
+      # 概要の長さで締切と状況の数字の位置が動く
+      it '状態ヘッダーの外に置く' do
+        open_page
+
+        expect(overview.at_css('dl[aria-label="状況"]')).to be_nil
+      end
+
+      # 並べるのは動かせる期間だけ。結果公開は主催者の実行で起きて日時では決まらない
+      it '各期間の範囲が入る' do
+        open_page
+
+        schedule = overview.text
+        expect(schedule).to include('2026年8月1日 00:00 — 2026年8月8日 00:00')
+        expect(schedule).to include('2026年8月8日 00:00 — 2026年8月15日 00:00')
       end
     end
 
     # 資料が狙っているのは、フェーズが変わっても目の置き場所が動かないこと。
-    # 締切だけは次の節目が無いフェーズで消えるので、位置ではなく前後関係で見る
+    # 左は「あなたがすること」と操作、右は締切と状況の数字。
+    # 締切だけは次の節目が無いフェーズで言い方が変わるので、位置ではなく前後関係で見る
     describe '画面の並び' do
       def positions(body, phase_name)
         { phase: body.index(phase_name), todo: body.index('あなたがすること'),
-          stats: body.index('取得枠'), links: body.index(exchange_books_path(exchange)) }
+          stats: body.index('取得枠'), books: body.index('みんなの本') }
       end
 
       {
@@ -533,8 +723,8 @@ RSpec.describe ExchangesController do
         '2026-08-10T00:00:00+09:00' => '希望提出期間',
         '2026-08-20T00:00:00+09:00' => 'マッチング実行待ち',
       }.each do |at, phase_name|
-        it "#{at} でも フェーズ帯 → あなたがすること → 状況の数字 → 導線 の順に並ぶ" do
-          open_top(at:)
+        it "#{at} でも フェーズ帯 → あなたがすること → 状況の数字 → 本の一覧 の順に並ぶ" do
+          open_page(at:)
 
           found = positions(response.body, phase_name)
           expect(found.values).to all(be_present)
@@ -545,7 +735,7 @@ RSpec.describe ExchangesController do
       # 締切は「あなたがすること」と状況の数字のあいだに入る。
       # 数字より上に置くと、まず読むべき行動から目が離れる
       it '締切は「あなたがすること」と状況の数字のあいだに出る' do
-        open_top
+        open_page
 
         found = positions(response.body, '登録期間')
         deadline = response.body.index('登録の締切')
@@ -553,12 +743,694 @@ RSpec.describe ExchangesController do
       end
     end
 
-    # 見えるのは登録した本人と、成立後の受取人だけ。トップはどちらの経路でもない
-    it 'ギフトコードが含まれない' do
-      create(:book, participation:, gift_code: 'MYOWNGIFTCODE')
-      create(:book, participation: create(:participation, exchange:), gift_code: 'OTHERGIFTCODE')
+    # 交換会を開くと本が並んでいる（docs/spec.md 6.2）。
+    # 読み取りは5フェーズすべてで開いており、フェーズで変わるのは書き込みの口だけ
+    describe '本の一覧' do
+      # 選ぶ材料は全員の本。自分の登録した本だけでは読み比べにならない
+      it '全員の本が並ぶ' do
+        create(:book, participation:, title: '自分の本')
+        book_by('佐藤 花子', title: '他の人の本')
 
-      open_top
+        open_page
+
+        expect(response.body).to include('自分の本')
+        expect(response.body).to include('他の人の本')
+      end
+
+      it '誰が登録したかが分かる' do
+        book_by('佐藤 花子')
+
+        open_page
+
+        expect(response.body).to include('佐藤 花子')
+      end
+
+      # 閉じたカードは抜粋だが、折るのは CSS で、全文は最初から入れておく。
+      # 開くたびにサーバーへ行くと、読み比べのたびに往復が挟まる
+      it '長いあらすじも全文が入る' do
+        book_by('佐藤 花子', summary: "#{'あ' * 200}最後まで読める")
+
+        open_page
+
+        expect(response.body).to include('最後まで読める')
+      end
+
+      it 'おすすめポイントも全文が入る' do
+        book_by('佐藤 花子', recommendation: "#{'ぜ' * 200}最後まで読める")
+
+        open_page
+
+        expect(response.body).to include('最後まで読める')
+      end
+
+      # 開くたびにカードの位置が入れ替わると、前に見た本を探し直すことになる
+      it '登録順に並ぶ' do
+        create(:book, participation:, title: '先に登録した本')
+        create(:book, participation:, title: 'あとで登録した本')
+
+        open_page
+
+        expect(response.body.index('先に登録した本')).to be < response.body.index('あとで登録した本')
+      end
+
+      # 白紙で返すと、壊れているのかまだ誰も登録していないのか区別がつかない
+      it '1冊も登録されていなければその旨を出す' do
+        open_page
+
+        expect(response.body).to include('まだ本は登録されていません')
+      end
+
+      [['準備中', '2026-07-25T00:00:00+09:00'],
+       ['希望提出期間', '2026-08-10T00:00:00+09:00'],
+       ['マッチング実行待ち', '2026-08-20T00:00:00+09:00']].each do |phase_name, at|
+        it "#{phase_name}でも本が並ぶ" do
+          book_by('佐藤 花子', title: '十三番目の便り')
+
+          open_page(at:)
+
+          expect(response.body).to include('十三番目の便り')
+        end
+      end
+    end
+
+    describe '一覧の見出し' do
+      # 参加人数も取得枠も状態ヘッダーが上で出している。
+      # 同じページに2つ載せると、同じ数字が縦に2度並ぶ
+      it '並んでいる冊数だけを添える' do
+        create(:book, participation:)
+        book_by('佐藤 花子')
+
+        open_page
+
+        expect(response.parsed_body.at_css('h2').parent.text).to include('2冊')
+      end
+
+      # ギフトコードが一覧に並ばないことは、期待して探しに来る人がいるので毎回書く
+      it '結果公開後は誰に渡ったかを読む並びだと断る' do
+        publish!
+
+        open_page
+
+        expect(response.parsed_body.at_css('h2').parent.text).to include('誰に渡ったか')
+      end
+    end
+
+    describe '絞り込み' do
+      # 自分がどれを出したかを確かめる用。登録期間の外では編集の導線が消えるので、
+      # 印だけでは冊数を数えづらい
+      it '自分の本だけに絞れる' do
+        create(:book, participation:, title: '自分の本')
+        book_by('佐藤 花子', title: '他の人の本')
+
+        open_mine
+
+        expect(response.body).to include('自分の本')
+        expect(response.body).not_to include('他の人の本')
+      end
+
+      it '絞り込みには自分の冊数が出る' do
+        create_list(:book, 2, participation:)
+
+        open_page
+
+        expect(response.body).to include('自分の本 2')
+      end
+
+      # 見出しの冊数はいま並んでいる数。交換会全体の数は状態ヘッダーが出す
+      it '絞ると見出しの冊数も絞った数になる' do
+        create(:book, participation:)
+        book_by('佐藤 花子')
+
+        open_mine
+
+        expect(response.parsed_body.at_css('h2').parent.text).to include('1冊')
+      end
+
+      it '知らない絞り込みは全件に倒す' do
+        book_by('佐藤 花子', title: '他の人の本')
+
+        travel_to(now) { get exchange_path(exchange, filter: 'その他') }
+
+        expect(response.body).to include('他の人の本')
+      end
+
+      # 取得枠は登録した冊数で決まる。空の一覧をそのまま返すと、
+      # まだ受け取る権利が無いことがどこにも出ない
+      it '自分が1冊も登録していなければその旨が出る' do
+        book_by('佐藤 花子')
+
+        open_mine
+
+        expect(response.body).to include('まだ1冊も登録していません')
+      end
+    end
+
+    describe 'カード' do
+      # 一覧をざっと眺めるための密度で並べる。1列に積むと、
+      # 12冊で画面を何度もめくることになる
+      it '3カラムで並ぶ' do
+        create(:book, participation:)
+
+        open_page
+
+        expect(response.body).to include('lg:grid-cols-3')
+      end
+
+      # 交換会の楽しみどころはおすすめポイント。あらすじを先に置くと、
+      # どの本にも似た筋書きが並び、読み比べる材料が下に沈む
+      it 'おすすめポイントがあらすじより前に出る' do
+        book_by('佐藤 花子', summary: 'あらすじの本文', recommendation: 'おすすめの本文')
+
+        open_page
+
+        expect(response.body.index('おすすめの本文')).to be < response.body.index('あらすじの本文')
+      end
+
+      # 詳細画面へ飛ばすと列の中の位置を見失う。開いて読んで、また列に戻れるようにする
+      it 'その場で開いて閉じられる' do
+        create(:book, participation:)
+
+        open_page
+
+        expect(response.body).to include('続きを読む')
+        expect(response.body).to include('閉じる')
+      end
+
+      # 空白のまま置くと、書き忘れなのか書くところが無いのか分からない
+      it 'おすすめポイントが未記入ならその旨が出る' do
+        book_by('佐藤 花子', recommendation: nil)
+
+        open_page
+
+        expect(response.body).to include('おすすめポイントが未記入です')
+      end
+
+      it '開くとストアへのリンクが出る' do
+        book_by('佐藤 花子', url: 'https://example.com/books/1')
+
+        open_page
+
+        expect(response.body).to include('https://example.com/books/1')
+        expect(response.body).to include('ストアで見る')
+      end
+
+      it 'URL が無ければストアへのリンクは出ない' do
+        book_by('佐藤 花子', url: nil)
+
+        open_page
+
+        expect(response.body).not_to include('ストアで見る')
+      end
+
+      # 登録者が書いた URL をそのままリンクにすると、読み比べに来た人の
+      # ブラウザで javascript: が走る
+      it 'http と https 以外はリンクにしない' do
+        book_by('佐藤 花子', url: "javascript:alert('x')")
+
+        open_page
+
+        expect(response.body).not_to include('javascript:alert')
+      end
+    end
+
+    describe '希望リストの編集' do
+      def open_page_while_wishing
+        open_page(at: wishing_at)
+      end
+
+      it '希望提出期間中は希望リストが常時出る' do
+        book_by('佐藤 花子')
+
+        open_page_while_wishing
+
+        expect(response.body).to include('あなたの希望リスト')
+      end
+
+      it '希望提出期間中は各カードから希望に追加できる' do
+        book = book_by('佐藤 花子')
+
+        open_page_while_wishing
+
+        expect(card_for(book).text).to include('希望に追加')
+      end
+
+      it '希望に入れた本には順位が出る' do
+        book = book_by('佐藤 花子')
+        create(:wish, participation:, book:, position: 1)
+
+        open_page_while_wishing
+
+        expect(card_for(book).text).to include('希望 1位')
+        expect(card_for(book).text).to include('希望から外す')
+      end
+
+      # 一覧を読んでいる間ずっと、いま何冊・何位まで選んだかが見えている
+      it '希望リストに順位と本が並ぶ' do
+        book = book_by('佐藤 花子', title: '選んだ本')
+        create(:wish, participation:, book:, position: 1)
+
+        open_page_while_wishing
+
+        expect(wish_list.text).to include('選んだ本')
+      end
+
+      it '1冊も選んでいなければその旨が出る' do
+        book_by('佐藤 花子')
+
+        open_page_while_wishing
+
+        expect(wish_list.text).to include('まだ1冊も選んでいません')
+      end
+
+      it '取得枠と希望冊数が並ぶ' do
+        register_own(2)
+        wish_for_others(3)
+
+        open_page_while_wishing
+
+        expect(wish_list.text).to include('取得枠2冊に対して希望3冊')
+      end
+
+      # 取得枠は登録した冊数で決まる。何と同じ数なのかを書かないと、
+      # 増やせる数なのか決まった数なのかが読み取れない
+      it '取得枠が何で決まるかを添える' do
+        register_own(2)
+
+        open_page_while_wishing
+
+        expect(response.parsed_body.at_css('aside').text).to include('2冊（登録した本と同じ）')
+      end
+
+      # 希望リストは長いほうが有利。上位が取られると下位へ降りていく
+      it '取得枠の2倍に満たなければ増やすことを促す' do
+        register_own(2)
+        wish_for_others(3)
+
+        open_page_while_wishing
+
+        expect(wish_list.text).to include('もう少し増やすことを推奨します')
+        expect(wish_list.text).to include('4冊以上')
+      end
+
+      it '取得枠の2倍以上あれば促さない' do
+        register_own(2)
+        wish_for_others(4)
+
+        open_page_while_wishing
+
+        expect(wish_list.text).not_to include('もう少し増やすことを推奨します')
+      end
+
+      # 登録期間はもう終わっている。増やすことを促しても、その人には届かない
+      it '1冊も登録していなければ受け取れないことを伝える' do
+        wish_for_others(3)
+
+        open_page_while_wishing
+
+        expect(wish_list.text).to include('受け取れる本はありません')
+        expect(wish_list.text).not_to include('もう少し増やすことを推奨します')
+      end
+
+      # 狭い画面ではシートを畳んだままでも一覧を読み進められる。
+      # 案内を開いた側だけに置くと、既定の状態では冊数がどこにも出ない
+      it '畳んだシートにも冊数が出る' do
+        register_own(2)
+        wish_for_others(3)
+
+        open_page_while_wishing
+
+        expect(wish_summary.text).to include('枠2冊／希望3冊')
+        expect(wish_summary.text).to include('あと1冊推奨')
+      end
+
+      it '畳んだシートでも足りていれば推奨を出さない' do
+        register_own(2)
+        wish_for_others(4)
+
+        open_page_while_wishing
+
+        expect(wish_summary.text).to include('枠2冊／希望4冊')
+        expect(wish_summary.text).not_to include('推奨')
+      end
+
+      # 何人がその本を希望しているかは誰にも見えない（docs/spec.md 8.）。
+      # 案内が数えるのは自分の希望だけで、他の人の希望では動かない
+      it '他の人の希望は冊数に混ざらない' do
+        register_own(1)
+        wanted = book_by('佐藤 花子')
+        create(:wish, participation:, book: wanted, position: 1)
+        3.times { create(:wish, participation: create(:participation, exchange:), book: wanted, position: 1) }
+
+        open_page_while_wishing
+
+        expect(wish_list.text).to include('取得枠1冊に対して希望1冊')
+      end
+
+      def wish_list
+        response.parsed_body.at_css('#wish_list')
+      end
+
+      # 畳んでいる間に出る1行。開いた側の案内と同じ文字が並ぶので、
+      # 出し分けを確かめるにはここだけを見る
+      def wish_summary
+        wish_list.at_css('#wish_summary')
+      end
+
+      # 希望リストの末尾に1冊足す。順位は足した順の連番になる
+      def wish_for(title)
+        book = book_by('佐藤 花子', title:)
+        create(:wish, participation:, book:, position: participation.wishes.count + 1)
+        book
+      end
+
+      # 取得枠は自分が登録した冊数と同じ（docs/spec.md 3.）
+      def register_own(count)
+        count.times { create(:book, participation:) }
+      end
+
+      def wish_for_others(count)
+        count.times { |index| wish_for("希望#{index + 1}") }
+      end
+
+      def rows
+        wish_list.css('ol li')
+      end
+
+      def move_button(row, label)
+        row.at_css(%(button[aria-label="#{label}"]))
+      end
+
+      # 並べ替えは順序だけをまとめて送る（docs/spec.md 6.2）。
+      # ここで確かめるのは送る材料が画面に揃っていることまで。
+      # つまんで動かす操作そのものはブラウザでしか確かめられない
+      it '希望リストの並びをそのまま送れる' do
+        first = wish_for('1冊目')
+        second = wish_for('2冊目')
+
+        open_page_while_wishing
+
+        expect(wish_list.css('input[name="book_ids[]"]').pluck('value'))
+          .to eq([first.id.to_s, second.id.to_s])
+      end
+
+      it '送り先は希望リストの更新' do
+        wish_for('1冊目')
+
+        open_page_while_wishing
+
+        expect(wish_list.at_css('form')['action']).to eq(exchange_wish_list_path(exchange))
+      end
+
+      # ドラッグはつまめる人にしか使えない。順位を1つずつ動かす口を別に置く
+      it '各行に順位を上げ下げする口がある' do
+        wish_for('1冊目')
+        wish_for('2冊目')
+
+        open_page_while_wishing
+
+        expect(wish_list.css('button[aria-label="順位を上げる"]').size).to eq(2)
+        expect(wish_list.css('button[aria-label="順位を下げる"]').size).to eq(2)
+      end
+
+      # 端の行に行き先は無い。押せるように見えて何も起きないボタンを置かない
+      it '先頭は上げられず、末尾は下げられない' do
+        wish_for('1冊目')
+        wish_for('2冊目')
+
+        open_page_while_wishing
+
+        expect(move_button(rows.first, '順位を上げる')[:disabled]).to be_present
+        expect(move_button(rows.first, '順位を下げる')[:disabled]).to be_nil
+        expect(move_button(rows.last, '順位を上げる')[:disabled]).to be_nil
+        expect(move_button(rows.last, '順位を下げる')[:disabled]).to be_present
+      end
+
+      # 並べ替えは JavaScript でしか動かない。動かない環境に押せる口を残すと、
+      # 押しても何も起きないボタンになる。カードからの追加・削除はそのまま通る
+      it '並べ替えの口は JavaScript が動くまで出さない' do
+        wish_for('1冊目')
+        wish_for('2冊目')
+
+        open_page_while_wishing
+
+        expect(wish_list.css('li [hidden] button[aria-label="順位を上げる"]').size).to eq(2)
+      end
+
+      # 絞り込みは URL に残る（docs/spec.md 6.2）
+      it '絞り込みを保ったまま並べ替えられる' do
+        wish_for('1冊目')
+
+        open_mine(at: wishing_at)
+
+        expect(wish_list.at_css('input[name="filter"]')['value']).to eq('mine')
+      end
+
+      it '1冊も選んでいなければ並べ替えるものが無い' do
+        book_by('佐藤 花子')
+
+        open_page_while_wishing
+
+        expect(wish_list.at_css('form')).to be_nil
+      end
+
+      # 自分の本は受け取れない（docs/spec.md 3.）。押しても通らないボタンを
+      # 出しておいて断るのではなく、選べないことをその場で示す
+      it '自分の本は選べないことが分かる' do
+        book = create(:book, participation:)
+
+        open_page_while_wishing
+
+        expect(card_for(book).text).to include('自分の本は希望に選べません')
+        expect(card_for(book).text).not_to include('希望に追加')
+      end
+
+      # 何人がその本を希望しているかは誰にも見せない（docs/spec.md 8.）。
+      # 中身まで揃えた2冊を並べ、希望された側とされていない側で
+      # カードが1文字も変わらないことを見る
+      it '何人がその本を希望しているかは出ない' do
+        registrant = create(:participation, exchange:, user: create(:user, display_name: '佐藤 花子'))
+        same = { title: '同じ題の本', summary: '同じあらすじ', recommendation: '同じおすすめ' }
+        wanted = create(:book, participation: registrant, **same)
+        ignored = create(:book, participation: registrant, **same)
+        3.times { create(:wish, participation: create(:participation, exchange:), book: wanted) }
+
+        open_page_while_wishing
+
+        expect(card_for(wanted).text).to eq(card_for(ignored).text)
+      end
+
+      # 登録期間はまだ選ぶ対象が揃っていない。出しても押せば断られる
+      it '登録期間中は出ない' do
+        book_by('佐藤 花子')
+
+        open_page
+
+        expect(response.body).not_to include('あなたの希望リスト')
+        expect(response.body).not_to include('希望に追加')
+      end
+
+      it 'マッチング実行待ちには出ない' do
+        book_by('佐藤 花子')
+
+        open_page(at: awaiting_at)
+
+        expect(response.body).not_to include('あなたの希望リスト')
+      end
+    end
+
+    describe '登録・編集・削除の導線' do
+      it '1冊も登録されていなくても登録ボタンが出る' do
+        open_page
+
+        expect(response.body).to include('まだ本は登録されていません')
+        expect(response.body).to include(new_exchange_book_path(exchange))
+      end
+
+      it '自分の本には編集と削除が出る' do
+        mine = create(:book, participation:)
+
+        open_page
+
+        expect(response.body).to include(edit_exchange_book_path(exchange, mine))
+        expect(response.body).to include('登録を取り消します')
+      end
+
+      # 消えるのは本だけではない。取得枠が1つ減り、その本への他の人の希望も消える
+      it '削除の確認で取得枠が減ることを伝える' do
+        create_list(:book, 2, participation:)
+
+        open_page
+
+        expect(response.body).to include('取得枠が2冊から1冊に減り')
+      end
+
+      # 自分の本は取得枠の数でもある。導線の有無だけで見分けさせると、
+      # 登録期間を過ぎたとたんにどれが自分の本か分からなくなる
+      it '自分の本には印が付く' do
+        mine = create(:book, participation:, title: '灯台守の一年')
+
+        open_page(at: wishing_at)
+
+        expect(card_for(mine).text).to include('自分の本')
+      end
+
+      it '他人の本には印が付かない' do
+        theirs = book_by('佐藤 花子', title: '十三番目の便り')
+
+        open_page
+
+        expect(card_for(theirs).text).not_to include('自分の本')
+      end
+
+      it '他人の本には編集も削除も出ない' do
+        theirs = book_by('佐藤 花子')
+
+        open_page
+
+        expect(response.body).not_to include(edit_exchange_book_path(exchange, theirs))
+      end
+
+      # 押しても通らない導線を残さない
+      it '登録期間外は自分の本にも編集と削除が出ない' do
+        mine = create(:book, participation:)
+
+        open_page(at: wishing_at)
+
+        expect(response.body).not_to include(edit_exchange_book_path(exchange, mine))
+        expect(response.body).not_to include('登録を取り消します')
+      end
+    end
+
+    describe '結果公開後' do
+      # 成立した割当。受け取る人は本の登録者とは別の参加になる
+      def matched(book, recipient_name)
+        recipient = create(:participation, exchange:, user: create(:user, display_name: recipient_name))
+        create(:assignment, book:, participation: recipient)
+      end
+
+      # 返却は誰にも渡せなかった本が登録者へ戻ること。割当は登録者の参加に付く
+      def returned(book)
+        create(:assignment, book:, participation: book.participation, round: nil, returned: true)
+      end
+
+      it '成立した本に誰から誰へ渡ったかが出る' do
+        book = book_by('佐藤 花子', title: '十三番目の便り')
+        matched(book, '鈴木 一郎')
+        publish!
+
+        open_page
+
+        expect(card_for(book).text).to include('佐藤 花子 さん → 鈴木 一郎 さん')
+      end
+
+      # 十数枚並ぶ中から自分の名前を探し直さずに済むようにする（結果画面と同じ扱い）
+      it '自分が出した本は自分の側が「あなた」になる' do
+        book = create(:book, participation:, title: '灯台守の一年')
+        matched(book, '鈴木 一郎')
+        publish!
+
+        open_page
+
+        expect(card_for(book).text).to include('あなた → 鈴木 一郎 さん')
+      end
+
+      it '自分が受け取った本は受け取る側が「あなた」になる' do
+        book = book_by('佐藤 花子', title: '波打ち際の観測所')
+        create(:assignment, book:, participation:)
+        publish!
+
+        open_page
+
+        expect(card_for(book).text).to include('佐藤 花子 さん → あなた')
+      end
+
+      # 渡った先は松葉で示す。返却と同じ色で並べると、成立を数え直すことになる
+      it '自分が受け取った本には印が付く' do
+        book = book_by('佐藤 花子', title: '波打ち際の観測所')
+        create(:assignment, book:, participation:)
+        publish!
+
+        open_page
+
+        expect(card_for(book).text).to include('あなたへ')
+      end
+
+      it '成立していても他人が受け取った本には印が付かない' do
+        book = book_by('佐藤 花子', title: '十三番目の便り')
+        matched(book, '鈴木 一郎')
+        publish!
+
+        open_page
+
+        expect(card_for(book).text).not_to include('あなたへ')
+      end
+
+      it '返却された自分の本には戻ってきたことが出る' do
+        book = create(:book, participation:, title: '砂の図書館')
+        returned(book)
+        publish!
+
+        open_page
+
+        expect(card_for(book).text).to include('あなたに返却されました')
+      end
+
+      it '返却された他人の本には登録者へ戻ったことが出る' do
+        book = book_by('佐藤 花子', title: '金曜日の献立')
+        returned(book)
+        publish!
+
+        open_page
+
+        expect(card_for(book).text).to include('佐藤 花子 さんに返却')
+      end
+
+      # 選ばれなかったことを本の評価として読ませない（docs/spec.md 6.5）。
+      # 戻った理由は結果画面が引き受ける
+      it '返却の理由は書かない' do
+        book = book_by('佐藤 花子', title: '金曜日の献立')
+        returned(book)
+        publish!
+
+        open_page
+
+        expect(card_for(book).text).not_to include('希望した人がいませんでした')
+      end
+
+      # 希望を出す期間は終わっている。押しても通らない口を残さない
+      it '希望に追加する口が消える' do
+        book = book_by('佐藤 花子', title: '十三番目の便り')
+        matched(book, '鈴木 一郎')
+        publish!
+
+        open_page
+
+        expect(response.body).not_to include('希望に追加')
+        expect(response.body).not_to include(exchange_book_wish_path(exchange, book))
+      end
+
+      # 公開前は割当が無い。フェーズを見ずに割当の有無だけで出すと、
+      # 主催者が実行した瞬間に、まだ公開の合図を受けていない画面へ結果が出る
+      it '結果公開前には渡った先が出ない' do
+        book = book_by('佐藤 花子', title: '十三番目の便り')
+        matched(book, '鈴木 一郎')
+
+        open_page
+
+        expect(card_for(book).text).not_to include('鈴木 一郎 さん')
+      end
+    end
+
+    # 見えるのは登録した本人と、成立後の受取人だけ。
+    # この画面はどちらの経路でもない（docs/spec.md 8.）
+    it 'ギフトコードが含まれない' do
+      mine = create(:book, participation:, gift_code: 'MYOWNGIFTCODE')
+      theirs = book_by('佐藤 花子', gift_code: 'OTHERGIFTCODE')
+      create(:assignment, book: theirs, participation:)
+      create(:assignment, book: mine, participation:, round: nil, returned: true)
+      publish!
+
+      open_page
 
       expect(response.body).not_to include('MYOWNGIFTCODE')
       expect(response.body).not_to include('OTHERGIFTCODE')

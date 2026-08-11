@@ -6,16 +6,26 @@ module ExchangesHelper
   # 桁を増やすと、久しぶりに開いた人が読み解く手間が増える
   DURATION_UNITS = [[1.day.to_i, '日'], [1.hour.to_i, '時間'], [1.minute.to_i, '分']].freeze
 
-  # 「あなたがすること」の面の描き分け。朱＝押すものと締切、松葉＝成立と完了なので、
-  # 放っておくと受け取れる本が減る状態だけを朱で塗り、結果公開を松葉にする。
-  # 面が濃いと墨の濃淡が読めなくなるため、文字の色まで組で持つ
+  # 「あなたがすること」の描き分け。朱＝押すものと締切、松葉＝成立と完了なので、
+  # 放っておくと受け取れる本が減る状態だけを朱の面で塗る。
+  # 面が濃いと墨の濃淡が読めなくなるため、文字の色まで組で持つ。
+  # 結果公開は状態ヘッダーごと松葉の面になるので（HEADER_STYLES）、ここでは面を持たない
   TODO_TONE_STYLES = {
-    normal: { panel: 'border-line bg-paper', eyebrow: 'text-ink-subtle',
+    normal: { panel: '', eyebrow: 'text-ink-subtle',
               headline: 'text-ink', detail: 'text-ink-muted' },
-    urgent: { panel: 'border-accent bg-accent', eyebrow: 'text-accent-soft',
+    urgent: { panel: 'border border-accent bg-accent px-5 py-5', eyebrow: 'text-accent-soft',
               headline: 'text-paper', detail: 'text-accent-soft' },
-    done: { panel: 'border-success bg-paper', eyebrow: 'text-success',
-            headline: 'text-ink', detail: 'text-ink-muted' },
+    done: { panel: '', eyebrow: 'text-success-soft',
+            headline: 'text-paper', detail: 'text-success-mute' },
+  }.freeze
+
+  # 状態ヘッダーの地と、その上に載る締切・状況の数字（docs/spec.md 6.1）。
+  # 結果公開だけ面ごと松葉に変わり、そのまま結果への入口になる。
+  # 地が濃い側では墨の濃淡が読めないので、罫と文字の色まで組で持つ
+  HEADER_STYLES = {
+    paper: { face: 'bg-paper', rule: 'border-line', label: 'text-ink-subtle', value: 'text-ink' },
+    success: { face: 'bg-success', rule: 'border-success-hover',
+               label: 'text-success-soft', value: 'text-paper' },
   }.freeze
 
   # 締切を朱の面で急かす範囲。今日中に手を動かさないと間に合わない長さにする。
@@ -52,6 +62,34 @@ module ExchangesHelper
 
   def exchange_card_style(tone, part)
     CARD_TONE_STYLES.fetch(tone).fetch(part)
+  end
+
+  def exchange_header_style(published, part)
+    HEADER_STYLES.fetch(published ? :success : :paper).fetch(part)
+  end
+
+  # 状態ヘッダーに並べる3つの数字（docs/spec.md 6.1 の表）。
+  # 枠の位置は動かさず、中身だけをフェーズで入れ替える。
+  # 参加人数を出すのは登録期間まで。それより後は登録の締切が過ぎており、
+  # まだ登録していない人が何人残っているかを数える用が無い。
+  # 代わりに自分の希望の冊数を出す。取得枠に対して足りているかが、その時期に
+  # いちばん確かめたい数になる。
+  #
+  # 数は呼ぶ側が読み込み済みのものを渡す。ここで数え直すと、絞り込んだ一覧の
+  # 冊数と交換会全体の冊数が混ざる。
+  # @return [Array<Array(String, String)>] ラベルと値の組を3つ
+  def exchange_stats(phase, participants:, books:, slots:, wishes:, returned:)
+    case phase
+    # まだ登録が始まっていないだけで、受け取れないわけではない。
+    # 取得枠に0冊と書くと、締め出されているようにも読める
+    when :preparing then [['参加者', "#{participants}人"], ['本', "#{books}冊"], ['取得枠', '—']]
+    when :registration then [['参加者', "#{participants}人"], ['本', "#{books}冊"], ['取得枠', "#{slots}冊"]]
+    when :wish then [['本', "#{books}冊"], ['取得枠', "#{slots}冊"], ['希望', "#{wishes}冊"]]
+    when :awaiting_matching then [['本', "#{books}冊"], ['取得枠', "#{slots}冊"], ['提出した希望', "#{wishes}冊"]]
+    # 結果が出たあとに数えるのは、何冊が渡って何冊が戻ったか。
+    # 一覧の見出しは冊数しか言わないので、内訳はここが引き受ける
+    else [['本', "#{books}冊"], ['成立', "#{books - returned}冊"], ['返却', "#{returned}冊"]]
+    end
   end
 
   # カード1枚の強さ。締切の近さを3段階で出し分け、待つ日時を持たない

@@ -1,25 +1,16 @@
 # frozen_string_literal: true
 
 class BooksController < ApplicationController
-  include BookListing
   include PhaseGuard
 
   before_action :require_login
   before_action :set_participation
 
   # フォームを開く時点で止める。押しても通らない画面を開かせても仕方がない。
-  # only: ではなく except: にして、既定を「止める」に倒す。
-  # 書き込みのアクションが増えたときに、書き忘れが素通りにならない。
-  # 読み取りは全フェーズで開くので、読むだけのアクションはここに並べる
-  guard_phase :book, except: [:index]
-
-  # 本の一覧。交換会トップと同じく参加から引くので、参加していなければ見つからない。
-  # 読み取りは全フェーズで開いており、止めるのは書き込みだけ（docs/spec.md 4. フェーズ）。
-  # 登録順に並べる。開くたびにカードの位置が入れ替わると、
-  # 前に見た本を毎回探し直すことになる
-  def index
-    load_book_listing
-  end
+  # 一覧を交換会ページに畳んでから、このコントローラに残るのは書き込みの口だけに
+  # なったので、除外は置かない。読むための経路が戻ってきたときに、
+  # そのときだけ except: を書き足すほうが、書き忘れが素通りにならない
+  guard_phase :book
 
   def new
     @book = @participation.books.build
@@ -44,7 +35,7 @@ class BooksController < ApplicationController
     @book = own_book
 
     if @book.update(book_params)
-      redirect_to exchange_books_path(@exchange), notice: t('book.flash.updated')
+      redirect_to exchange_path(@exchange), notice: t('book.flash.updated')
     else
       render :edit, status: :unprocessable_content
     end
@@ -53,7 +44,7 @@ class BooksController < ApplicationController
   def destroy
     own_book.destroy!
 
-    redirect_to exchange_books_path(@exchange), notice: t('book.flash.destroyed')
+    redirect_to exchange_path(@exchange), notice: t('book.flash.destroyed')
   end
 
   private
@@ -75,7 +66,7 @@ class BooksController < ApplicationController
   def after_create_path
     return new_exchange_book_path(@exchange) if params[:continue].present?
 
-    exchange_books_path(@exchange)
+    exchange_path(@exchange)
   end
 
   # 自分の本だけを引く。他人の本は見つからないことにする。

@@ -1,6 +1,9 @@
 <%# カードの一覧。希望を1冊出し入れするたびにここごと差し替える。
     1冊外すと後ろの順位がすべて繰り上がるので、押した1枚だけでは足りない %>
-<div id="book_grid" class="mt-6">
+<%# 幅は希望リストが脇に並ぶ間の一覧と同じところで止める（1180 − 340 − 24）。
+    止めないと、リストの無いフェーズだけカードが1100px を超えて広がり、
+    1行が80字を回って読みにくいうえ、締切をまたぐたびに幅が変わる %>
+<div id="book_grid" class="mt-6 max-w-[768px]">
   <%# 順位は本から引く。カードごとに希望リストを走査すると、冊数の二乗になる %>
   <% positions = wishes.to_h { [it.book_id, it.position] } %>
 
@@ -26,12 +29,12 @@
       <% end %>
     </div>
   <% else %>
-    <%# ざっと眺めるための密度で並べる。気になった1枚はその場で開き、
-        読み終わったら列の元の位置に戻れる。狭い画面では1カラムに落ちる。
-        希望リストが脇に出ている間は、その幅のぶん1列減らす。
-        実行待ちも同じだけ減らす。締切をまたいだ瞬間にカードの大きさが変わると、
-        読み比べていた並びを覚え直すことになる %>
-    <ul class="grid gap-4 sm:grid-cols-2 <%= 'lg:grid-cols-3' unless wishing || submitted %>">
+    <%# 縦1列に積む。気になった1枚はその場で開き、読み終わったら元の位置に戻れる。
+        横に並べると、開いた1枚が幅を取ったぶん以降のカードがマスの中で
+        総入れ替えになり、読み比べの途中でどこまで見たかを見失う。
+        フェーズでも画面の幅でも並べ方は変えない。締切をまたいだ瞬間に
+        カードの大きさが変わると、読み比べていた並びを覚え直すことになる %>
+    <ul class="flex flex-col gap-4">
       <% books.each do |book| %>
         <% mine = book.participation_id == participation.id %>
         <% actions = registering && mine %>
@@ -51,10 +54,12 @@
             そのまま入れなかったことにあたる。自分の本もここに入る（順位を持てない） %>
         <% submitted_wish = submitted && position %>
         <li id="<%= dom_id(book) %>" data-controller="book-card"
-            class="group flex flex-col gap-4 rounded-[5px] border p-6 data-open:col-span-full
+            class="group flex flex-col gap-4 rounded-[5px] border p-6
                    <%= book_card_tone(dimmed:, received:, mine:) %>">
-          <%# 開くと本文と脇の2段組みになる。閉じている間は本文だけを縦に積む %>
-          <div class="flex flex-1 flex-col gap-3.5 group-data-open:flex-row group-data-open:gap-8">
+          <%# 開くと本文と脇の2段組みになる。閉じている間は本文だけを縦に積む。
+              狭い画面では開いても縦のまま。脇は240px を譲らないので、
+              横に並べると本文が数十pxまで削られ、1行に1文字ずつ落ちる %>
+          <div class="flex flex-1 flex-col gap-3.5 sm:group-data-open:flex-row sm:group-data-open:gap-8">
             <div class="flex flex-1 flex-col gap-3.5">
               <%# 誰が登録したかは参加者全員に見える（docs/spec.md 8.） %>
               <div>
@@ -107,9 +112,10 @@
               <% end %>
             </div>
 
-            <%# 開いたときだけ出る脇。ストアへ出るか、読み終えて列に戻るかの2つ %>
-            <div class="hidden w-[240px] flex-none flex-col gap-3 border-line pl-0
-                        group-data-open:flex sm:group-data-open:border-l sm:group-data-open:pl-6">
+            <%# 開いたときだけ出る脇。ストアへ出るか、読み終えて列に戻るかの2つ。
+                幅を持つのは横に並ぶときだけ。狭い画面では本文の下に続く %>
+            <div class="hidden flex-col gap-3 border-line pl-0 group-data-open:flex
+                        sm:w-[240px] sm:flex-none sm:group-data-open:border-l sm:group-data-open:pl-6">
               <% if (store_url = book_store_url(book)) %>
                 <%= link_to 'ストアで見る ↗', store_url, target: '_blank', rel: 'noopener noreferrer',
                             class: 'rounded-[5px] border border-line-strong px-4 py-2.5 text-center ' \

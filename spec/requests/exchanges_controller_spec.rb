@@ -344,6 +344,16 @@ RSpec.describe ExchangesController do
       response.parsed_body.at_css("##{dom_id(book)}")
     end
 
+    # カードを積む器。並べ方はここの class にしか現れない
+    def book_list
+      response.parsed_body.at_css('#book_grid > ul')
+    end
+
+    # 本文と、開いたときだけ出る脇を束ねる段。開いた形はここの class で決まる
+    def card_body(book)
+      card_for(book).at_css('div')
+    end
+
     # 登録者を名前で作るための入れ物。参加を伴わない本は作れない
     def book_by(display_name, **attributes)
       registrant = create(:participation, exchange:, user: create(:user, display_name:))
@@ -1064,14 +1074,35 @@ RSpec.describe ExchangesController do
     end
 
     describe 'カード' do
-      # 一覧をざっと眺めるための密度で並べる。1列に積むと、
-      # 12冊で画面を何度もめくることになる
-      it '3カラムで並ぶ' do
+      # カードは縦1列に積む。横に並べると、1枚開いたときに以降のカードが
+      # マスの中で総入れ替えになり、読み比べの途中でどこまで見たかを見失う
+      it '1列に積まれる' do
         create(:book, participation:)
 
         open_page
 
-        expect(response.body).to include('lg:grid-cols-3')
+        expect(book_list['class'].split).not_to include(a_string_matching(/grid-cols/))
+      end
+
+      # 開いた1枚が他のカードの居場所に触れると、読み比べの列がその場で崩れる。
+      # 開いても伸びるのは自分の高さだけにする
+      it '開いてもカードの居場所が変わらない' do
+        book = create(:book, participation:)
+
+        open_page
+
+        expect(card_for(book)['class'].split).not_to include(a_string_matching(/col-span/))
+      end
+
+      # 開くと本文の脇にストアへの口と閉じる口が並ぶが、脇は240px を譲らない。
+      # 狭い画面でも横に並べると本文が数十pxまで削られ、1行に1文字ずつ落ちる
+      it '狭い画面では開いても本文と脇が横に並ばない' do
+        book = create(:book, participation:)
+
+        open_page
+
+        expect(card_body(book)['class'].split).not_to include('group-data-open:flex-row')
+        expect(card_body(book)['class'].split).to include('sm:group-data-open:flex-row')
       end
 
       # 交換会の楽しみどころはおすすめポイント。あらすじを先に置くと、
@@ -1570,15 +1601,14 @@ RSpec.describe ExchangesController do
         expect(card_for(wanted).text).to eq(card_for(ignored).text)
       end
 
-      # 希望リストが同じ幅を取り続けるので、カードの列も同じ数のまま。
+      # 希望リストが同じ幅を取り続けるので、カードの並べ方も変わらない。
       # 締切をまたいだ瞬間に大きさが変わると、読み比べていた並びを覚え直すことになる
-      it '希望提出期間と同じ幅でカードが並ぶ' do
+      it '希望提出期間と同じ並べ方でカードが並ぶ' do
         book_by('佐藤 花子')
 
         open_awaiting
 
-        expect(response.parsed_body.at_css('#book_grid > ul')['class']).to include('sm:grid-cols-2')
-        expect(response.parsed_body.at_css('#book_grid > ul')['class']).not_to include('lg:grid-cols-3')
+        expect(book_list['class'].split).not_to include(a_string_matching(/grid-cols/))
       end
     end
 

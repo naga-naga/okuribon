@@ -848,37 +848,24 @@ RSpec.describe ExchangesController do
         open_page(at: preparing_at)
       end
 
-      def placeholders
-        response.parsed_body.css('ul[aria-label="本の入る場所"] > li')
+      def grid
+        response.parsed_body.at_css('#book_grid')
       end
 
-      # 枠の数と大きさを登録期間のカードに合わせておくと、
-      # 登録が始まった瞬間にここが埋まることが形で分かる
-      it 'カードの入る場所を空の枠で示す' do
+      # 空なのは、まだ誰も登録していないからではなく、登録できる人がまだ居ないため。
+      # 登録期間と同じ文にすると、誰かの登録を待っているように読める
+      it '登録が始まれば並ぶことを書く' do
         open_preparing
 
-        expect(placeholders.size).to eq(3)
+        expect(grid.text).to include('まだ本は登録されていません')
+        expect(grid.text).to include('登録期間が始まると、ここに並びます')
       end
 
-      it 'ここに何が並ぶのかを書く' do
-        open_preparing
-
-        expect(placeholders.first.text).to include('登録された本は、おすすめポイントつきでここに並びます')
-      end
-
-      it 'いつまで空のままなのかを添える' do
-        open_preparing
-
-        expect(response.parsed_body.at_css('#book_grid').text).to include('登録期間が始まるまで')
-      end
-
-      # 登録が始まってからも空の枠を出し続けると、誰かが登録すれば埋まることが
-      # 伝わらない。ここから先は「まだ誰も登録していない」と言うほうが正しい
-      it '登録期間に入ったら空の枠は出ない' do
+      it '登録期間に入ったら誰かの登録を待つ言い方に変わる' do
         open_page
 
-        expect(placeholders).to be_empty
-        expect(response.body).to include('まだ本は登録されていません')
+        expect(grid.text).to include('誰かが登録すると、ここに並びます')
+        expect(grid.text).not_to include('登録期間が始まると')
       end
 
       # 取得枠に0冊と書くと受け取れないと読めるが、まだ登録が始まっていないだけ

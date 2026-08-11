@@ -4,32 +4,10 @@
   <%# 順位は本から引く。カードごとに希望リストを走査すると、冊数の二乗になる %>
   <% positions = wishes.to_h { [it.book_id, it.position] } %>
 
-  <% if books.empty? && preparing %>
-    <%# 登録が始まるより前は、まだ誰も登録していないのではなく、登録できる人が
-        まだ居ない。カードの入る場所を空の枠で示し、ここに何が並ぶのかを書く。
-        枠の数と大きさを登録期間のカードに合わせておくと、登録が始まった瞬間に
-        ここが埋まることが形で分かる %>
-    <ul aria-label="本の入る場所" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      <%# 1列ぶんの幅で2行に折れる。text-pretty を置かないと、最後の行に
-          1文字だけが残ることがある %>
-      <li class="flex min-h-[150px] items-center rounded-[5px] border border-dashed border-line-strong
-                 bg-surface-sunken px-6 py-6 text-[12.5px] leading-[1.85] text-pretty text-ink-muted">
-        登録された本は、おすすめポイントつきでここに並びます
-      </li>
-
-      <%# 2枚目以降は同じ文を繰り返さない。並びの形だけを見せるものなので、
-          狭い画面では1枚に落とす。縦に3つ積むと、読むもののない面が続く %>
-      <% 2.times do %>
-        <li class="hidden min-h-[150px] rounded-[5px] border border-dashed border-line-strong
-                   bg-surface-sunken sm:block"></li>
-      <% end %>
-    </ul>
-
-    <p class="mt-3.5 text-[12.5px] leading-[1.85] text-ink-subtle">
-      登録期間が始まるまで、この場所は空のままです。
-    </p>
-  <% elsif books.empty? %>
-    <%# 白紙で返すと、壊れているのかまだ誰も登録していないのか区別がつかない %>
+  <% if books.empty? %>
+    <%# 白紙で返すと、壊れているのかまだ誰も登録していないのか区別がつかない。
+        面はどのフェーズでも1つで、差し替えるのは文だけにする。
+        0冊という同じ状態がフェーズごとに別の形で出ると、読み替える手間が増える %>
     <div class="rounded-[5px] border border-line bg-paper px-5 py-6">
       <% if mine_only %>
         <%# 取得枠は登録した冊数で決まる。空の一覧をそのまま返すと、
@@ -41,7 +19,9 @@
       <% else %>
         <p class="text-[14.5px] font-medium text-ink">まだ本は登録されていません。</p>
         <p class="mt-2 text-[13px] leading-[1.85] text-ink-muted">
-          誰かが登録すると、ここに並びます。
+          <%# 登録が始まるより前に空なのは、まだ誰も登録していないからではなく、
+              登録できる人がまだ居ないため。誰かを待っているように書かない %>
+          <%= preparing ? '登録期間が始まると、ここに並びます。' : '誰かが登録すると、ここに並びます。' %>
         </p>
       <% end %>
     </div>

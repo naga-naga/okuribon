@@ -378,6 +378,12 @@ RSpec.describe ExchangesController do
       count.times { |index| wish_for("希望#{index + 1}") }
     end
 
+    # 希望を出し入れする口。追加も削除も同じパスを持ち、button_to なので form になる。
+    # 口が外れたことをラベルの文字で確かめると、言い方を変えただけで素通りする
+    def wish_form(book)
+      card_for(book).at_css(%(form[action="#{exchange_book_wish_path(exchange, book)}"]))
+    end
+
     # 取得枠は自分が登録した冊数と同じ（docs/spec.md 3.）
     def register_own(count)
       count.times { create(:book, participation:) }
@@ -1036,6 +1042,7 @@ RSpec.describe ExchangesController do
 
         open_page_while_wishing
 
+        expect(wish_form(book)).to be_present
         expect(card_for(book).text).to include('希望に追加')
       end
 
@@ -1242,7 +1249,7 @@ RSpec.describe ExchangesController do
         open_page_while_wishing
 
         expect(card_for(book).text).to include('自分の本は希望に選べません')
-        expect(card_for(book).text).not_to include('希望に追加')
+        expect(wish_form(book)).to be_nil
       end
 
       # 何人がその本を希望しているかは誰にも見せない（docs/spec.md 8.）。
@@ -1262,12 +1269,12 @@ RSpec.describe ExchangesController do
 
       # 登録期間はまだ選ぶ対象が揃っていない。出しても押せば断られる
       it '登録期間中は出ない' do
-        book_by('佐藤 花子')
+        book = book_by('佐藤 花子')
 
         open_page
 
         expect(response.body).not_to include('あなたの希望リスト')
-        expect(response.body).not_to include('希望に追加')
+        expect(wish_form(book)).to be_nil
       end
     end
 
@@ -1379,8 +1386,8 @@ RSpec.describe ExchangesController do
 
         open_awaiting
 
-        expect(card_for(wanted).text).not_to include('希望から外す')
-        expect(card_for(ignored).text).not_to include('希望に追加')
+        expect(wish_form(wanted)).to be_nil
+        expect(wish_form(ignored)).to be_nil
       end
 
       # 増やす道はもう残っていない。促す代わりに、いま何が起きるのかだけを書く

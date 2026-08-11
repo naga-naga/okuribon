@@ -703,6 +703,68 @@ RSpec.describe ExchangesController do
       end
     end
 
+    # 状態ヘッダーの下には十数枚のカードが続く。読み進めた先で 6.1 の3点が
+    # 視界から消えないよう、畳んだ帯を上部に残す
+    describe '畳んだ帯' do
+      def bar
+        response.parsed_body.at_css('[data-state-header-target="bar"]')
+      end
+
+      it '交換会名・フェーズ・すべきこと・締切までの残りが並ぶ' do
+        open_page
+
+        expect(bar.text).to include('夏の交換会')
+        expect(bar.text).to include('登録期間')
+        expect(bar.text).to include('本を登録する')
+        expect(bar.text).to include('あと4日')
+      end
+
+      # 畳みは JavaScript が動いてから効く。動かない環境では帯が出ないだけで、
+      # 状態ヘッダーはそのまま読める
+      it '既定では隠れている' do
+        open_page
+
+        expect(bar).to be_key('hidden')
+      end
+
+      it 'JavaScript が無くても状態ヘッダーは読める' do
+        open_page
+
+        expect(response.parsed_body.at_css('dl[aria-label="状況"]')).to be_present
+        expect(response.parsed_body.at_css('ol[aria-label="フェーズ"]')).to be_present
+      end
+
+      # 帯に出す残りは状態ヘッダーと同じ数を指す。別々に組むと、片方だけが
+      # 古い数え方で残る
+      it '締切を持たないフェーズには残りを出さない' do
+        open_page(at: awaiting_at)
+
+        expect(bar.text).to include('マッチング実行待ち')
+        expect(bar.text).not_to include('締切まで')
+      end
+
+      # 取得枠に対して希望が足りているかは、その期間にいちばん確かめたい数になる
+      it '希望提出期間には希望の冊数と取得枠が入る' do
+        register_own(2)
+        wish_for_others(3)
+
+        open_page(at: wishing_at)
+
+        expect(bar.text).to include('希望 3冊')
+        expect(bar.text).to include('枠 2冊')
+      end
+
+      # 数を出すのは希望提出期間だけ。ほかの期間は取得枠に対して足りているかを
+      # 確かめる用が無く、帯の1行を埋めるだけになる
+      it '希望提出期間のほかには冊数を入れない' do
+        register_own(2)
+
+        open_page
+
+        expect(bar.text).not_to include('枠 2冊')
+      end
+    end
+
     # 読むのは本を登録する直前なので、畳まずに出したままにする
     describe '概要と日程' do
       def overview

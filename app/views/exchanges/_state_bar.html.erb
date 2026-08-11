@@ -1,0 +1,47 @@
+<%# 状態ヘッダーを畳んだ帯（docs/spec.md 6.1）。状態ヘッダーが画面の上へ出たあと、
+    ここが代わりに上部へ残る。持たせるのは 6.1 の3点（フェーズ・締切までの残り・
+    すべきこと）と、それが何の交換会の話なのかを言う名前だけ。
+
+    既定は hidden で、外すのは state_header コントローラ。JavaScript が動かない
+    環境では帯が出ないだけで、状態ヘッダーはそのまま読める。
+
+    共通ヘッダーの上には重ならない。畳むのは状態ヘッダーが上へ出てからで、
+    その時点で共通ヘッダーは先に流れている（10.2） %>
+<div data-state-header-target="bar" hidden
+     class="fixed inset-x-0 top-0 z-30 border-b border-line-strong bg-paper">
+  <div class="mx-auto flex h-[52px] w-full max-w-[1180px] items-center gap-x-3 px-4 sm:gap-x-5 sm:px-6">
+    <%# 狭い画面では落とす。「マッチング実行待ち」のチップだけで 375px の3分の1を
+        取るので、4つとも1行には入らない。落とすのは 6.1 の3点に入らないものから %>
+    <span class="hidden max-w-[240px] flex-none truncate text-[14px] font-bold text-ink sm:block">
+      <%= exchange.name %>
+    </span>
+
+    <%# フェーズ帯と同じく、結果公開だけ松葉にする。押せるものではないので
+        リンクにも button にもしない %>
+    <span class="flex-none rounded-[3px] px-2.5 py-1 text-[11.5px] font-bold text-paper
+                 <%= published ? 'bg-success' : 'bg-accent' %>">
+      <%= t(phase, scope: 'exchange.phases') %>
+    </span>
+
+    <%# 帯に入るのは見出しだけ。detail は本人の状態にもとづく補足なので、
+        1行に畳んだここでは切り落とされるほうが長い %>
+    <span class="min-w-0 flex-1 truncate text-[13px] text-ink"><%= todo.headline %></span>
+
+    <%# 残りを持たないフェーズでは何も出さない。状態ヘッダーは枠を空けない決めごとだが
+        （6.1）、帯はラベル付きの枠を持たないので、空欄に見える先がない %>
+    <% if remaining %>
+      <span class="flex flex-none items-baseline gap-2">
+        <span class="text-[11.5px] text-ink-subtle">締切まで</span>
+        <span class="tabular text-[17px] font-bold text-accent"><%= remaining %></span>
+      </span>
+    <% end %>
+
+    <%# 狭い画面では落とす。下部に固定した希望リストのシートが同じ数を持っており、
+        上と下で同じ数字を挟むことになる（6.1）。シートが脇へ回るのは lg から %>
+    <% if wishes %>
+      <span class="tabular hidden flex-none text-[12.5px] text-accent lg:block">
+        希望 <%= wishes %>冊 ／ 枠 <%= slots %>冊
+      </span>
+    <% end %>
+  </div>
+</div>

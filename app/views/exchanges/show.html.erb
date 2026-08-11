@@ -36,13 +36,24 @@
     実行した瞬間に、公開の合図をまだ受けていない画面へ結果が出る %>
 <% returned_count = published ? @books.count { it.assignment.nil? || it.assignment.returned? } : 0 %>
 
+<%# 締切までの残りは状態ヘッダーと畳んだ帯の両方が出す。1回だけ引いて回す。
+    2か所で引き直すと、描いている途中で締切をまたいだときに違う数が並ぶ %>
+<% deadline = published ? nil : @exchange.next_deadline(at: requested_at) %>
+
 <%# 希望リストは狭い画面では下部に固定されるので、その高さぶん一覧の下を空ける %>
-<div class="mx-auto w-full max-w-[1180px] px-4 pt-8 sm:px-6 <%= wish_pane ? 'pb-44 lg:pb-10' : 'pb-10' %>">
+<div data-controller="state-header"
+     class="mx-auto w-full max-w-[1180px] px-4 pt-8 sm:px-6 <%= wish_pane ? 'pb-44 lg:pb-10' : 'pb-10' %>">
+  <%= render 'exchanges/state_bar', exchange: @exchange, phase:, published:, todo: @todo,
+                                    remaining: deadline && remaining_time_text(deadline, at: requested_at),
+                                    wishes: (@wishes.size if phase == :wish), slots: my_books.size %>
+
   <%# 状態ヘッダー。必ず一目で分かるべきは、今どのフェーズか・締切まであとどれくらいか・
       自分は今なにをすべきかの3点。高さは、開いた直後に本のカードが1行ぶん見える
       ところまでに抑える。全部を占めると、開くたびに状態を読ませてからでないと
-      本に辿り着けず、統合した意味が無くなる %>
-  <section class="overflow-hidden rounded-[6px] border border-line bg-paper">
+      本に辿り着けず、統合した意味が無くなる。
+      スクロールで上へ出たあとは、畳んだ帯が3点を引き取る %>
+  <section data-state-header-target="header"
+           class="overflow-hidden rounded-[6px] border border-line bg-paper">
     <%# 交換会名と主催者名はこの画面が持つ。共通ヘッダーは画面をまたいで中身を
         変えない決めごとなので、パンくずとアカウントのまま通す（10.2）。
         参加人数は下の状況の数字が出すので、ここでは繰り返さない %>
@@ -134,7 +145,7 @@
           <%= link_to '結果を見る', exchange_result_path(@exchange),
                       class: 'mt-3.5 block rounded-[5px] bg-paper px-5 py-3 text-center text-[14px] ' \
                              'font-bold text-success no-underline hover:bg-paper-hover' %>
-        <% elsif (deadline = @exchange.next_deadline(at: requested_at)) %>
+        <% elsif deadline %>
           <p class="text-[11px] text-ink-subtle"><%= @exchange.next_deadline_name(at: requested_at) %></p>
 
           <%# 数週間ぶりに開く人がまず知りたいのは、日付そのものより残りの長さ。

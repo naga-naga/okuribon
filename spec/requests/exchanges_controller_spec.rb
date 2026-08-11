@@ -345,8 +345,8 @@ RSpec.describe ExchangesController do
     end
 
     # カードを積む器。並べ方はここの class にしか現れない
-    def book_list
-      response.parsed_body.at_css('#book_grid > ul')
+    def card_stack
+      response.parsed_body.at_css('#book_list > ul')
     end
 
     # 本文と、開いたときだけ出る脇を束ねる段。開いた形はここの class で決まる
@@ -971,8 +971,8 @@ RSpec.describe ExchangesController do
         open_page(at: preparing_at)
       end
 
-      def grid
-        response.parsed_body.at_css('#book_grid')
+      def book_list
+        response.parsed_body.at_css('#book_list')
       end
 
       # 空なのは、まだ誰も登録していないからではなく、登録できる人がまだ居ないため。
@@ -980,15 +980,15 @@ RSpec.describe ExchangesController do
       it '登録が始まれば並ぶことを書く' do
         open_preparing
 
-        expect(grid.text).to include('まだ本は登録されていません')
-        expect(grid.text).to include('登録期間が始まると、ここに並びます')
+        expect(book_list.text).to include('まだ本は登録されていません')
+        expect(book_list.text).to include('登録期間が始まると、ここに並びます')
       end
 
       it '登録期間に入ったら誰かの登録を待つ言い方に変わる' do
         open_page
 
-        expect(grid.text).to include('誰かが登録すると、ここに並びます')
-        expect(grid.text).not_to include('登録期間が始まると')
+        expect(book_list.text).to include('誰かが登録すると、ここに並びます')
+        expect(book_list.text).not_to include('登録期間が始まると')
       end
 
       # 取得枠に0冊と書くと受け取れないと読めるが、まだ登録が始まっていないだけ
@@ -1081,7 +1081,7 @@ RSpec.describe ExchangesController do
 
         open_page
 
-        expect(book_list['class'].split).not_to include(a_string_matching(/grid-cols/))
+        expect(card_stack['class'].split).not_to include(a_string_matching(/grid-cols/))
       end
 
       # 開いた1枚が他のカードの居場所に触れると、読み比べの列がその場で崩れる。
@@ -1608,7 +1608,7 @@ RSpec.describe ExchangesController do
 
         open_awaiting
 
-        expect(book_list['class'].split).not_to include(a_string_matching(/grid-cols/))
+        expect(card_stack['class'].split).not_to include(a_string_matching(/grid-cols/))
       end
     end
 

@@ -349,9 +349,15 @@ RSpec.describe ExchangesController do
       response.parsed_body.at_css('#book_list > ul')
     end
 
-    # 本文と、開いたときだけ出る脇を束ねる段。開いた形はここの class で決まる
+    # 本文を束ねる段。開いた形はここの class で決まる
     def card_body(book)
       card_for(book).at_css('div')
+    end
+
+    # まだ開いていないカードで見えているもの。開くまで伏せてあるものは
+    # hidden か invisible を持つ。開閉で見た目がどれだけ動くかは、この差でしか見られない
+    def closed_card(book)
+      card_for(book).dup.tap { |card| card.css('.hidden, .invisible').each(&:remove) }
     end
 
     # 登録者を名前で作るための入れ物。参加を伴わない本は作れない
@@ -1094,15 +1100,46 @@ RSpec.describe ExchangesController do
         expect(card_for(book)['class'].split).not_to include(a_string_matching(/col-span/))
       end
 
-      # 開くと本文の脇にストアへの口と閉じる口が並ぶが、脇は240px を譲らない。
-      # 狭い画面でも横に並べると本文が数十pxまで削られ、1行に1文字ずつ落ちる
-      it '狭い画面では開いても本文と脇が横に並ばない' do
+      # 本文の脇に段を作ると、その段は幅を譲らないので狭い画面で本文が削られる。
+      # 開いても本文の置き場所は動かさない
+      it '開いても本文の脇に段が出ない' do
         book = create(:book, participation:)
 
         open_page
 
-        expect(card_body(book)['class'].split).not_to include('group-data-open:flex-row')
-        expect(card_body(book)['class'].split).to include('sm:group-data-open:flex-row')
+        expect(card_body(book)['class'].split).not_to include(a_string_matching(/flex-row/))
+      end
+
+      # 開く口が消えて別の場所に閉じる口が現れると、押した指の先で口が入れ替わる。
+      # 同じ1つの口の文字だけを差し替える
+      it '開く口と閉じる口が同じ場所にある' do
+        book = create(:book, participation:)
+
+        open_page
+
+        toggle = card_for(book).css('[data-book-card-target="toggle"]')
+        expect(toggle.size).to eq(1)
+        expect(toggle.text).to include('続きを読む').and include('閉じる')
+      end
+
+      # 開く前と後で、増えるのは折りたたまれていた本文だけにする。
+      # 見出しや口がそのとき初めて現れると、同じカードが別の顔で出てくる
+      it 'おすすめポイントとあらすじの見出しが開く前から出ている' do
+        book = book_by('佐藤 花子', summary: 'あらすじの本文', recommendation: 'おすすめの本文')
+
+        open_page
+
+        expect(closed_card(book).text).to include('おすすめポイント').and include('あらすじ')
+      end
+
+      # 題が大きくなると折り返しの位置まで変わり、同じ本を読み直すことになる
+      it '開いても文字の大きさが変わらない' do
+        book = book_by('佐藤 花子')
+
+        open_page
+
+        resized = card_for(book).css('*').select { it['class'].to_s.include?('group-data-open:text-') }
+        expect(resized).to be_empty
       end
 
       # 交換会の楽しみどころはおすすめポイント。あらすじを先に置くと、
@@ -1134,13 +1171,15 @@ RSpec.describe ExchangesController do
         expect(response.body).to include('おすすめポイントが未記入です')
       end
 
-      it '開くとストアへのリンクが出る' do
-        book_by('佐藤 花子', url: 'https://example.com/books/1')
+      # 買う先を見るのに、まず本文を開かせる理由が無い。
+      # 開いて初めて出てくると、閉じたカードを眺めている側からは口が無いように見える
+      it 'ストアへのリンクは開く前から出ている' do
+        book = book_by('佐藤 花子', url: 'https://example.com/books/1')
 
         open_page
 
-        expect(response.body).to include('https://example.com/books/1')
-        expect(response.body).to include('ストアで見る')
+        expect(closed_card(book).to_html).to include('https://example.com/books/1')
+        expect(closed_card(book).text).to include('ストアで見る')
       end
 
       it 'URL が無ければストアへのリンクは出ない' do

@@ -56,15 +56,15 @@
         <li id="<%= dom_id(book) %>" data-controller="book-card"
             class="group flex flex-col gap-4 rounded-[5px] border p-6
                    <%= book_card_tone(dimmed:, received:, mine:) %>">
-          <%# 開くと本文と脇の2段組みになる。閉じている間は本文だけを縦に積む。
-              狭い画面では開いても縦のまま。脇は240px を譲らないので、
-              横に並べると本文が数十pxまで削られ、1行に1文字ずつ落ちる %>
-          <div class="flex flex-1 flex-col gap-3.5 sm:group-data-open:flex-row sm:group-data-open:gap-8">
+          <%# 開いて変わるのは本文の折り返しが解けることだけ。見出しも口も文字の
+              大きさも動かさない。開いた瞬間に別の顔になると、読み比べていた
+              カードを見つけ直すことになる %>
+          <div class="flex flex-1 flex-col gap-3.5">
             <div class="flex flex-1 flex-col gap-3.5">
               <%# 誰が登録したかは参加者全員に見える（docs/spec.md 8.） %>
               <div>
                 <div class="flex items-start justify-between gap-2.5">
-                  <h2 class="text-[18px] font-bold leading-[1.45] group-data-open:text-[22px]
+                  <h2 class="text-[18px] font-bold leading-[1.45]
                              <%= dimmed ? 'text-ink-subtle' : 'text-ink' %>">
                     <%= book.title %>
                   </h2>
@@ -84,15 +84,15 @@
 
               <%# おすすめポイントが交換会の楽しみどころなので、朱の縦線を引いて
                   あらすじより前に置く。閉じている間は抜粋で、開くと全文になる。
-                  折るのは CSS なので、開いてももう一度サーバーへ行かない %>
+                  折るのは CSS なので、開いてももう一度サーバーへ行かない。
+                  見出しは閉じている間も出す。開いて初めて出てくると、
+                  抜粋が何の抜粋なのかを開くまで名指せない %>
               <% if book.recommendation.present? %>
                 <div class="border-l-2 pl-3 <%= dimmed ? 'border-line' : 'border-accent' %>">
-                  <p class="hidden text-[10.5px] tracking-[0.12em] text-accent group-data-open:block">
-                    おすすめポイント
-                  </p>
+                  <p class="text-[10.5px] tracking-[0.12em] text-accent">おすすめポイント</p>
                   <%# 改行を活かすので、タグの内側で折り返さない。
                       pre-line はタグ直後の改行も1行として残す %>
-                  <p class="line-clamp-2 whitespace-pre-line text-[13px] leading-[1.9] group-data-open:mt-1.5
+                  <p class="mt-1.5 line-clamp-2 whitespace-pre-line text-[13px] leading-[1.9]
                             group-data-open:line-clamp-none
                             <%= dimmed ? 'text-ink-muted' : 'text-ink' %>"><%= book.recommendation %></p>
                 </div>
@@ -105,40 +105,33 @@
 
               <% if book.summary.present? %>
                 <div>
-                  <p class="hidden text-[10.5px] tracking-[0.12em] text-ink-subtle group-data-open:block">あらすじ</p>
-                  <p class="line-clamp-1 whitespace-pre-line text-[12.5px] leading-[1.85] text-ink-muted
-                            group-data-open:mt-1.5 group-data-open:line-clamp-none"><%= book.summary %></p>
+                  <p class="text-[10.5px] tracking-[0.12em] text-ink-subtle">あらすじ</p>
+                  <p class="mt-1.5 line-clamp-1 whitespace-pre-line text-[12.5px] leading-[1.85]
+                            text-ink-muted group-data-open:line-clamp-none"><%= book.summary %></p>
                 </div>
               <% end %>
             </div>
-
-            <%# 開いたときだけ出る脇。ストアへ出るか、読み終えて列に戻るかの2つ。
-                幅を持つのは横に並ぶときだけ。狭い画面では本文の下に続く %>
-            <div class="hidden flex-col gap-3 border-line pl-0 group-data-open:flex
-                        sm:w-[240px] sm:flex-none sm:group-data-open:border-l sm:group-data-open:pl-6">
-              <% if (store_url = book_store_url(book)) %>
-                <%= link_to 'ストアで見る ↗', store_url, target: '_blank', rel: 'noopener noreferrer',
-                            class: 'rounded-[5px] border border-line-strong px-4 py-2.5 text-center ' \
-                                   'text-[13.5px] font-medium text-ink no-underline hover:bg-paper-hover' %>
-              <% end %>
-
-              <%# 開閉のボタンは2つあるが開き先は1つ。aria-expanded は controller が両方に配る %>
-              <button type="button" data-action="book-card#toggle" data-book-card-target="toggle"
-                      aria-expanded="false"
-                      class="mt-auto cursor-pointer text-left text-[12.5px] text-accent underline">
-                閉じる ↑
-              </button>
-            </div>
           </div>
 
-          <%# 開いている間、この段の中身が無くなる本もある。線だけが残らないよう畳む %>
-          <footer class="mt-auto flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-line pt-3.5
-                         <%= 'group-data-open:hidden' unless actions || wishing || submitted_wish || published %>">
+          <%# 口はすべてこの段に集める。開閉で出入りするものが無いので、
+              フェーズや開き具合にかかわらず、この段はいつも中身を持つ %>
+          <footer class="mt-auto flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-line pt-3.5">
+            <%# 開く口と閉じる口は同じ1つ。文字だけを差し替える。
+                別々のボタンにすると、押した指の先で口が入れ替わる。
+                2つの文字は重ねて置く。長いほうの幅で場所が決まるので、
+                短い「閉じる」に変わっても隣のストアの口が寄ってこない %>
             <button type="button" data-action="book-card#toggle" data-book-card-target="toggle"
                     aria-expanded="false"
-                    class="cursor-pointer text-[12.5px] text-accent underline group-data-open:hidden">
-              続きを読む ↓
+                    class="grid cursor-pointer text-[12.5px] text-accent underline">
+              <span class="col-start-1 row-start-1 text-left group-data-open:invisible">続きを読む ↓</span>
+              <span class="invisible col-start-1 row-start-1 text-left group-data-open:visible">閉じる ↑</span>
             </button>
+
+            <%# 買う先を見るのに本文を開かせる理由が無いので、閉じている間も出す %>
+            <% if (store_url = book_store_url(book)) %>
+              <%= link_to 'ストアで見る ↗', store_url, target: '_blank', rel: 'noopener noreferrer',
+                          class: 'text-[12.5px]' %>
+            <% end %>
 
             <% if published %>
               <%# 渡った先は松葉で、返却は沈めた文字で書く。同じ色で並べると、

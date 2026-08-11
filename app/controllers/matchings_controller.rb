@@ -12,8 +12,8 @@ class MatchingsController < ApplicationController
   # 実行前の確認画面。押す前に、何人に何冊が渡るのかを数で示す
   def new
     # 締切前や実行済みのときは、確認画面も開かない。通らない道を先に見せると、
-    # 押せると思わせたまま最後に断ることになる。判定は Matching::Execution が
-    # 実行時に見るものと同じ表から引く（Exchange::WRITABLE_PHASES）
+    # 押せると思わせたまま最後に断ることになる。判定は交換会ページが実行への
+    # 導線を出すかどうかと同じ述語から引く。別々に書くと、押しても断られる導線が残る
     raise Exchange::PhaseViolation.new(@exchange, :matching, at: requested_at) unless executable?
 
     @summary = Exchanges::MatchingSummary.new(@exchange.participations.with_counts).call
@@ -36,6 +36,6 @@ class MatchingsController < ApplicationController
   end
 
   def executable?
-    @exchange.writable?(:matching, at: requested_at)
+    @exchange.matching_executable?(current_user, at: requested_at)
   end
 end

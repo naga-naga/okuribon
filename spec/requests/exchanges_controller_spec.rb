@@ -584,6 +584,51 @@ RSpec.describe ExchangesController do
           expect(response.body).not_to include(new_exchange_book_path(exchange))
         end
       end
+
+      # 実行待ちに待つ以外の道があるのは主催者だけ。ほかの参加者が待っているのは
+      # その人の操作で、日時では動かない
+      it 'マッチング実行待ちの参加者には実行の口が出ない' do
+        open_page(at: awaiting_at)
+
+        expect(response.body).to include('結果を待ちます')
+        expect(response.body).not_to include(new_exchange_management_matching_path(exchange))
+      end
+    end
+
+    # 実行待ちで待つ以外の道があるのは主催者だけ。この画面の交換会は既定では
+    # 別の人が主催しているので、日程はそのまま使い、主催者だけを自分に付け替える。
+    # 参加はもう成立しているので、主催が移っても影響を受けない
+    describe '主催者のマッチング実行' do
+      before { exchange.update!(owner: user) }
+
+      # 待つだけと書くと、自分が押すまで結果が出ないことがどこにも出ない
+      it 'マッチング実行待ちにはマッチングの実行がすることになる' do
+        open_page(at: awaiting_at)
+
+        expect(response.body).to include('マッチングを実行する')
+        expect(response.body).not_to include('結果を待ちます')
+      end
+
+      it '実行へ向かう導線が出る' do
+        open_page(at: awaiting_at)
+
+        expect(response.body).to include(new_exchange_management_matching_path(exchange))
+      end
+
+      # マッチングは一度だけ実行できる。残すと、押しても断られる導線になる
+      it '実行済みなら実行の口が出ない' do
+        publish!
+
+        open_page(at: awaiting_at)
+
+        expect(response.body).not_to include(new_exchange_management_matching_path(exchange))
+      end
+
+      it '締切前には実行の口が出ない' do
+        open_page(at: wishing_at)
+
+        expect(response.body).not_to include(new_exchange_management_matching_path(exchange))
+      end
     end
 
     describe '締切' do

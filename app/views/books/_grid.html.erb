@@ -10,8 +10,10 @@
         枠の数と大きさを登録期間のカードに合わせておくと、登録が始まった瞬間に
         ここが埋まることが形で分かる %>
     <ul aria-label="本の入る場所" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <%# 1列ぶんの幅で2行に折れる。text-pretty を置かないと、最後の行に
+          1文字だけが残ることがある %>
       <li class="flex min-h-[150px] items-center rounded-[5px] border border-dashed border-line-strong
-                 bg-surface-sunken px-6 py-6 text-[12.5px] leading-[1.85] text-ink-muted">
+                 bg-surface-sunken px-6 py-6 text-[12.5px] leading-[1.85] text-pretty text-ink-muted">
         登録された本は、おすすめポイントつきでここに並びます
       </li>
 

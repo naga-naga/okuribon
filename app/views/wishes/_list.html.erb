@@ -25,9 +25,11 @@
           <%= editable ? 'まだ1冊も選んでいません' : '希望を1冊も出しませんでした' %>
         </span>
       <% else %>
+        <%# 1位だけを朱にするのは動かせる間だけ。朱は押すものと締切の担当なので、
+            締め切られた並びに残すと、まだ動かせるように読める %>
         <% wishes.each do |wish| %>
           <span class="tabular flex-none rounded-[3px] px-3 py-2 text-[12px] whitespace-nowrap
-                       <%= wish.position == 1 ? 'bg-accent-soft text-accent' : 'bg-fill text-ink' %>">
+                       <%= editable && wish.position == 1 ? 'bg-accent-soft text-accent' : 'bg-fill text-ink' %>">
             <%= wish.position %> <%= wish.book.title %>
           </span>
         <% end %>

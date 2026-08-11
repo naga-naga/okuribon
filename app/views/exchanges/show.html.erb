@@ -1,121 +1,227 @@
 <% content_for :title, @exchange.name %>
 
-<%# 上から「フェーズ帯 → あなたがすること → 締切 → 状況の数字 → 導線」の一列に置く。
-    どのフェーズでも各段の位置を動かさない。数週間ぶりに開いても、
-    目の置き場所を覚え直さずに済むことがこの画面の狙い %>
-<div class="mx-auto w-full max-w-[640px] px-4 py-10 sm:px-6">
-  <%# 戻り先は共通ヘッダーのパンくずが持つ。招待URLは参加していない人のための入口で、
-      参加を終えた人がここから辿るものではないので、祖先は交換会一覧だけ %>
-  <h1 class="text-[26px] font-bold leading-[1.45] text-ink"><%= @exchange.name %></h1>
+<%# 交換会ページ。上半分が状態ヘッダー（docs/spec.md 6.1）、下半分が本の一覧と
+    希望リスト（6.2）。交換会を開くと本が並んでいて、その上に現在の状態が載っている。
+    状態だけを見せる交換会トップは持たない %>
 
-  <%# フェーズ帯。交換会名の横の小さな印から独立した段へ上げる。
-      松葉は成立と完了の担当なので、終わった交換会だけ色を変える %>
-  <p class="mt-4 rounded-[5px] border border-line bg-fill px-4 py-2.5 text-[12.5px] font-medium
-            <%= @exchange.published?(at: requested_at) ? 'text-success' : 'text-accent' %>">
-    <%= @exchange.phase_name(at: requested_at) %>
-  </p>
+<%# 登録・希望の可否は1回だけ引く。カードごとに引き直すと、描いている途中で
+    締切をまたいだときに1つの画面の中で出し分けが食い違う。
+    押せる期間は writable? から引き、フェーズ名で条件を書き直さない。
+    フェーズ名で書くと、押しても断られるボタンがどこかのフェーズに残る %>
+<% phase = @exchange.phase(at: requested_at) %>
+<% registering = @exchange.writable?(:book, at: requested_at) %>
+<% wishing = @exchange.writable?(:wish, at: requested_at) %>
+<% published = @exchange.published?(at: requested_at) %>
 
-  <%# この画面でいちばん探されるのは、フェーズ名ではなく自分がすべきこと。
-      フェーズ帯より大きく扱う %>
-  <div class="mt-5 rounded-[5px] border px-6 py-6 <%= exchange_todo_style(@todo.tone, :panel) %>">
-    <p class="text-[10.5px] tracking-[0.12em] <%= exchange_todo_style(@todo.tone, :eyebrow) %>">
-      あなたがすること
-    </p>
-    <p class="mt-2 text-[22px] font-bold leading-[1.5] <%= exchange_todo_style(@todo.tone, :headline) %>">
-      <%= @todo.headline %>
-    </p>
-    <p class="mt-2 text-[13.5px] leading-[1.85] <%= exchange_todo_style(@todo.tone, :detail) %>">
-      <%= @todo.detail %>
-    </p>
-  </div>
+<%# 自分の本は取得枠の数でもあり、絞り込みの行き先でもある。
+    読み込み済みの一覧から選ぶので、カードごとに COUNT が飛ばない %>
+<% my_books = @books.select { it.participation_id == @participation.id } %>
+<% listed = @mine_only ? my_books : @books %>
 
-  <%# 次の節目が無いフェーズでは、枠ごと出さない。
-      マッチング実行待ちが待っているのは主催者の操作で日時では動かず、
-      結果公開はもう終わっている %>
-  <% if (deadline = @exchange.next_deadline(at: requested_at)) %>
-    <div class="mt-4 rounded-[5px] border border-line bg-paper px-5 py-5">
-      <p class="text-[12px] text-ink-subtle"><%= @exchange.next_deadline_name(at: requested_at) %></p>
+<%# 渡った先を出すかどうかはフェーズで決める。割当の有無で決めると、主催者が
+    実行した瞬間に、公開の合図をまだ受けていない画面へ結果が出る %>
+<% returned_count = published ? @books.count { it.assignment.nil? || it.assignment.returned? } : 0 %>
 
-      <%# 数週間ぶりに開く人がまず知りたいのは、日付そのものより残りの長さ。
-          ただし朱は1画面に1箇所だけにする。「あなたがすること」を朱で塗ったときは、
-          こちらを墨に落とす。2つ並ぶと、どちらに急かされているのか読み取れない %>
-      <p class="mt-1.5 flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-3">
-        <span class="tabular text-[22px] font-bold leading-[1.4]
-                     <%= @todo.tone == :urgent ? 'text-ink' : 'text-accent' %>">
-          <%= remaining_time_text(deadline, at: requested_at) %>
-        </span>
-        <span class="tabular text-[13px] text-ink-muted"><%= l deadline, format: :schedule %></span>
-      </p>
-    </div>
-  <% end %>
-
-  <%# 狭い画面では縦に積み、ラベルと数を左右に振り分ける。
-      3つ横に並べたままだと 320px で数字が折り返る %>
-  <dl class="mt-8 grid grid-cols-1 gap-3 border-t border-line pt-8 sm:grid-cols-3">
-    <%# 登録した冊数がそのまま受け取れる冊数になる。全体の冊数と並べておかないと、
-        自分が何冊登録したのかを確かめる先がどこにも無い %>
-    <% [['参加者', "#{@exchange.participations.count}人"],
-        ['登録された本', "#{@exchange.books.count}冊"],
-        ['あなたが登録した本（＝取得枠）', "#{@participation.books.count}冊"]].each do |label, value| %>
-      <div class="flex items-baseline justify-between gap-2 sm:flex-col sm:items-start sm:gap-1">
-        <dt class="text-[12px] leading-[1.6] text-ink-subtle"><%= label %></dt>
-        <dd class="tabular text-[19px] font-medium text-ink"><%= value %></dd>
+<%# 希望リストは狭い画面では下部に固定されるので、その高さぶん一覧の下を空ける %>
+<div class="mx-auto w-full max-w-[1180px] px-4 pt-8 sm:px-6 <%= wishing ? 'pb-44 lg:pb-10' : 'pb-10' %>">
+  <%# 状態ヘッダー。必ず一目で分かるべきは、今どのフェーズか・締切まであとどれくらいか・
+      自分は今なにをすべきかの3点。高さは、開いた直後に本のカードが1行ぶん見える
+      ところまでに抑える。全部を占めると、開くたびに状態を読ませてからでないと
+      本に辿り着けず、統合した意味が無くなる %>
+  <section class="overflow-hidden rounded-[6px] border border-line bg-paper">
+    <%# 交換会名と主催者名はこの画面が持つ。共通ヘッダーは画面をまたいで中身を
+        変えない決めごとなので、パンくずとアカウントのまま通す（10.2）。
+        参加人数は下の状況の数字が出すので、ここでは繰り返さない %>
+    <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-5 pt-5 pb-4 sm:px-7">
+      <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <h1 class="text-[22px] font-bold leading-[1.45] text-ink"><%= @exchange.name %></h1>
+        <p class="text-[12px] text-ink-subtle">
+          主催 <%= exchange_owner_name(@exchange, current_user) %>
+        </p>
       </div>
-    <% end %>
-  </dl>
 
-  <%# 本を選ぶのがこのツールの中心なので、導線は面で押させる。
-      その日の行き先をフェーズごとに1つだけ主にする。
-      押せる期間は writable? から引く。フェーズ名で条件を書き直すと、
-      押しても断られるボタンがどこかのフェーズに残る %>
-  <%
-    # 朱は1画面に1箇所だけ。「あなたがすること」を朱で塗ったときは、
-    # 主ボタンを輪郭だけの朱に落とす。面が2つ朱になると、どちらに急かされているのか読めない
-    base = 'block rounded-[5px] px-5 py-4 text-center text-[14.5px] font-medium no-underline'
-    primary = if @todo.tone == :urgent
-                "#{base} border border-accent bg-paper text-accent hover:bg-paper-hover"
-              else
-                "#{base} bg-accent text-paper hover:bg-accent-hover"
-              end
-    secondary = "#{base} border border-line-strong bg-paper text-ink hover:bg-paper-hover"
-  %>
-  <div class="mt-8 flex flex-col gap-3 border-t border-line pt-8">
-    <%# 結果画面へ辿り着く経路はここだけ。公開されるまでは押しても
-        404 になるので出さない。松葉は成立と完了の担当なので、
-        公開後はこちらがその日の行き先になる %>
-    <% if @exchange.published?(at: requested_at) %>
-      <%= link_to '結果を見る', exchange_result_path(@exchange),
-                  class: "#{base} bg-success text-paper hover:bg-success-hover" %>
-    <% elsif @exchange.writable?(:book, at: requested_at) %>
-      <%= link_to '本を登録する', new_exchange_book_path(@exchange), class: primary %>
-    <% elsif @exchange.writable?(:wish, at: requested_at) %>
-      <%# 希望リストの編集は本の一覧に統合してある（docs/spec.md 6.2）。
-          並べるものを見ながら選ぶ画面なので、専用の入口を別に作らない %>
-      <%= link_to '希望リストを編集する', exchange_books_path(@exchange), class: primary %>
-    <% end %>
+      <%# 主催者管理画面へ辿り着く経路はこのページだけ（6.8）。交換会一覧は主催と
+          参加を区別せずに並べるので、そちらには置けない。
+          主催者以外には出さない。押しても 404 になるリンクは見せない %>
+      <% if @exchange.owner?(current_user) %>
+        <%= link_to '主催者管理', exchange_management_path(@exchange), class: 'text-[12.5px]' %>
+      <% end %>
+    </div>
 
-    <%# 読み取りは全フェーズで開いているので、本の一覧はどのフェーズでも出す %>
-    <%= link_to '本の一覧を見る', exchange_books_path(@exchange), class: secondary %>
-  </div>
+    <%# フェーズ帯。現在のフェーズ名だけを出すと、それが5つのうちのどこなのか、
+        次に何が来るのかが読み取れない。数週間かかるツールで、参加者が全体の
+        道のりを覚えている前提は置けない。
+        ただしフェーズは日時から導出されるもので、選べる先ではない（4.）。
+        リンクにも button にもせず、現在地以外は生成りに沈めた道のりとして描く %>
+    <ol aria-label="フェーズ" class="flex border-y border-line bg-fill">
+      <% Exchange::PHASES.each do |step| %>
+        <% current = step == phase %>
+        <%= tag.li t(step, scope: 'exchange.phases'),
+                   aria: { current: ('step' if current) },
+                   class: ['flex-1 border-b-2 px-1 py-2.5 text-center text-[11px] leading-[1.5] sm:text-[11.5px]',
+                           if !current
+                             'border-transparent text-ink-subtle'
+                           elsif published
+                             'border-success bg-paper font-bold text-success'
+                           else
+                             'border-accent bg-paper font-bold text-accent'
+                           end] %>
+      <% end %>
+    </ol>
 
-  <%# 主催者管理画面へ辿り着く経路はここだけ。交換会一覧は主催と参加を
-      区別せずに並べるので（6.6）、この画面が入口を持つ。
-      主催者以外には出さない。押しても 404 になるリンクは見せない %>
-  <% if @exchange.owner?(current_user) %>
-    <p class="mt-5 text-center text-[13px]">
-      <%= link_to '主催者管理', exchange_management_path(@exchange) %>
-    </p>
-  <% end %>
+    <%# 左は「あなたがすること」と、その日の操作。右は締切と状況の数字。
+        フェーズが変わっても、どちらに何があるかを動かさない。数週間ぶりに開いても、
+        目の置き場所を覚え直さずに済むことを優先する。
+        結果公開だけは面ごと松葉に変わり、そのまま結果への入口になる %>
+    <div class="flex flex-col gap-6 px-5 py-6 sm:px-7 lg:flex-row lg:items-start lg:gap-8
+                <%= exchange_header_style(published, :face) %>">
+      <div class="min-w-0 flex-1">
+        <%# この画面でいちばん探されるのは、フェーズ名ではなく自分がすべきこと。
+            フェーズだけでは決まらないので、文言の組み立ては Exchanges::Todo に置く。
+            交換会一覧のカードも同じ headline を並べる（6.6） %>
+        <div class="rounded-[5px] <%= exchange_todo_style(@todo.tone, :panel) %>">
+          <p class="font-mono text-[10.5px] tracking-[0.12em] <%= exchange_todo_style(@todo.tone, :eyebrow) %>">
+            あなたがすること
+          </p>
+          <p class="mt-1.5 text-[22px] font-bold leading-[1.5] <%= exchange_todo_style(@todo.tone, :headline) %>">
+            <%= @todo.headline %>
+          </p>
+          <p class="mt-2 max-w-[560px] text-[13.5px] leading-[1.85] <%= exchange_todo_style(@todo.tone, :detail) %>">
+            <%= @todo.detail %>
+          </p>
+        </div>
 
-  <%# 対応ストアや価格帯の目安が書かれている。読み返すのは本を選ぶ前で、
-      その日なにをするかより下でよい。5段の並びの中に挟むと、
-      概要の長さでフェーズごとに下の段の位置が動く %>
-  <% if @exchange.description.present? %>
-    <div class="mt-10 border-t border-line pt-8">
-      <p class="text-[10.5px] tracking-[0.12em] text-ink-subtle">この交換会について</p>
-      <p class="mt-2 whitespace-pre-line text-[14.5px] leading-[1.95] text-ink">
+        <%# 導線は「あなたがすること」の直下に置き、独立した段を作らない。
+            その日の主な行き先は本の一覧で、それがこのページの下半分そのものに
+            なった。残るのは操作で、これは「すること」の一部にあたる。
+            朱は1画面に1箇所だけなので、「あなたがすること」を朱で塗ったときは
+            こちらを輪郭だけに落とす %>
+        <% if registering %>
+          <p class="mt-4">
+            <%= link_to '本を登録する', new_exchange_book_path(@exchange),
+                        class: 'inline-block rounded-[5px] px-6 py-3 text-[14px] font-medium no-underline ' +
+                               (@todo.tone == :urgent ? 'border border-accent bg-paper text-accent hover:bg-paper-hover'
+                                                      : 'bg-accent text-paper hover:bg-accent-hover') %>
+          </p>
+        <% end %>
+      </div>
+
+      <div class="border-t pt-6 lg:w-[300px] lg:flex-none lg:border-t-0 lg:border-l lg:pt-0 lg:pl-7
+                  <%= exchange_header_style(published, :rule) %>">
+        <%# 締切の枠は、待つべき日時が無いフェーズでも空けない。空欄にすると、
+            締切を見落としたのか、そもそも無いのかが読み取れない %>
+        <% if published %>
+          <%# 結果画面へ辿り着く経路はここだけ。ギフトコードの取り出し口も
+              結果画面に限るので（6.3）、渡った先をカードで見た人は上へ戻れば入れる %>
+          <p class="text-[11px] <%= exchange_header_style(published, :label) %>">公開</p>
+          <p class="tabular mt-1 text-[15px] font-medium <%= exchange_header_style(published, :value) %>">
+            <%= l @exchange.matched_at, format: :schedule %>
+          </p>
+          <%= link_to '結果を見る', exchange_result_path(@exchange),
+                      class: 'mt-3.5 block rounded-[5px] bg-paper px-5 py-3 text-center text-[14px] ' \
+                             'font-bold text-success no-underline hover:bg-paper-hover' %>
+        <% elsif (deadline = @exchange.next_deadline(at: requested_at)) %>
+          <p class="text-[11px] text-ink-subtle"><%= @exchange.next_deadline_name(at: requested_at) %></p>
+
+          <%# 数週間ぶりに開く人がまず知りたいのは、日付そのものより残りの長さ。
+              ただし朱は1画面に1箇所だけにする。「あなたがすること」を朱で塗った
+              ときは、こちらを墨に落とす。2つ並ぶと、どちらに急かされているのか
+              読み取れない %>
+          <p class="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <span class="tabular text-[26px] font-bold leading-[1.2]
+                         <%= @todo.tone == :urgent ? 'text-ink' : 'text-accent' %>">
+              <%= remaining_time_text(deadline, at: requested_at) %>
+            </span>
+            <span class="tabular text-[12px] text-ink-muted"><%= l deadline, format: :schedule %></span>
+          </p>
+        <% else %>
+          <%# 待っているのは主催者の操作で、日時では動かない %>
+          <p class="text-[11px] text-ink-subtle">締切</p>
+          <p class="mt-1 text-[19px] font-medium text-ink-muted">ありません</p>
+          <p class="mt-1.5 text-[12px] leading-[1.8] text-ink-subtle">することはもうありません。</p>
+        <% end %>
+
+        <%# 枠の位置は動かさず、中身はフェーズで入れ替える（6.1 の表）。
+            数字は絞り込んでも交換会全体のまま出す。ここで一緒に動かすと、
+            登録がどこまで進んだのかが読めなくなる %>
+        <dl aria-label="状況"
+            class="tabular mt-4 flex overflow-hidden rounded-[4px] border
+                   <%= exchange_header_style(published, :rule) %>">
+          <% exchange_stats(phase, participants: @participant_count, books: @books.size,
+                            slots: my_books.size, wishes: @wishes.size,
+                            returned: returned_count).each_with_index do |(label, value), index| %>
+            <div class="min-w-0 flex-1 px-3 py-2.5
+                        <%= "border-l #{exchange_header_style(published, :rule)}" unless index.zero? %>">
+              <dt class="truncate text-[10.5px] <%= exchange_header_style(published, :label) %>"><%= label %></dt>
+              <dd class="text-[15px] font-bold <%= exchange_header_style(published, :value) %>"><%= value %></dd>
+            </div>
+          <% end %>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <%# 対応ストアや価格帯の目安が書かれている。読み返すのは本を選ぶ前の一度きりで、
+      毎回この画面の上を占める用がない。畳んで格納し、常設しない %>
+  <details class="mt-4 rounded-[5px] border border-line bg-paper px-5 py-3.5 sm:px-6">
+    <summary class="cursor-pointer text-[12.5px] text-accent underline underline-offset-2">概要と日程</summary>
+
+    <% if @exchange.description.present? %>
+      <p class="mt-3.5 whitespace-pre-line text-[13.5px] leading-[1.95] text-ink">
         <%= @exchange.description %>
       </p>
+    <% end %>
+
+    <%# 並べるのは動かせる期間だけ。結果公開は主催者の実行で起きて日時では決まらない。
+        終了時刻は期間に含まれないので（4.）、範囲の右端は締切そのものにあたる。
+        書式は管理画面の日程と揃える。同じ日時が画面をまたいで別の顔で出ないようにする %>
+    <dl class="mt-3.5 flex flex-col gap-2 border-t border-line pt-3.5 text-[12.5px] sm:flex-row sm:gap-8">
+      <% Exchange::PERIODS.each do |step| %>
+        <% period = @exchange.period(step) %>
+        <div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+          <dt class="text-ink-subtle"><%= t(step, scope: 'exchange.phases') %></dt>
+          <dd class="tabular text-ink-muted">
+            <%= l period.begin, format: :schedule %> — <%= l period.end, format: :schedule %>
+          </dd>
+        </div>
+      <% end %>
+    </dl>
+  </details>
+
+  <%# 見出しはカードの並びの説明だけを持つ。フェーズごとの「次にすること」も、
+      参加人数も取得枠も、状態ヘッダーが上で出しているので繰り返さない。
+      ここに残す冊数は、いま並んでいるものが何枚なのかをグリッドの直前で言うもの %>
+  <div class="mt-8 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+    <div class="flex flex-wrap items-baseline gap-x-3 gap-y-2">
+      <h2 class="text-[19px] font-bold leading-[1.45] text-ink">みんなの本</h2>
+      <span class="tabular text-[14px] font-medium text-ink-subtle">
+        <%= listed.size %>冊<%= '・誰に渡ったか' if published %>
+      </span>
     </div>
-  <% end %>
+
+    <%# 1冊も無いうちは出さない。行き先が両方とも空の絞り込みになる %>
+    <% if @books.any? %>
+      <div class="flex overflow-hidden rounded-[5px] border border-line-strong">
+        <%= link_to 'すべて', exchange_path(@exchange), class: book_filter_segment_class(!@mine_only) %>
+        <%= link_to "自分の本 #{my_books.size}", exchange_path(@exchange, filter: :mine),
+                    class: "border-l border-line-strong #{book_filter_segment_class(@mine_only)}" %>
+      </div>
+    <% end %>
+  </div>
+
+  <%# 希望を選ぶ間だけ、一覧の脇に希望リストが並ぶ。それ以外のフェーズでは
+      並べ替える対象が無いので、一覧が幅いっぱいを使う %>
+  <div class="<%= 'lg:flex lg:items-start lg:gap-6' if wishing %>">
+    <div class="min-w-0 flex-1">
+      <%= render 'books/grid', exchange: @exchange, books: listed,
+                               participation: @participation, wishes: @wishes,
+                               registering:, wishing:, published:,
+                               slots: my_books.size, mine_only: @mine_only %>
+    </div>
+
+    <% if wishing %>
+      <%= render 'wishes/sheet', exchange: @exchange, wishes: @wishes,
+                                 slots: my_books.size, mine_only: @mine_only %>
+    <% end %>
+  </div>
 </div>

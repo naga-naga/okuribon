@@ -1,17 +1,6 @@
 # frozen_string_literal: true
 
 module BooksHelper
-  # 見出しに添える一文。フェーズごとに次にすることが変わる。
-  # 待っている日時は next_deadline に任せる。フェーズと日時カラムの対応を
-  # ここでもう一度書くと、片方だけ直したときに文と日付が食い違う
-  def book_index_guide(exchange, at:)
-    deadline = exchange.next_deadline(at:)
-
-    t(exchange.phase(at:),
-      scope: 'book.index_guides',
-      at: deadline && l(deadline, format: :schedule))
-  end
-
   # 結果公開後、カードの下段に出す1行（docs/spec.md 6.2）。渡った先だけを書く。
   # 何番目の希望で渡ったかは書かない。受け取った人の希望リストの中身にあたるうえ、
   # 順位が低いと渡った事実より順位のほうが目に残る（docs/spec.md 6.5）。

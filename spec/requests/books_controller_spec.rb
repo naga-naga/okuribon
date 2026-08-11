@@ -11,872 +11,48 @@ RSpec.describe BooksController do
 
   before { log_in_as(user) }
 
+  # 本の一覧は交換会ページに畳んだ（docs/spec.md 6.1 / 6.2）。
+  # すでに配られた旧 URL のために経路だけを残してあるので、開いたら送るだけになる
   describe '#index' do
-    def open_list
+    it '交換会ページへ送る' do
       get exchange_books_path(exchange)
+
+      expect(response).to have_http_status(:moved_permanently)
+      expect(response).to redirect_to(exchange_path(exchange))
     end
 
-    # 印や導線はカード単位で確かめる。ページ全体の文字列を見ると、
-    # 隣のカードや見出しに同じ字があったときに見分けがつかない
-    def card_for(book)
-      response.parsed_body.at_css("##{dom_id(book)}")
+    # 絞り込みは交換会ページの URL のクエリに載る（docs/spec.md 6.1）
+    it '絞り込みを持ち回す' do
+      get exchange_books_path(exchange, filter: 'mine')
+
+      expect(response).to redirect_to(exchange_path(exchange, filter: 'mine'))
     end
 
-    # 登録者を名前で作るための入れ物。参加を伴わない本は作れない
-    def book_by(display_name, **attributes)
-      registrant = create(:participation, exchange:, user: create(:user, display_name:))
-      create(:book, participation: registrant, **attributes)
-    end
+    # 送り先は全フェーズで開いている。ここで止めると、結果を見に来た人が
+    # 旧 URL からだけ弾かれる
+    it '登録期間の外でも送る' do
+      outside_registration
 
-    it '参加者は開ける' do
-      open_list
+      get exchange_books_path(exchange)
 
-      expect(response).to have_http_status(:ok)
-    end
-
-    # 選ぶ材料は全員の本。自分の登録した本だけでは読み比べにならない
-    it '全員の本が並ぶ' do
-      create(:book, participation:, title: '自分の本')
-      book_by('佐藤 花子', title: '他の人の本')
-
-      open_list
-
-      expect(response.body).to include('自分の本')
-      expect(response.body).to include('他の人の本')
-    end
-
-    it '誰が登録したかが分かる' do
-      book_by('佐藤 花子')
-
-      open_list
-
-      expect(response.body).to include('佐藤 花子')
-    end
-
-    # 閉じたカードは抜粋だが、折るのは CSS で、全文は最初から入れておく。
-    # 開くたびにサーバーへ行くと、読み比べのたびに往復が挟まる
-    it '長いあらすじも全文が入る' do
-      book_by('佐藤 花子', summary: "#{'あ' * 200}最後まで読める")
-
-      open_list
-
-      expect(response.body).to include('最後まで読める')
-    end
-
-    it 'おすすめポイントも全文が入る' do
-      book_by('佐藤 花子', recommendation: "#{'ぜ' * 200}最後まで読める")
-
-      open_list
-
-      expect(response.body).to include('最後まで読める')
-    end
-
-    # 見えるのは登録した本人と、成立後の受取人だけ。一覧はどちらの経路でもない
-    it 'ギフトコードが含まれない' do
-      create(:book, participation:, gift_code: 'MYOWNGIFTCODE')
-      book_by('佐藤 花子', gift_code: 'OTHERGIFTCODE')
-
-      open_list
-
-      expect(response.body).not_to include('MYOWNGIFTCODE')
-      expect(response.body).not_to include('OTHERGIFTCODE')
-    end
-
-    # 開くたびにカードの位置が入れ替わると、前に見た本を探し直すことになる
-    it '登録順に並ぶ' do
-      create(:book, participation:, title: '先に登録した本')
-      create(:book, participation:, title: 'あとで登録した本')
-
-      open_list
-
-      expect(response.body.index('先に登録した本')).to be < response.body.index('あとで登録した本')
-    end
-
-    # 白紙で返すと、壊れているのかまだ誰も登録していないのか区別がつかない
-    it '1冊も登録されていなければその旨を出す' do
-      open_list
-
-      expect(response).to have_http_status(:ok)
-      expect(response.body).to include('まだ本は登録されていません')
-    end
-
-    # 交換会トップへ戻る口は共通ヘッダーのパンくずが持つ。画面の中には置かない。
-    # 見出しは「みんなの本」で交換会名を含まないので、どの交換会の一覧かはヘッダーが書く
-    it 'パンくずから交換会トップへ戻れる' do
-      open_list
-
-      expect(breadcrumb).to eq('読書交換会' => exchanges_path,
-                               '夏の交換会' => exchange_path(exchange))
-    end
-
-    describe '見出し' do
-      # 冊数だけでは、まだ登録していない人がどれだけ残っているかが分からない
-      it '冊数と参加人数が出る' do
-        create(:book, participation:)
-        book_by('佐藤 花子')
-
-        open_list
-
-        expect(response.body).to include('2冊')
-        expect(response.body).to include('3人')
-      end
-
-      # 数週間かかるツールなので、開くたびに今なにをすべきかが分かるようにする
-      it '登録期間中は希望の提出がいつからかを添える' do
-        open_list
-
-        expect(response.body).to include('おすすめポイントを読んで')
-        expect(response.body).to include(I18n.l(exchange.wish_starts_at, format: :schedule))
-      end
-
-      # 一覧は全フェーズで開ける。どのフェーズで来ても、次にすることが書いてある
-      {
-        '準備中' => ['2026-07-25T00:00:00+09:00', '登録期間はまだ始まっていません'],
-        '希望提出期間' => ['2026-08-11T00:00:00+09:00', '欲しい本を希望順に並べましょう'],
-        'マッチング実行待ち' => ['2026-08-20T00:00:00+09:00', '希望の受付は終わりました'],
-      }.each do |phase, (now, guide)|
-        it "#{phase}にはその期間ですることが出る" do
-          exchange.update!(registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
-                           registration_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
-                           wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone)
-
-          travel_to(now) { open_list }
-
-          expect(response.body).to include(guide)
-        end
-      end
-
-      # ギフトコードが一覧に並ばないことは、期待して探しに来る人がいるので毎回書く
-      it '結果公開後は誰に渡ったかを読む画面だと分かる' do
-        exchange.update!(matched_at: 1.day.ago)
-
-        open_list
-
-        expect(response.body).to include('誰の本が誰に渡ったかを見られます')
-        expect(response.body).to include('ギフトコードは自分に関係する本だけ、結果画面で開けます')
-      end
-    end
-
-    describe '絞り込み' do
-      def open_mine
-        get exchange_books_path(exchange, filter: :mine)
-      end
-
-      # 自分がどれを出したかを確かめる用。登録期間の外では編集の導線が消えるので、
-      # 印だけでは冊数を数えづらい
-      it '自分の本だけに絞れる' do
-        create(:book, participation:, title: '自分の本')
-        book_by('佐藤 花子', title: '他の人の本')
-
-        open_mine
-
-        expect(response.body).to include('自分の本')
-        expect(response.body).not_to include('他の人の本')
-      end
-
-      it '絞り込みには自分の冊数が出る' do
-        create_list(:book, 2, participation:)
-
-        open_list
-
-        expect(response.body).to include('自分の本 2')
-      end
-
-      # 見出しが数えるのは交換会全体。絞り込みで動くと、
-      # まだ登録していない人が何人いるかが読めなくなる
-      it '絞っても見出しの冊数と人数は全体のまま' do
-        create(:book, participation:)
-        book_by('佐藤 花子')
-
-        open_mine
-
-        expect(response.body).to include('2冊 ／ 3人')
-      end
-
-      it '知らない絞り込みは全件に倒す' do
-        book_by('佐藤 花子', title: '他の人の本')
-
-        get exchange_books_path(exchange, filter: 'その他')
-
-        expect(response.body).to include('他の人の本')
-      end
-
-      # 取得枠は登録した冊数で決まる。空の一覧をそのまま返すと、
-      # まだ受け取る権利が無いことがどこにも出ない
-      it '自分が1冊も登録していなければその旨が出る' do
-        book_by('佐藤 花子')
-
-        open_mine
-
-        expect(response.body).to include('まだ1冊も登録していません')
-      end
-    end
-
-    describe 'カード' do
-      # 一覧をざっと眺めるための密度で並べる。1列に積むと、
-      # 12冊で画面を何度もめくることになる
-      it '3カラムで並ぶ' do
-        create(:book, participation:)
-
-        open_list
-
-        expect(response.body).to include('lg:grid-cols-3')
-      end
-
-      # 交換会の楽しみどころはおすすめポイント。あらすじを先に置くと、
-      # どの本にも似た筋書きが並び、読み比べる材料が下に沈む
-      it 'おすすめポイントがあらすじより前に出る' do
-        book_by('佐藤 花子', summary: 'あらすじの本文', recommendation: 'おすすめの本文')
-
-        open_list
-
-        expect(response.body.index('おすすめの本文')).to be < response.body.index('あらすじの本文')
-      end
-
-      # 詳細画面へ飛ばすと列の中の位置を見失う。開いて読んで、また列に戻れるようにする
-      it 'その場で開いて閉じられる' do
-        create(:book, participation:)
-
-        open_list
-
-        expect(response.body).to include('続きを読む')
-        expect(response.body).to include('閉じる')
-      end
-
-      # 空白のまま置くと、書き忘れなのか書くところが無いのか分からない
-      it 'おすすめポイントが未記入ならその旨が出る' do
-        book_by('佐藤 花子', recommendation: nil)
-
-        open_list
-
-        expect(response.body).to include('おすすめポイントが未記入です')
-      end
-
-      it '開くとストアへのリンクが出る' do
-        book_by('佐藤 花子', url: 'https://example.com/books/1')
-
-        open_list
-
-        expect(response.body).to include('https://example.com/books/1')
-        expect(response.body).to include('ストアで見る')
-      end
-
-      it 'URL が無ければストアへのリンクは出ない' do
-        book_by('佐藤 花子', url: nil)
-
-        open_list
-
-        expect(response.body).not_to include('ストアで見る')
-      end
-
-      # 登録者が書いた URL をそのままリンクにすると、読み比べに来た人の
-      # ブラウザで javascript: が走る
-      it 'http と https 以外はリンクにしない' do
-        book_by('佐藤 花子', url: "javascript:alert('x')")
-
-        open_list
-
-        expect(response.body).not_to include('javascript:alert')
-      end
-    end
-
-    describe '希望リストの編集' do
-      # 希望提出期間の中の1点。この画面でだけ希望リストが出る
-      let!(:during_wish) { '2026-08-11T00:00:00+09:00'.in_time_zone }
-
-      before do
-        exchange.update!(registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
-                         registration_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
-                         wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone)
-      end
-
-      def open_list_while_wishing
-        travel_to(during_wish) { open_list }
-      end
-
-      def open_list_while_registering
-        travel_to('2026-08-04T00:00:00+09:00'.in_time_zone) { open_list }
-      end
-
-      it '希望提出期間中は希望リストが常時出る' do
-        book_by('佐藤 花子')
-
-        open_list_while_wishing
-
-        expect(response.body).to include('あなたの希望リスト')
-      end
-
-      it '希望提出期間中は各カードから希望に追加できる' do
-        book = book_by('佐藤 花子')
-
-        open_list_while_wishing
-
-        expect(card_for(book).text).to include('希望に追加')
-      end
-
-      it '希望に入れた本には順位が出る' do
-        book = book_by('佐藤 花子')
-        create(:wish, participation:, book:, position: 1)
-
-        open_list_while_wishing
-
-        expect(card_for(book).text).to include('希望 1位')
-        expect(card_for(book).text).to include('希望から外す')
-      end
-
-      # 一覧を読んでいる間ずっと、いま何冊・何位まで選んだかが見えている
-      it '希望リストに順位と本が並ぶ' do
-        book = book_by('佐藤 花子', title: '選んだ本')
-        create(:wish, participation:, book:, position: 1)
-
-        open_list_while_wishing
-
-        expect(response.parsed_body.at_css('#wish_list').text).to include('選んだ本')
-      end
-
-      it '1冊も選んでいなければその旨が出る' do
-        book_by('佐藤 花子')
-
-        open_list_while_wishing
-
-        expect(response.parsed_body.at_css('#wish_list').text).to include('まだ1冊も選んでいません')
-      end
-
-      it '取得枠と希望冊数が並ぶ' do
-        register_own(2)
-        wish_for_others(3)
-
-        open_list_while_wishing
-
-        expect(wish_list.text).to include('取得枠2冊に対して希望3冊')
-      end
-
-      # 取得枠は登録した冊数で決まる。何と同じ数なのかを書かないと、
-      # 増やせる数なのか決まった数なのかが読み取れない
-      it '取得枠が何で決まるかを添える' do
-        register_own(2)
-
-        open_list_while_wishing
-
-        expect(response.parsed_body.at_css('aside').text).to include('2冊（登録した本と同じ）')
-      end
-
-      # 希望リストは長いほうが有利。上位が取られると下位へ降りていく
-      it '取得枠の2倍に満たなければ増やすことを促す' do
-        register_own(2)
-        wish_for_others(3)
-
-        open_list_while_wishing
-
-        expect(wish_list.text).to include('もう少し増やすことを推奨します')
-        expect(wish_list.text).to include('4冊以上')
-      end
-
-      it '取得枠の2倍以上あれば促さない' do
-        register_own(2)
-        wish_for_others(4)
-
-        open_list_while_wishing
-
-        expect(wish_list.text).not_to include('もう少し増やすことを推奨します')
-      end
-
-      # 登録期間はもう終わっている。増やすことを促しても、その人には届かない
-      it '1冊も登録していなければ受け取れないことを伝える' do
-        wish_for_others(3)
-
-        open_list_while_wishing
-
-        expect(wish_list.text).to include('受け取れる本はありません')
-        expect(wish_list.text).not_to include('もう少し増やすことを推奨します')
-      end
-
-      # 狭い画面ではシートを畳んだままでも一覧を読み進められる。
-      # 案内を開いた側だけに置くと、既定の状態では冊数がどこにも出ない
-      it '畳んだシートにも冊数が出る' do
-        register_own(2)
-        wish_for_others(3)
-
-        open_list_while_wishing
-
-        expect(wish_summary.text).to include('枠2冊／希望3冊')
-        expect(wish_summary.text).to include('あと1冊推奨')
-      end
-
-      it '畳んだシートでも足りていれば推奨を出さない' do
-        register_own(2)
-        wish_for_others(4)
-
-        open_list_while_wishing
-
-        expect(wish_summary.text).to include('枠2冊／希望4冊')
-        expect(wish_summary.text).not_to include('推奨')
-      end
-
-      # 何人がその本を希望しているかは誰にも見えない（docs/spec.md 8.）。
-      # 案内が数えるのは自分の希望だけで、他の人の希望では動かない
-      it '他の人の希望は冊数に混ざらない' do
-        register_own(1)
-        wanted = book_by('佐藤 花子')
-        create(:wish, participation:, book: wanted, position: 1)
-        3.times { create(:wish, participation: create(:participation, exchange:), book: wanted, position: 1) }
-
-        open_list_while_wishing
-
-        expect(wish_list.text).to include('取得枠1冊に対して希望1冊')
-      end
-
-      def wish_list
-        response.parsed_body.at_css('#wish_list')
-      end
-
-      # 畳んでいる間に出る1行。開いた側の案内と同じ文字が並ぶので、
-      # 出し分けを確かめるにはここだけを見る
-      def wish_summary
-        wish_list.at_css('#wish_summary')
-      end
-
-      # 希望リストの末尾に1冊足す。順位は足した順の連番になる
-      def wish_for(title)
-        book = book_by('佐藤 花子', title:)
-        create(:wish, participation:, book:, position: participation.wishes.count + 1)
-        book
-      end
-
-      # 取得枠は自分が登録した冊数と同じ（docs/spec.md 3.）
-      def register_own(count)
-        count.times { create(:book, participation:) }
-      end
-
-      def wish_for_others(count)
-        count.times { |index| wish_for("希望#{index + 1}") }
-      end
-
-      def rows
-        wish_list.css('ol li')
-      end
-
-      def move_button(row, label)
-        row.at_css(%(button[aria-label="#{label}"]))
-      end
-
-      # 並べ替えは順序だけをまとめて送る（docs/spec.md 6.2）。
-      # ここで確かめるのは送る材料が画面に揃っていることまで。
-      # つまんで動かす操作そのものはブラウザでしか確かめられない
-      it '希望リストの並びをそのまま送れる' do
-        first = wish_for('1冊目')
-        second = wish_for('2冊目')
-
-        open_list_while_wishing
-
-        expect(wish_list.css('input[name="book_ids[]"]').pluck('value'))
-          .to eq([first.id.to_s, second.id.to_s])
-      end
-
-      it '送り先は希望リストの更新' do
-        wish_for('1冊目')
-
-        open_list_while_wishing
-
-        expect(wish_list.at_css('form')['action']).to eq(exchange_wish_list_path(exchange))
-      end
-
-      # ドラッグはつまめる人にしか使えない。順位を1つずつ動かす口を別に置く
-      it '各行に順位を上げ下げする口がある' do
-        wish_for('1冊目')
-        wish_for('2冊目')
-
-        open_list_while_wishing
-
-        expect(wish_list.css('button[aria-label="順位を上げる"]').size).to eq(2)
-        expect(wish_list.css('button[aria-label="順位を下げる"]').size).to eq(2)
-      end
-
-      # 端の行に行き先は無い。押せるように見えて何も起きないボタンを置かない
-      it '先頭は上げられず、末尾は下げられない' do
-        wish_for('1冊目')
-        wish_for('2冊目')
-
-        open_list_while_wishing
-
-        expect(move_button(rows.first, '順位を上げる')[:disabled]).to be_present
-        expect(move_button(rows.first, '順位を下げる')[:disabled]).to be_nil
-        expect(move_button(rows.last, '順位を上げる')[:disabled]).to be_nil
-        expect(move_button(rows.last, '順位を下げる')[:disabled]).to be_present
-      end
-
-      # 並べ替えは JavaScript でしか動かない。動かない環境に押せる口を残すと、
-      # 押しても何も起きないボタンになる。カードからの追加・削除はそのまま通る
-      it '並べ替えの口は JavaScript が動くまで出さない' do
-        wish_for('1冊目')
-        wish_for('2冊目')
-
-        open_list_while_wishing
-
-        expect(wish_list.css('li [hidden] button[aria-label="順位を上げる"]').size).to eq(2)
-      end
-
-      # 絞り込みは URL に残る（docs/spec.md 6.2）
-      it '絞り込みを保ったまま並べ替えられる' do
-        wish_for('1冊目')
-
-        travel_to(during_wish) { get exchange_books_path(exchange, filter: 'mine') }
-
-        expect(wish_list.at_css('input[name="filter"]')['value']).to eq('mine')
-      end
-
-      it '1冊も選んでいなければ並べ替えるものが無い' do
-        book_by('佐藤 花子')
-
-        open_list_while_wishing
-
-        expect(wish_list.at_css('form')).to be_nil
-      end
-
-      # 自分の本は受け取れない（docs/spec.md 3.）。押しても通らないボタンを
-      # 出しておいて断るのではなく、選べないことをその場で示す
-      it '自分の本は選べないことが分かる' do
-        book = create(:book, participation:)
-
-        open_list_while_wishing
-
-        expect(card_for(book).text).to include('自分の本は希望に選べません')
-        expect(card_for(book).text).not_to include('希望に追加')
-      end
-
-      # 何人がその本を希望しているかは誰にも見せない（docs/spec.md 8.）。
-      # 中身まで揃えた2冊を並べ、希望された側とされていない側で
-      # カードが1文字も変わらないことを見る
-      it '何人がその本を希望しているかは出ない' do
-        registrant = create(:participation, exchange:, user: create(:user, display_name: '佐藤 花子'))
-        same = { title: '同じ題の本', summary: '同じあらすじ', recommendation: '同じおすすめ' }
-        wanted = create(:book, participation: registrant, **same)
-        ignored = create(:book, participation: registrant, **same)
-        3.times { create(:wish, participation: create(:participation, exchange:), book: wanted) }
-
-        open_list_while_wishing
-
-        expect(card_for(wanted).text).to eq(card_for(ignored).text)
-      end
-
-      # 登録期間はまだ選ぶ対象が揃っていない。出しても押せば断られる
-      it '登録期間中は出ない' do
-        book_by('佐藤 花子')
-
-        open_list_while_registering
-
-        expect(response.body).not_to include('あなたの希望リスト')
-        expect(response.body).not_to include('希望に追加')
-      end
-
-      it 'マッチング実行待ちには出ない' do
-        book_by('佐藤 花子')
-
-        travel_to('2026-08-20T00:00:00+09:00'.in_time_zone) { open_list }
-
-        expect(response.body).not_to include('あなたの希望リスト')
-      end
+      expect(response).to redirect_to(exchange_path(exchange))
     end
 
     # 403 だと、招待されていない交換会の実在が URL を試すだけで確かめられる
     it '参加していなければ見つからない' do
       log_in_as(create(:user))
 
-      open_list
+      get exchange_books_path(exchange)
 
       expect(response).to have_http_status(:not_found)
-    end
-
-    # 主催者は必ず参加者を兼ねるので、自分の交換会の一覧を開ける
-    it '主催者も開ける' do
-      owned = create(:exchange, owner: user)
-
-      get exchange_books_path(owned)
-
-      expect(response).to have_http_status(:ok)
     end
 
     it 'ログインしていなければログイン画面へ送る' do
       log_out
 
-      open_list
+      get exchange_books_path(exchange)
 
       expect(response).to redirect_to(login_path)
-    end
-
-    # 読み取りは全フェーズで開いている。止めるのは書き込みだけ
-    # （docs/spec.md 4. フェーズ）
-    [
-      ['準備中', '2026-07-25T00:00:00+09:00'],
-      ['登録期間', '2026-08-04T00:00:00+09:00'],
-      ['希望提出期間', '2026-08-11T00:00:00+09:00'],
-      ['マッチング実行待ち', '2026-08-20T00:00:00+09:00'],
-    ].each do |phase, now|
-      it "#{phase}でも開ける" do
-        exchange.update!(registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
-                         registration_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
-                         wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone)
-
-        travel_to(now) { open_list }
-
-        expect(response).to have_http_status(:ok)
-      end
-    end
-
-    it '結果公開でも開ける' do
-      exchange.update!(matched_at: 1.day.ago)
-
-      open_list
-
-      expect(response).to have_http_status(:ok)
-    end
-
-    # 登録・編集・削除のすべてに、この画面から入れるようにする。
-    # リンクは行き先ができてから足す（#22 の時点では行き先が無かった）
-    describe '登録・編集・削除の導線' do
-      it '登録期間中は登録ボタンが出る' do
-        open_list
-
-        expect(response.body).to include(new_exchange_book_path(exchange))
-      end
-
-      it '1冊も登録されていなくても登録ボタンが出る' do
-        open_list
-
-        expect(response.body).to include('まだ本は登録されていません')
-        expect(response.body).to include(new_exchange_book_path(exchange))
-      end
-
-      it '登録期間外は登録ボタンが出ない' do
-        outside_registration
-
-        open_list
-
-        expect(response.body).not_to include(new_exchange_book_path(exchange))
-      end
-
-      it '自分の本には編集と削除が出る' do
-        mine = create(:book, participation:)
-
-        open_list
-
-        expect(response.body).to include(edit_exchange_book_path(exchange, mine))
-        expect(response.body).to include('登録を取り消します')
-      end
-
-      # 消えるのは本だけではない。取得枠が1つ減り、その本への他の人の希望も消える
-      it '削除の確認で取得枠が減ることを伝える' do
-        create_list(:book, 2, participation:)
-
-        open_list
-
-        expect(response.body).to include('取得枠が2冊から1冊に減り')
-      end
-
-      # 自分の本は取得枠の数でもある。導線の有無だけで見分けさせると、
-      # 登録期間を過ぎたとたんにどれが自分の本か分からなくなる
-      it '自分の本には印が付く' do
-        mine = create(:book, participation:, title: '灯台守の一年')
-        outside_registration
-
-        open_list
-
-        expect(card_for(mine).text).to include('自分の本')
-      end
-
-      it '他人の本には印が付かない' do
-        theirs = create(:book, participation: create(:participation, exchange:), title: '十三番目の便り')
-
-        open_list
-
-        expect(card_for(theirs).text).not_to include('自分の本')
-      end
-
-      it '他人の本には編集も削除も出ない' do
-        theirs = create(:book, participation: create(:participation, exchange:))
-
-        open_list
-
-        expect(response.body).not_to include(edit_exchange_book_path(exchange, theirs))
-      end
-
-      # 押しても通らない導線を残さない
-      it '登録期間外は自分の本にも編集と削除が出ない' do
-        mine = create(:book, participation:)
-        outside_registration
-
-        open_list
-
-        expect(response.body).not_to include(edit_exchange_book_path(exchange, mine))
-        expect(response.body).not_to include('登録を取り消します')
-      end
-    end
-
-    describe '結果公開後' do
-      # 公開は matched_at で決まる。日時カラムを戻しても公開済みであることは変わらない
-      def publish!
-        exchange.update!(matched_at: 1.day.ago)
-      end
-
-      # 成立した割当。受け取る人は本の登録者とは別の参加になる
-      def matched(book, recipient_name)
-        recipient = create(:participation, exchange:, user: create(:user, display_name: recipient_name))
-        create(:assignment, book:, participation: recipient)
-      end
-
-      # 返却は誰にも渡せなかった本が登録者へ戻ること。割当は登録者の参加に付く
-      def returned(book)
-        create(:assignment, book:, participation: book.participation, round: nil, returned: true)
-      end
-
-      it '成立した本に誰から誰へ渡ったかが出る' do
-        book = book_by('佐藤 花子', title: '十三番目の便り')
-        matched(book, '鈴木 一郎')
-        publish!
-
-        open_list
-
-        expect(card_for(book).text).to include('佐藤 花子 さん → 鈴木 一郎 さん')
-      end
-
-      # 十数枚並ぶ中から自分の名前を探し直さずに済むようにする（結果画面と同じ扱い）
-      it '自分が出した本は自分の側が「あなた」になる' do
-        book = create(:book, participation:, title: '灯台守の一年')
-        matched(book, '鈴木 一郎')
-        publish!
-
-        open_list
-
-        expect(card_for(book).text).to include('あなた → 鈴木 一郎 さん')
-      end
-
-      it '自分が受け取った本は受け取る側が「あなた」になる' do
-        book = book_by('佐藤 花子', title: '波打ち際の観測所')
-        create(:assignment, book:, participation:)
-        publish!
-
-        open_list
-
-        expect(card_for(book).text).to include('佐藤 花子 さん → あなた')
-      end
-
-      # 渡った先は松葉で示す。返却と同じ色で並べると、成立を数え直すことになる
-      it '自分が受け取った本には印が付く' do
-        book = book_by('佐藤 花子', title: '波打ち際の観測所')
-        create(:assignment, book:, participation:)
-        publish!
-
-        open_list
-
-        expect(card_for(book).text).to include('あなたへ')
-      end
-
-      it '成立していても他人が受け取った本には印が付かない' do
-        book = book_by('佐藤 花子', title: '十三番目の便り')
-        matched(book, '鈴木 一郎')
-        publish!
-
-        open_list
-
-        expect(card_for(book).text).not_to include('あなたへ')
-      end
-
-      it '返却された自分の本には戻ってきたことが出る' do
-        book = create(:book, participation:, title: '砂の図書館')
-        returned(book)
-        publish!
-
-        open_list
-
-        expect(card_for(book).text).to include('あなたに返却されました')
-      end
-
-      it '返却された他人の本には登録者へ戻ったことが出る' do
-        book = book_by('佐藤 花子', title: '金曜日の献立')
-        returned(book)
-        publish!
-
-        open_list
-
-        expect(card_for(book).text).to include('佐藤 花子 さんに返却')
-      end
-
-      # 選ばれなかったことを本の評価として読ませない（docs/spec.md 6.5）。
-      # 戻った理由は結果画面が引き受ける
-      it '返却の理由は書かない' do
-        book = book_by('佐藤 花子', title: '金曜日の献立')
-        returned(book)
-        publish!
-
-        open_list
-
-        expect(card_for(book).text).not_to include('希望した人がいませんでした')
-      end
-
-      # 冊数だけでは、何冊が渡って何冊が戻ったのかを数え直すことになる
-      it '見出しに成立と返却の内訳が出る' do
-        matched(book_by('佐藤 花子'), '鈴木 一郎')
-        returned(book_by('田中 太郎'))
-        publish!
-
-        open_list
-
-        expect(response.body).to include('2冊')
-        expect(response.body).to include('成立1冊・返却1冊')
-      end
-
-      # ギフトコードの取り出し口は結果画面だけ（docs/spec.md 6.3）
-      it '結果画面への導線が出る' do
-        publish!
-
-        open_list
-
-        expect(response.body).to include('自分の結果を見る')
-        expect(response.body).to include(exchange_result_path(exchange))
-      end
-
-      it '結果公開前には結果画面への導線が出ない' do
-        open_list
-
-        expect(response.body).not_to include(exchange_result_path(exchange))
-      end
-
-      # 希望を出す期間は終わっている。押しても通らない口を残さない
-      it '希望に追加する口が消える' do
-        book = book_by('佐藤 花子', title: '十三番目の便り')
-        matched(book, '鈴木 一郎')
-        publish!
-
-        open_list
-
-        expect(response.body).not_to include('希望に追加')
-        expect(response.body).not_to include(exchange_book_wish_path(exchange, book))
-      end
-
-      # 見えるのは登録した本人と受け取った人だけ。一覧はどちらの経路でもない
-      it 'ギフトコードが含まれない' do
-        mine = create(:book, participation:, gift_code: 'MYOWNGIFTCODE')
-        theirs = book_by('佐藤 花子', gift_code: 'OTHERGIFTCODE')
-        create(:assignment, book: theirs, participation:)
-        returned(mine)
-        publish!
-
-        open_list
-
-        expect(response.body).not_to include('MYOWNGIFTCODE')
-        expect(response.body).not_to include('OTHERGIFTCODE')
-      end
-
-      # 公開前は割当が無い。フェーズを見ずに割当の有無だけで出すと、
-      # 主催者が実行した瞬間に、まだ公開の合図を受けていない画面へ結果が出る
-      it '結果公開前には渡った先が出ない' do
-        book = book_by('佐藤 花子', title: '十三番目の便り')
-        matched(book, '鈴木 一郎')
-
-        open_list
-
-        expect(card_for(book).text).not_to include('鈴木 一郎 さん')
-      end
     end
   end
 
@@ -899,13 +75,12 @@ RSpec.describe BooksController do
       expect(response).to have_http_status(:ok)
     end
 
-    # 直前にいた画面は本の一覧なので、そこまでを祖先として並べる
-    it 'パンくずから交換会トップと本の一覧へ戻れる' do
+    # 直前にいた画面は交換会ページ。本の一覧はそこに畳まれているので、祖先は1つ
+    it 'パンくずから交換会ページへ戻れる' do
       open_form
 
       expect(breadcrumb).to eq('読書交換会' => exchanges_path,
-                               '夏の交換会' => exchange_path(exchange),
-                               '本の一覧' => exchange_books_path(exchange))
+                               '夏の交換会' => exchange_path(exchange))
     end
 
     # 押しても通らないフォームを開かせない（docs/spec.md 6.4）
@@ -1010,13 +185,13 @@ RSpec.describe BooksController do
       expect(book.recommendation).to eq('読み終わったあとに空が違って見える。')
     end
 
-    it '登録すると本の一覧へ戻る' do
+    it '登録すると交換会ページへ戻る' do
       register
 
-      expect(response).to redirect_to(exchange_books_path(exchange))
+      expect(response).to redirect_to(exchange_path(exchange))
     end
 
-    # 何冊でも登録できる。一覧を経由させると、1冊ごとに2画面を往復することになる
+    # 何冊でも登録できる。交換会ページを経由させると、1冊ごとに2画面を往復することになる
     it '続けて登録するときは登録フォームへ戻る' do
       post exchange_books_path(exchange),
            params: { book: { title: '銀河の果ての本屋', gift_code: 'GIFT-1234' },
@@ -1094,12 +269,11 @@ RSpec.describe BooksController do
       expect(response).to have_http_status(:ok)
     end
 
-    it 'パンくずから交換会トップと本の一覧へ戻れる' do
+    it 'パンくずから交換会ページへ戻れる' do
       open_form
 
       expect(breadcrumb).to eq('読書交換会' => exchanges_path,
-                               '夏の交換会' => exchange_path(exchange),
-                               '本の一覧' => exchange_books_path(exchange))
+                               '夏の交換会' => exchange_path(exchange))
     end
 
     it '登録期間外は開けない' do
@@ -1162,10 +336,10 @@ RSpec.describe BooksController do
       expect(book.reload.title).to eq('新しいタイトル')
     end
 
-    it '編集すると本の一覧へ戻る' do
+    it '編集すると交換会ページへ戻る' do
       rename
 
-      expect(response).to redirect_to(exchange_books_path(exchange))
+      expect(response).to redirect_to(exchange_path(exchange))
     end
 
     it 'タイトルが空だと保存されない' do
@@ -1228,10 +402,10 @@ RSpec.describe BooksController do
       expect { remove }.to change { participation.books.count }.by(-1)
     end
 
-    it '削除すると本の一覧へ戻る' do
+    it '削除すると交換会ページへ戻る' do
       remove
 
-      expect(response).to redirect_to(exchange_books_path(exchange))
+      expect(response).to redirect_to(exchange_path(exchange))
     end
 
     it '他人の本は削除できない' do

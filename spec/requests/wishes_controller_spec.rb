@@ -65,10 +65,10 @@ RSpec.describe WishesController do
       expect(wished_books).to eq([book])
     end
 
-    it '一覧へ戻る' do
+    it '交換会ページへ戻る' do
       add(book_by_other)
 
-      expect(response).to redirect_to(exchange_books_path(exchange))
+      expect(response).to redirect_to(exchange_path(exchange))
     end
 
     # 絞り込みは URL に残る（docs/spec.md 6.2）。追加のたびに全件へ戻されると、
@@ -76,7 +76,7 @@ RSpec.describe WishesController do
     it '絞り込みを保ったまま戻る' do
       add(book_by_other, params: { filter: 'mine' })
 
-      expect(response).to redirect_to(exchange_books_path(exchange, filter: 'mine'))
+      expect(response).to redirect_to(exchange_path(exchange, filter: 'mine'))
     end
 
     # 自分の本は受け取れない（docs/spec.md 3.）。ボタンは出さないが、
@@ -166,7 +166,7 @@ RSpec.describe WishesController do
     it '希望していない本を外しても落ちない' do
       remove(book_by_other)
 
-      expect(response).to redirect_to(exchange_books_path(exchange))
+      expect(response).to redirect_to(exchange_path(exchange))
     end
 
     it '登録期間は外せない' do

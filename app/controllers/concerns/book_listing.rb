@@ -45,7 +45,7 @@ module BookListing
       # 口が増えたときに同じ内容のテンプレートがもう1枚生える
       format.turbo_stream { render 'wishes/listing' }
       # JavaScript が無くても通る道を残す。絞り込みは URL に残っているので持ち回す
-      format.html { redirect_to exchange_books_path(@exchange, filter: params[:filter].presence) }
+      format.html { redirect_to exchange_path(@exchange, filter: params[:filter].presence) }
     end
   end
 end

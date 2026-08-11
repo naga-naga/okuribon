@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class ExchangesController < ApplicationController
+  include BookListing
+
   before_action :require_login
 
   # 並ぶのは参加している交換会だけ。主催者は必ず参加者を兼ねるので、
@@ -10,16 +12,21 @@ class ExchangesController < ApplicationController
     @cards = Exchanges::Listing.new(current_user, at: requested_at).call
   end
 
-  # 交換会トップ。参加から引くので、参加していなければ見つからない。
-  # 主催者も参加者を兼ねるのでここを開ける。主催者管理画面（#36）への導線は
-  # この画面が持つ。自分の取得枠を出すのに参加そのものが要るため、
-  # 交換会ではなく参加を引いて、権限の判定と取り出しを1回で済ませる
+  # 交換会ページ。状態ヘッダー（docs/spec.md 6.1）と本の一覧（6.2）を1枚で出す。
+  # 参加から引くので、参加していなければ見つからない。主催者も参加者を兼ねるので
+  # ここを開ける。主催者管理画面への導線もこの画面が持つ。
+  # 自分の取得枠を出すのに参加そのものが要るため、交換会ではなく参加を引いて、
+  # 権限の判定と取り出しを1回で済ませる。
+  # 読み取りは5フェーズすべてで開いており、止めるのは書き込みだけ（4. フェーズ）
   def show
     @participation = current_user.participations.find_by!(exchange_id: params.expect(:id))
     @exchange = @participation.exchange
-    # この画面でいちばん上に出る「あなたがすること」。フェーズだけでは決まらず
-    # 自分の状態で変わるので、組み立てはサービスに置く（#94 も同じ文言を並べる）
+    # 状態ヘッダーの「あなたがすること」。フェーズだけでは決まらず自分の状態で
+    # 変わるので、組み立てはサービスに置く（交換会一覧も同じ文言を並べる）
     @todo = Exchanges::Todo.new(@participation, at: requested_at).call
+    # 下半分に並ぶ本と希望リスト。希望を出し入れしたあとの差し替えと
+    # 同じ読み込みを通す。別々に書くと、片方にだけ足した並びが差し替えで消える
+    load_book_listing
   end
 
   def new

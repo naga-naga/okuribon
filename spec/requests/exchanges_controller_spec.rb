@@ -669,28 +669,40 @@ RSpec.describe ExchangesController do
       end
     end
 
-    # 読み返すのは本を選ぶ前の一度きりで、毎回この画面の上を占める用がない
+    # 読むのは本を登録する直前なので、畳まずに出したままにする
     describe '概要と日程' do
-      it '畳んで格納する' do
+      def overview
+        response.parsed_body.at_css('section[aria-label="概要と日程"]')
+      end
+
+      # 押す直前に1クリック挟ませない。畳む口そのものを持たない
+      it '畳まずに出す' do
         open_page
 
-        summary = response.parsed_body.at_css('details summary')
-        expect(summary.text).to include('概要と日程')
-        expect(response.parsed_body.at_css('details')['open']).to be_nil
+        expect(overview).to be_present
+        expect(overview.at_css('details, summary')).to be_nil
       end
 
       # 対応ストアや価格帯の目安が書かれている。本を選ぶ前に読む必要がある
       it '概要が入る' do
         open_page
 
-        expect(response.parsed_body.at_css('details').text).to include('Kindle のみ。1000円前後を目安に。')
+        expect(overview.text).to include('Kindle のみ。1000円前後を目安に。')
+      end
+
+      # 概要は自由記述で長さに上限が無い。状態ヘッダーの中に入れると、
+      # 概要の長さで締切と状況の数字の位置が動く
+      it '状態ヘッダーの外に置く' do
+        open_page
+
+        expect(overview.at_css('dl[aria-label="状況"]')).to be_nil
       end
 
       # 並べるのは動かせる期間だけ。結果公開は主催者の実行で起きて日時では決まらない
       it '各期間の範囲が入る' do
         open_page
 
-        schedule = response.parsed_body.at_css('details').text
+        schedule = overview.text
         expect(schedule).to include('2026年8月1日 00:00 — 2026年8月8日 00:00')
         expect(schedule).to include('2026年8月8日 00:00 — 2026年8月15日 00:00')
       end

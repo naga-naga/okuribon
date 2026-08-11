@@ -1427,22 +1427,24 @@ RSpec.describe ExchangesController do
         expect(card_for(book).text).to include('希望に入れた 1位')
       end
 
-      it '希望に入れなかった本にはその旨が出る' do
+      # 順位が出ている本が同じ画面に並んでいるので、出ていないことがそのまま
+      # 入れなかったことにあたる。入れなかった側にも書くと、十数枚のうち
+      # 大半が否定の一文を持つことになる
+      it '希望に入れなかった本には何も書かない' do
         book = book_by('佐藤 花子', title: '選ばなかった本')
 
         open_awaiting
 
-        expect(card_for(book).text).to include('希望には入れていません')
+        expect(card_for(book).text).not_to include('希望には入れていません')
+        expect(card_for(book).text).not_to include('希望に入れた')
       end
 
-      # 自分の本は希望に入れようがない。「希望には入れていません」と書くと、
-      # 入れ忘れたようにも読める。書くことが無いので下段そのものを持たない
-      it '自分の本には希望の状態を書かない' do
+      # 自分の本は希望に入れようがない。入れなかった本と同じ扱いで足りる
+      it '自分の本にも希望の状態を書かない' do
         mine = create(:book, participation:, title: '自分の本')
 
         open_awaiting
 
-        expect(card_for(mine).text).not_to include('希望には入れていません')
         expect(card_for(mine).text).not_to include('希望に入れた')
       end
 

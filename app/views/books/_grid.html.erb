@@ -44,10 +44,12 @@
             押せないことをボタンの有無だけに頼らず示す。
             返却された本も同じだけ沈める。渡らなかったことを線や記号で示さない %>
         <% dimmed = ((wishing || submitted) && mine) || returned %>
-        <%# 実行待ちに何位で出したかを添えるのは他人の本だけ。自分の本は希望に
-            入れようがないので、書くことが無い。無いまま下段を出すと罫だけが残る %>
-        <% submitted_wish = submitted && !mine %>
         <% position = positions[book.id] %>
+        <%# 実行待ちに下段を出すのは、希望に入れた本だけ。入れなかった本にも
+            その旨を書くと、十数枚のうち大半が否定の一文を持つことになる。
+            順位が出ている本が同じ画面に並んでいるので、出ていないことが
+            そのまま入れなかったことにあたる。自分の本もここに入る（順位を持てない） %>
+        <% submitted_wish = submitted && position %>
         <li id="<%= dom_id(book) %>" data-controller="book-card"
             class="group flex flex-col gap-4 rounded-[5px] border p-6 data-open:col-span-full
                    <%= book_card_tone(dimmed:, received:, mine:) %>">
@@ -155,13 +157,9 @@
                   添える。出すのは自分の希望だけで、他人の順位も、その本を何人が
                   希望したかも出さない（docs/spec.md 8.）。
                   朱は押すものと締切の担当なので、もう動かせない順位は生成りに置く %>
-              <% if position %>
-                <span class="tabular rounded-[3px] bg-fill px-3 py-1 text-[12.5px] text-ink-muted">
-                  希望に入れた <%= position %>位
-                </span>
-              <% else %>
-                <span class="text-[12.5px] text-ink-subtle">希望には入れていません</span>
-              <% end %>
+              <span class="tabular rounded-[3px] bg-fill px-3 py-1 text-[12.5px] text-ink-muted">
+                希望に入れた <%= position %>位
+              </span>
             <% end %>
 
             <% if wishing %>

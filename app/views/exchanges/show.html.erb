@@ -13,6 +13,11 @@
 <% wishing = @exchange.writable?(:wish, at: requested_at) %>
 <% published = @exchange.published?(at: requested_at) %>
 
+<%# マッチングの実行へ送るかどうか。確認画面が開けるかどうかと同じ述語から引く。
+    ここでフェーズ名を書き直すと、確認画面が断る条件を変えたときに、
+    押しても断られる導線がこの画面に残る %>
+<% executing = @exchange.matching_executable?(current_user, at: requested_at) %>
+
 <%# 何が並ぶかはフェーズそのもので決まる。登録が始まるより前の一覧が空なのは、
     まだ誰も登録していないからではなく、登録できる人がまだ居ないため。
     書き込みの可否から引くと、実行待ちと区別が付かない %>
@@ -119,14 +124,20 @@
         <%# 導線は「あなたがすること」の直下に置き、独立した段を作らない。
             その日の主な行き先は本の一覧で、それがこのページの下半分そのものに
             なった。残るのは操作で、これは「すること」の一部にあたる。
-            朱は1画面に1箇所だけなので、「あなたがすること」を朱で塗ったときは
-            こちらを輪郭だけに落とす %>
+            見た目は行き先で分けない（exchange_todo_action_class） %>
         <% if registering %>
           <p class="mt-4">
             <%= link_to '本を登録する', new_exchange_book_path(@exchange),
-                        class: 'inline-block rounded-[5px] px-6 py-3 text-[14px] font-medium no-underline ' +
-                               (@todo.tone == :urgent ? 'border border-accent bg-paper text-accent hover:bg-paper-hover'
-                                                      : 'bg-accent text-paper hover:bg-accent-hover') %>
+                        class: exchange_todo_action_class(@todo.tone) %>
+          </p>
+        <% elsif executing %>
+          <%# 実行待ちで待つ以外の道があるのは主催者だけ。押し忘れが起きやすいので
+              （6.8）、管理画面の中だけでなくこの画面からも始められるようにする。
+              送るのは確認画面で、管理画面は経由しない。押す前に何人に何冊が渡るのかを
+              数で示すのは確認画面の仕事なので、間に管理画面を挟んでも増えるものが無い %>
+          <p class="mt-4">
+            <%= link_to 'マッチングを実行する', new_exchange_management_matching_path(@exchange),
+                        class: exchange_todo_action_class(@todo.tone) %>
           </p>
         <% end %>
       </div>

@@ -144,6 +144,16 @@ class Exchange < ApplicationRecord
     participant?(user) && !owner?(user) && writable?(:participation, at:)
   end
 
+  # マッチングを実行できるか。確認画面を開けるかどうかと、交換会ページに実行への
+  # 導線を出すかどうかを同じ規則から引く。片方だけを直すと、押しても断られる導線が残る。
+  # 実行そのものの検証は Matching::Execution が行ロックの内側で持つので、これは
+  # 見せてよいかの判定にあたる。
+  # 実行済みで false になるのは phase が :published を返すため。
+  # matched_at を直に見ない
+  def matching_executable?(user, at:)
+    owner?(user) && writable?(:matching, at:)
+  end
+
   def phase_name(at:)
     I18n.t(phase(at:), scope: 'exchange.phases')
   end

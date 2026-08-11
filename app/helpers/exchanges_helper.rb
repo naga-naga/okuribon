@@ -60,6 +60,21 @@ module ExchangesHelper
     TODO_TONE_STYLES.fetch(tone).fetch(part)
   end
 
+  # 「あなたがすること」の直下に置く操作の見た目（docs/spec.md 6.1）。
+  # 行き先はフェーズごとに違うが、どれもそのフェーズの主となる導線にあたるので、
+  # 位置も大きさも分けず、文言と行き先だけを差し替える。
+  # 朱は1画面に1箇所だけなので、「あなたがすること」を朱で塗ったときは
+  # こちらを輪郭だけに落とす
+  def exchange_todo_action_class(tone)
+    emphasis = if tone == :urgent
+                 'border border-accent bg-paper text-accent hover:bg-paper-hover'
+               else
+                 'bg-accent text-paper hover:bg-accent-hover'
+               end
+
+    "inline-block rounded-[5px] px-6 py-3 text-[14px] font-medium no-underline #{emphasis}"
+  end
+
   def exchange_card_style(tone, part)
     CARD_TONE_STYLES.fetch(tone).fetch(part)
   end

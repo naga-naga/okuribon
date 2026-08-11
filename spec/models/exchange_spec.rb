@@ -757,6 +757,42 @@ RSpec.describe Exchange do
     end
   end
 
+  describe '#matching_executable?' do
+    let!(:exchange) do
+      create(
+        :exchange,
+        registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
+        registration_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
+        wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone
+      )
+    end
+
+    let!(:awaiting) { '2026-08-20T00:00:00+09:00'.in_time_zone }
+
+    it '実行待ちの主催者なら true になる' do
+      expect(exchange.matching_executable?(exchange.owner, at: awaiting)).to be(true)
+    end
+
+    it '主催者以外なら false になる' do
+      expect(exchange.matching_executable?(create(:user), at: awaiting)).to be(false)
+    end
+
+    it '締切前なら false になる' do
+      expect(exchange.matching_executable?(exchange.owner, at: '2026-08-10T00:00:00+09:00'.in_time_zone)).to be(false)
+    end
+
+    # マッチングは一度だけ実行できる。日時カラムを戻しても実行済みであることは変わらない
+    it '実行済みなら false になる' do
+      exchange.update!(matched_at: '2026-08-16T00:00:00+09:00'.in_time_zone)
+
+      expect(exchange.matching_executable?(exchange.owner, at: awaiting)).to be(false)
+    end
+
+    it '利用者がいなければ false になる' do
+      expect(exchange.matching_executable?(nil, at: awaiting)).to be(false)
+    end
+  end
+
   describe '#join!' do
     let!(:exchange) do
       create(

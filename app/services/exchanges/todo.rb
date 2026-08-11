@@ -83,9 +83,21 @@ module Exchanges
     end
 
     # 次に動くのは主催者の操作で、日時では決まらない。待つべき日時が無いので、
-    # 締め切った日時のほうを出して、受付が終わったことを言う
+    # 締め切った日時のほうを出して、受付が終わったことを言う。
+    # ここだけは主催者かどうかでも変わる。ほかのフェーズと違って、次に何が起きるかが
+    # 見ている本人の操作にかかっているのが1人だけいる。その人にまで待てと言うと、
+    # 交換会がそこで止まったままになる（docs/spec.md 6.1）。
+    # 主催者かどうかは実行の可否から引く。フェーズ名で書き直すと、確認画面が
+    # 開かなくなったときに、押しても断られる導線がここに残る
     def awaiting_matching
-      [:awaiting_matching, { at: schedule(@exchange.wish_ends_at) }]
+      options = { at: schedule(@exchange.wish_ends_at) }
+
+      executable? ? [:awaiting_matching_owner, options] : [:awaiting_matching, options]
+    end
+
+    # 交換会ページが実行への導線を出すかどうかと同じ述語を見る
+    def executable?
+      @exchange.matching_executable?(@participation.user, at: @at)
     end
 
     def published

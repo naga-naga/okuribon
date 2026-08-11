@@ -110,6 +110,20 @@ RSpec.describe Exchanges::Listing do
       expect(cards.first.headline).to eq('本を登録する')
     end
 
+    # 見出しは Exchanges::Todo から引くので、主催者かどうかで変わる分もそのまま
+    # カードに出る。実行待ちのカードを開く前に、待っている側なのか自分の番なのかが分かる
+    it '主催している実行待ちの見出しは、マッチングの実行になる' do
+      awaiting_matching_exchange(owner: user)
+
+      expect(cards.first.headline).to eq('マッチングを実行する')
+    end
+
+    it '主催していない実行待ちの見出しは、待つことになる' do
+      awaiting_matching_exchange
+
+      expect(cards.first.headline).to eq('結果を待ちます')
+    end
+
     it '自分の参加が入る' do
       exchange = registration_exchange
 

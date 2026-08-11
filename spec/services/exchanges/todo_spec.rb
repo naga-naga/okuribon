@@ -68,12 +68,23 @@ RSpec.describe Exchanges::Todo do
     end
   end
 
+  # ここだけは、すべきことが主催者かどうかでも変わる。実行の口を持つのは主催者だけで、
+  # ほかの参加者に待つ以外の道が無いのは、その人が押していないため
   describe 'マッチング実行待ち' do
     let!(:at) { Time.zone.parse('2026-02-25 12:00') }
 
-    it '待つだけであることと、希望提出の締切を出す' do
-      expect(todo).to have_attributes(headline: '結果を待ちます', tone: :normal)
-      expect(todo.detail).to include('2026年2月21日 23:59')
+    it '主催者にはマッチングの実行を出す' do
+      expect(todo).to have_attributes(headline: 'マッチングを実行する', tone: :normal)
+      expect(todo.detail).to include('結果を見られません')
+    end
+
+    context '主催者以外の参加者' do
+      let!(:participation) { create(:participation, exchange:, user: create(:user)) }
+
+      it '待つだけであることと、希望提出の締切を出す' do
+        expect(todo).to have_attributes(headline: '結果を待ちます', tone: :normal)
+        expect(todo.detail).to include('2026年2月21日 23:59')
+      end
     end
   end
 

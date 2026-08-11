@@ -50,6 +50,11 @@ ja:
       awaiting_matching:
         headline: 結果を待ちます
         detail: 希望の受付は%{at}に締め切りました。主催者がマッチングを実行すると結果が公開されます。この画面でできることはもうありません。
+      # 主催者だけは待つ側ではない。押し忘れが起きやすいので（docs/spec.md 6.8）、
+      # 押さないあいだ何が起きないのかを書く
+      awaiting_matching_owner:
+        headline: マッチングを実行する
+        detail: 希望の受付は%{at}に締め切りました。あなたが実行するまで、参加者は結果を見られません。
       published:
         headline: あなたに%{count}冊届いています
         detail: "%{givers}からの本です。ギフトコードは結果画面で開けます。"

@@ -1424,6 +1424,49 @@ RSpec.describe ExchangesController do
         expect(wish_list.text).to include('希望を1冊も出しませんでした')
       end
 
+      # 十数枚並ぶ中から自分が何を出したのかを、リストと見比べずに読めるようにする
+      it 'カードに自分が何位で出したかが出る' do
+        book = wish_for('選んだ本')
+
+        open_awaiting
+
+        expect(card_for(book).text).to include('希望に入れた 1位')
+      end
+
+      it '希望に入れなかった本にはその旨が出る' do
+        book = book_by('佐藤 花子', title: '選ばなかった本')
+
+        open_awaiting
+
+        expect(card_for(book).text).to include('希望には入れていません')
+      end
+
+      # 自分の本は希望に入れようがない。「希望には入れていません」と書くと、
+      # 入れ忘れたようにも読める
+      it '自分の本には行き先がいつ分かるのかが出る' do
+        mine = create(:book, participation:, title: '自分の本')
+
+        open_awaiting
+
+        expect(card_for(mine).text).to include('行き先は結果公開で分かります')
+        expect(card_for(mine).text).not_to include('希望には入れていません')
+      end
+
+      # 何人がその本を希望しているかは誰にも見せない（docs/spec.md 8.）。
+      # 中身まで揃えた2冊を並べ、他の人に希望された側とされていない側で
+      # カードが1文字も変わらないことを見る
+      it '他人の希望も、その本を何人が希望したかも出ない' do
+        registrant = create(:participation, exchange:, user: create(:user, display_name: '佐藤 花子'))
+        same = { title: '同じ題の本', summary: '同じあらすじ', recommendation: '同じおすすめ' }
+        wanted = create(:book, participation: registrant, **same)
+        ignored = create(:book, participation: registrant, **same)
+        3.times { create(:wish, participation: create(:participation, exchange:), book: wanted) }
+
+        open_awaiting
+
+        expect(card_for(wanted).text).to eq(card_for(ignored).text)
+      end
+
       # 希望リストが同じ幅を取り続けるので、カードの列も同じ数のまま。
       # 締切をまたいだ瞬間に大きさが変わると、読み比べていた並びを覚え直すことになる
       it '希望提出期間と同じ幅でカードが並ぶ' do

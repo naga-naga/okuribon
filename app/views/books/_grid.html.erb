@@ -61,7 +61,7 @@
         <%# 希望を選ぶ間、自分の本だけは選べない。輪郭も文字も落として、
             押せないことをボタンの有無だけに頼らず示す。
             返却された本も同じだけ沈める。渡らなかったことを線や記号で示さない %>
-        <% dimmed = (wishing && mine) || returned %>
+        <% dimmed = ((wishing || submitted) && mine) || returned %>
         <% position = positions[book.id] %>
         <li id="<%= dom_id(book) %>" data-controller="book-card"
             class="group flex flex-col gap-4 rounded-[5px] border p-6 data-open:col-span-full
@@ -140,7 +140,7 @@
 
           <%# 開いている間、この段の中身が無くなる本もある。線だけが残らないよう畳む %>
           <footer class="mt-auto flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-line pt-3.5
-                         <%= 'group-data-open:hidden' unless actions || wishing || published %>">
+                         <%= 'group-data-open:hidden' unless actions || wishing || submitted || published %>">
             <button type="button" data-action="book-card#toggle" data-book-card-target="toggle"
                     aria-expanded="false"
                     class="cursor-pointer text-[12.5px] text-accent underline group-data-open:hidden">
@@ -162,6 +162,24 @@
               <%= button_to '削除', exchange_book_path(exchange, book), method: :delete,
                             form: { data: { turbo_confirm: book_deletion_confirm(book, slots:) } },
                             class: 'cursor-pointer text-[12.5px] text-ink-subtle underline hover:text-accent' %>
+            <% end %>
+
+            <% if submitted %>
+              <%# 提出した希望はリストにも並んでいるが、十数枚のカードを読み返す側は
+                  そのつど右のリストと見比べることになる。何位で出したかをカードにも
+                  添える。出すのは自分の希望だけで、他人の順位も、その本を何人が
+                  希望したかも出さない（docs/spec.md 8.）。
+                  朱は押すものと締切の担当なので、もう動かせない順位は生成りに置く %>
+              <% if mine %>
+                <%# 自分の本は希望に入れようがない。入れ忘れたように読ませない %>
+                <span class="text-[12.5px] text-ink-subtle">行き先は結果公開で分かります</span>
+              <% elsif position %>
+                <span class="tabular rounded-[3px] bg-fill px-3 py-1 text-[12.5px] text-ink-muted">
+                  希望に入れた <%= position %>位
+                </span>
+              <% else %>
+                <span class="text-[12.5px] text-ink-subtle">希望には入れていません</span>
+              <% end %>
             <% end %>
 
             <% if wishing %>

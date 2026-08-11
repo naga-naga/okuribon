@@ -26,9 +26,9 @@ Rails.application.routes.draw do
   resources :exchanges, only: [:index, :show, :new, :create, :edit, :update] do
     # 1冊だけを開く画面は持たない（docs/spec.md 6.3）。
     # 読むための情報は一覧のカードが全部持っていて、ギフトコードは結果画面が受け持つ。
-    # 一覧そのものも交換会ページに畳んだ（6.1）。index を残してあるのは、
-    # すでに配られた旧 URL から交換会ページへ送るためだけ
-    resources :books, except: [:show] do
+    # 一覧そのものも交換会ページに畳んだので index も持たない（6.1）。
+    # 本に残るのは書き込みの口だけになる
+    resources :books, except: [:show, :index] do
       # 1冊に対する自分の希望は1つしかないので単数で置く。参加と同じ理由。
       # 順位はここでは受け取らない。並べ替えは希望リスト全体を1度に送る（#27）
       resource :wish, only: [:create, :destroy]

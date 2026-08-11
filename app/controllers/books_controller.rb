@@ -7,19 +7,10 @@ class BooksController < ApplicationController
   before_action :set_participation
 
   # フォームを開く時点で止める。押しても通らない画面を開かせても仕方がない。
-  # only: ではなく except: にして、既定を「止める」に倒す。
-  # 書き込みのアクションが増えたときに、書き忘れが素通りにならない。
-  # index は交換会ページへ送るだけで、行き先は全フェーズで開いている
-  guard_phase :book, except: [:index]
-
-  # 本の一覧は交換会ページに畳んだ（docs/spec.md 6.1 / 6.2）。同じものを指す URL を
-  # 2つ残すと、交換会一覧のカードやパンくずがどちらを指すのかを画面ごとに選ぶことに
-  # なるので、経路は残したまま交換会ページへ送る。すでに配られたリンクのため。
-  # 絞り込みは交換会ページの URL のクエリに載るので、そのまま持ち回す
-  def index
-    redirect_to exchange_path(@exchange, filter: params[:filter].presence),
-                status: :moved_permanently
-  end
+  # 一覧を交換会ページに畳んでから、このコントローラに残るのは書き込みの口だけに
+  # なったので、除外は置かない。読むための経路が戻ってきたときに、
+  # そのときだけ except: を書き足すほうが、書き忘れが素通りにならない
+  guard_phase :book
 
   def new
     @book = @participation.books.build

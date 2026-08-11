@@ -12,47 +12,21 @@ RSpec.describe BooksController do
   before { log_in_as(user) }
 
   # 本の一覧は交換会ページに畳んだ（docs/spec.md 6.1 / 6.2）。
-  # すでに配られた旧 URL のために経路だけを残してあるので、開いたら送るだけになる
-  describe '#index' do
-    it '交換会ページへ送る' do
-      get exchange_books_path(exchange)
-
-      expect(response).to have_http_status(:moved_permanently)
-      expect(response).to redirect_to(exchange_path(exchange))
-    end
-
-    # 絞り込みは交換会ページの URL のクエリに載る（docs/spec.md 6.1）
-    it '絞り込みを持ち回す' do
-      get exchange_books_path(exchange, filter: 'mine')
-
-      expect(response).to redirect_to(exchange_path(exchange, filter: 'mine'))
-    end
-
-    # 送り先は全フェーズで開いている。ここで止めると、結果を見に来た人が
-    # 旧 URL からだけ弾かれる
-    it '登録期間の外でも送る' do
-      outside_registration
-
-      get exchange_books_path(exchange)
-
-      expect(response).to redirect_to(exchange_path(exchange))
-    end
-
-    # 403 だと、招待されていない交換会の実在が URL を試すだけで確かめられる
-    it '参加していなければ見つからない' do
-      log_in_as(create(:user))
-
+  # 一覧のための URL は持たないので、経路そのものが無い。
+  # 同じ画面に入口が2つあると、交換会一覧のカードやパンくずが
+  # どちらを指すのかを画面ごとに選ぶことになる
+  describe '本の一覧の URL' do
+    it '持たない' do
       get exchange_books_path(exchange)
 
       expect(response).to have_http_status(:not_found)
     end
 
-    it 'ログインしていなければログイン画面へ送る' do
-      log_out
+    # 同じ URL は本の登録を受ける口として残っている。読む経路だけが無い
+    it '本の登録は同じ URL の POST で受ける' do
+      post exchange_books_path(exchange), params: { book: { title: '銀河の果ての本屋', gift_code: 'GIFT-1234' } }
 
-      get exchange_books_path(exchange)
-
-      expect(response).to redirect_to(login_path)
+      expect(response).to redirect_to(exchange_path(exchange))
     end
   end
 

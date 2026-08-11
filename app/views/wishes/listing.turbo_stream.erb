@@ -11,9 +11,15 @@
                                                 registering: @exchange.writable?(:book, at: requested_at),
                                                 wishing: @exchange.writable?(:wish, at: requested_at),
                                                 published: @exchange.published?(at: requested_at),
+                                                # 差し替えが起きるのは希望を出し入れできる間だけなので、
+                                                # 前後のフェーズの姿はここを通らない
+                                                preparing: false,
+                                                submitted: false,
                                                 slots: my_books.size,
                                                 mine_only: @mine_only } %>
 
 <%= turbo_stream.replace 'wish_list', partial: 'wishes/list',
                                       locals: { exchange: @exchange, wishes: @wishes,
-                                                slots: my_books.size, mine_only: @mine_only } %>
+                                                slots: my_books.size, mine_only: @mine_only,
+                                                # 差し替えが起きるのは希望を出し入れできる間だけ
+                                                editable: true } %>

@@ -1,10 +1,13 @@
 <%# 希望リストの中身。1冊出し入れするたびにここごと差し替える。
     出し入れの口はカードの側にあるので、ここは今の並びを見せて順序だけを動かす。
-    何人がその本を希望しているかは、ここにも一覧にも出さない（docs/spec.md 8.） %>
+    何人がその本を希望しているかは、ここにも一覧にも出さない（docs/spec.md 8.）。
+
+    editable: false はマッチング実行待ち。並びはそのままで、促しと動かす口が外れる %>
 <div id="wish_list" class="min-h-0 overflow-y-auto px-5 pt-3 pb-5 lg:px-6 lg:pt-4 lg:pb-5">
   <%# 案内の出し分けは畳んだ側と開いた側で共通。数えるのは自分の取得枠と
-      自分の希望だけで、何人がその本を希望しているかは持ち込まない %>
-  <% guidance = wish_guidance_state(slots:, wishes: wishes.size) %>
+      自分の希望だけで、何人がその本を希望しているかは持ち込まない。
+      締め切られたあとは増やす道が残っていないので、促しそのものを持たない %>
+  <% guidance = editable ? wish_guidance_state(slots:, wishes: wishes.size) : :enough %>
 
   <%# 畳んでいる間に出る2行。狭い画面でだけ出る。冊数を1行目に置くのは、
       ここが狭い画面の既定の状態で、開かないまま一覧を読み進める人がいるため。
@@ -12,16 +15,21 @@
   <div class="group-data-open/sheet:hidden lg:hidden">
     <p id="wish_summary" class="tabular mb-2 text-[11.5px]
                                 <%= guidance == :enough ? 'text-ink-subtle' : 'text-accent' %>">
-      <%= wish_summary_text(slots:, wishes: wishes.size) %>
+      <%= editable ? wish_summary_text(slots:, wishes: wishes.size)
+                   : t('wish.summaries.counts', slots:, wishes: wishes.size) %>
     </p>
 
     <div class="flex gap-2 overflow-x-auto">
       <% if wishes.empty? %>
-        <span class="text-[12.5px] text-ink-subtle">まだ1冊も選んでいません</span>
+        <span class="text-[12.5px] text-ink-subtle">
+          <%= editable ? 'まだ1冊も選んでいません' : '希望を1冊も出しませんでした' %>
+        </span>
       <% else %>
+        <%# 1位だけを朱にするのは動かせる間だけ。朱は押すものと締切の担当なので、
+            締め切られた並びに残すと、まだ動かせるように読める %>
         <% wishes.each do |wish| %>
           <span class="tabular flex-none rounded-[3px] px-3 py-2 text-[12px] whitespace-nowrap
-                       <%= wish.position == 1 ? 'bg-accent-soft text-accent' : 'bg-fill text-ink' %>">
+                       <%= editable && wish.position == 1 ? 'bg-accent-soft text-accent' : 'bg-fill text-ink' %>">
             <%= wish.position %> <%= wish.book.title %>
           </span>
         <% end %>
@@ -31,26 +39,38 @@
 
   <div class="hidden group-data-open/sheet:block lg:block">
     <%# 開いた側の案内。面を朱で塗るのは、まだ増やせる人に限る。
-        取得枠が0の人には増やす道が残っていないので、塗っても圧をかけるだけになる %>
-    <div class="mb-4 rounded-[4px] border px-4 py-3.5
-                <%= guidance == :short ? 'border-accent-soft bg-accent-soft' : 'border-line bg-surface-sunken' %>">
-      <p class="tabular text-[13.5px] font-bold <%= guidance == :enough ? 'text-ink' : 'text-accent' %>">
-        <%= t('wish.guidance.counts', slots:, wishes: wishes.size) %>
-      </p>
-      <p class="mt-1.5 text-[12.5px] leading-[1.8] text-ink-muted">
-        <%= t("wish.guidance.#{guidance}", recommended: recommended_wish_count(slots)) %>
-      </p>
-    </div>
-
-    <% if wishes.empty? %>
-      <%# 空のまま返すと、選び方が分からないのか壊れているのか区別がつかない %>
-      <div class="rounded-[4px] border border-dashed border-line-strong px-4 py-5 text-center">
-        <p class="text-[13px] text-ink-muted">まだ1冊も選んでいません。</p>
-        <p class="mt-2 text-[12px] leading-[1.8] text-ink-subtle">
-          左の一覧から「希望に追加」を押すと、ここに順に積まれます。
+        取得枠が0の人には増やす道が残っていないので、塗っても圧をかけるだけになる。
+        締め切られたあとも同じ理由で出さない。冊数はシートの下部と畳んだ側が持つ %>
+    <% if editable %>
+      <div class="mb-4 rounded-[4px] border px-4 py-3.5
+                  <%= guidance == :short ? 'border-accent-soft bg-accent-soft' : 'border-line bg-surface-sunken' %>">
+        <p class="tabular text-[13.5px] font-bold <%= guidance == :enough ? 'text-ink' : 'text-accent' %>">
+          <%= t('wish.guidance.counts', slots:, wishes: wishes.size) %>
+        </p>
+        <p class="mt-1.5 text-[12.5px] leading-[1.8] text-ink-muted">
+          <%= t("wish.guidance.#{guidance}", recommended: recommended_wish_count(slots)) %>
         </p>
       </div>
-    <% else %>
+    <% end %>
+
+    <% if wishes.empty? %>
+      <%# 空のまま返すと、選び方が分からないのか壊れているのか区別がつかない。
+          締め切られたあとは選び方を教えても仕方がないので、
+          割り当てが無いことだけを言う %>
+      <div class="rounded-[4px] border border-dashed border-line-strong px-4 py-5 text-center">
+        <% if editable %>
+          <p class="text-[13px] text-ink-muted">まだ1冊も選んでいません。</p>
+          <p class="mt-2 text-[12px] leading-[1.8] text-ink-subtle">
+            左の一覧から「希望に追加」を押すと、ここに順に積まれます。
+          </p>
+        <% else %>
+          <p class="text-[13px] text-ink-muted">希望を1冊も出しませんでした。</p>
+          <p class="mt-2 text-[12px] leading-[1.8] text-ink-subtle">
+            割り当てられる本はありません。
+          </p>
+        <% end %>
+      </div>
+    <% elsif editable %>
       <%# 並べ替えは順序だけをまとめて送る。送る並びは行の並びそのもので、
           行を動かせば中の hidden も一緒に動く。順位は送らず、サーバー側で1から振り直す %>
       <%= form_with url: exchange_wish_list_path(exchange), method: :patch,
@@ -58,50 +78,12 @@
         <%# 絞り込みは URL に残る。JavaScript が無い経路へ倒れても同じ並びで戻す %>
         <%= hidden_field_tag :filter, 'mine', id: nil if mine_only %>
 
-        <ol class="flex flex-col gap-2">
-          <% wishes.each_with_index do |wish, index| %>
-            <li data-wish-reorder-target="row"
-                class="flex items-center gap-3 rounded-[4px] border border-line bg-paper px-3.5 py-3
-                       data-dragging:border-dashed data-dragging:border-accent">
-              <%= hidden_field_tag 'book_ids[]', wish.book_id, id: nil,
-                                                 data: { wish_reorder_target: 'book' } %>
-
-              <span data-wish-reorder-target="position"
-                    class="tabular w-4 flex-none text-[13px] font-bold text-accent"><%= wish.position %></span>
-
-              <div class="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span class="truncate text-[13.5px] font-bold text-ink"><%= wish.book.title %></span>
-                <span class="text-[11.5px] text-ink-subtle"><%= wish.book.registrant.display_name %></span>
-              </div>
-
-              <%# 並べ替えは JavaScript でしか動かない。動かない環境に押せる口を残すと、
-                  押しても何も起きないボタンになる。連結したときに controller が外す %>
-              <div hidden data-wish-reorder-target="controls" class="flex flex-none items-center gap-1">
-                <%# つまむ口。読み上げには順位のボタンで足りるので、こちらは渡さない。
-                    touch-none を置かないと、指で下ろした瞬間に画面のほうが動く %>
-                <span data-wish-reorder-target="handle" data-action="pointerdown->wish-reorder#grab"
-                      aria-hidden="true"
-                      class="flex h-11 w-6 flex-none cursor-grab touch-none items-center justify-center
-                             text-[14px] text-ink-subtle lg:h-9">⠿</span>
-
-                <%# つまめない人にも1つずつ動かす道を残す。端の行に行き先は無いので落とす %>
-                <button type="button" aria-label="順位を上げる" data-action="wish-reorder#moveUp"
-                        data-wish-reorder-target="up" <%= 'disabled' if index.zero? %>
-                        class="flex h-11 w-11 flex-none items-center justify-center rounded-[4px] border
-                               border-line text-[15px] text-ink enabled:cursor-pointer
-                               enabled:hover:bg-paper-hover disabled:border-fill
-                               disabled:text-line-strong lg:h-9 lg:w-9">↑</button>
-                <button type="button" aria-label="順位を下げる" data-action="wish-reorder#moveDown"
-                        data-wish-reorder-target="down" <%= 'disabled' if index == wishes.size - 1 %>
-                        class="flex h-11 w-11 flex-none items-center justify-center rounded-[4px] border
-                               border-line text-[15px] text-ink enabled:cursor-pointer
-                               enabled:hover:bg-paper-hover disabled:border-fill
-                               disabled:text-line-strong lg:h-9 lg:w-9">↓</button>
-              </div>
-            </li>
-          <% end %>
-        </ol>
+        <%= render 'wishes/rows', wishes:, editable: %>
       <% end %>
+    <% else %>
+      <%# 送り先が無いので form で包まない。空の form を残すと、
+          押せば何かが起きるように読める %>
+      <%= render 'wishes/rows', wishes:, editable: %>
     <% end %>
   </div>
 </div>

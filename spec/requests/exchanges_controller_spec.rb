@@ -350,6 +350,45 @@ RSpec.describe ExchangesController do
       create(:book, participation: registrant, **attributes)
     end
 
+    # 状況の3つの数字。枠の位置は動かさず中身だけがフェーズで入れ替わるので、
+    # ラベルと値を組で読む。値だけを見ると、入れ替わったのか数が変わったのかが分からない
+    def stats
+      response.parsed_body.css('dl[aria-label="状況"] > div')
+              .map { |cell| cell.css('dt, dd').map { it.text.strip } }
+    end
+
+    # 希望リストは選んでいる間と、提出したものを読み返す間の両方に出る。
+    # 同じ場所を指すので、読む先も1つにしておく
+    def wish_list
+      response.parsed_body.at_css('#wish_list')
+    end
+
+    def rows
+      wish_list.css('ol li')
+    end
+
+    # 希望リストの末尾に1冊足す。順位は足した順の連番になる
+    def wish_for(title)
+      book = book_by('佐藤 花子', title:)
+      create(:wish, participation:, book:, position: participation.wishes.count + 1)
+      book
+    end
+
+    def wish_for_others(count)
+      count.times { |index| wish_for("希望#{index + 1}") }
+    end
+
+    # 希望を出し入れする口。追加も削除も同じパスを持ち、button_to なので form になる。
+    # 口が外れたことをラベルの文字で確かめると、言い方を変えただけで素通りする
+    def wish_form(book)
+      card_for(book).at_css(%(form[action="#{exchange_book_wish_path(exchange, book)}"]))
+    end
+
+    # 取得枠は自分が登録した冊数と同じ（docs/spec.md 3.）
+    def register_own(count)
+      count.times { create(:book, participation:) }
+    end
+
     it '参加者は開ける' do
       open_page
 
@@ -606,11 +645,6 @@ RSpec.describe ExchangesController do
         create(:book, participation: create(:participation, exchange:))
       end
 
-      def stats
-        response.parsed_body.css('dl[aria-label="状況"] > div')
-                .map { |cell| cell.css('dt, dd').map { it.text.strip } }
-      end
-
       {
         '2026-07-25T00:00:00+09:00' => ['参加者', '本', '取得枠'],
         '2026-08-04T00:00:00+09:00' => ['参加者', '本', '取得枠'],
@@ -813,6 +847,43 @@ RSpec.describe ExchangesController do
       end
     end
 
+    # 並ぶ本がまだ無いフェーズ（docs/spec.md 6.2）。空白のまま落とすと、
+    # 読み込みに失敗したのか、まだ誰も登録していないのかが読み取れない
+    describe '準備中' do
+      def open_preparing
+        open_page(at: preparing_at)
+      end
+
+      def grid
+        response.parsed_body.at_css('#book_grid')
+      end
+
+      # 空なのは、まだ誰も登録していないからではなく、登録できる人がまだ居ないため。
+      # 登録期間と同じ文にすると、誰かの登録を待っているように読める
+      it '登録が始まれば並ぶことを書く' do
+        open_preparing
+
+        expect(grid.text).to include('まだ本は登録されていません')
+        expect(grid.text).to include('登録期間が始まると、ここに並びます')
+      end
+
+      it '登録期間に入ったら誰かの登録を待つ言い方に変わる' do
+        open_page
+
+        expect(grid.text).to include('誰かが登録すると、ここに並びます')
+        expect(grid.text).not_to include('登録期間が始まると')
+      end
+
+      # 取得枠に0冊と書くと受け取れないと読めるが、まだ登録が始まっていないだけ
+      it '状況の数字は参加者と0冊と — になる' do
+        create_list(:participation, 2, exchange:)
+
+        open_preparing
+
+        expect(stats).to eq([['参加者', '4人'], ['本', '0冊'], ['取得枠', '—']])
+      end
+    end
+
     describe '一覧の見出し' do
       # 参加人数も取得枠も状態ヘッダーが上で出している。
       # 同じページに2つ載せると、同じ数字が縦に2度並ぶ
@@ -971,6 +1042,7 @@ RSpec.describe ExchangesController do
 
         open_page_while_wishing
 
+        expect(wish_form(book)).to be_present
         expect(card_for(book).text).to include('希望に追加')
       end
 
@@ -1086,34 +1158,10 @@ RSpec.describe ExchangesController do
         expect(wish_list.text).to include('取得枠1冊に対して希望1冊')
       end
 
-      def wish_list
-        response.parsed_body.at_css('#wish_list')
-      end
-
       # 畳んでいる間に出る1行。開いた側の案内と同じ文字が並ぶので、
       # 出し分けを確かめるにはここだけを見る
       def wish_summary
         wish_list.at_css('#wish_summary')
-      end
-
-      # 希望リストの末尾に1冊足す。順位は足した順の連番になる
-      def wish_for(title)
-        book = book_by('佐藤 花子', title:)
-        create(:wish, participation:, book:, position: participation.wishes.count + 1)
-        book
-      end
-
-      # 取得枠は自分が登録した冊数と同じ（docs/spec.md 3.）
-      def register_own(count)
-        count.times { create(:book, participation:) }
-      end
-
-      def wish_for_others(count)
-        count.times { |index| wish_for("希望#{index + 1}") }
-      end
-
-      def rows
-        wish_list.css('ol li')
       end
 
       def move_button(row, label)
@@ -1201,7 +1249,7 @@ RSpec.describe ExchangesController do
         open_page_while_wishing
 
         expect(card_for(book).text).to include('自分の本は希望に選べません')
-        expect(card_for(book).text).not_to include('希望に追加')
+        expect(wish_form(book)).to be_nil
       end
 
       # 何人がその本を希望しているかは誰にも見せない（docs/spec.md 8.）。
@@ -1221,20 +1269,12 @@ RSpec.describe ExchangesController do
 
       # 登録期間はまだ選ぶ対象が揃っていない。出しても押せば断られる
       it '登録期間中は出ない' do
-        book_by('佐藤 花子')
+        book = book_by('佐藤 花子')
 
         open_page
 
         expect(response.body).not_to include('あなたの希望リスト')
-        expect(response.body).not_to include('希望に追加')
-      end
-
-      it 'マッチング実行待ちには出ない' do
-        book_by('佐藤 花子')
-
-        open_page(at: awaiting_at)
-
-        expect(response.body).not_to include('あなたの希望リスト')
+        expect(wish_form(book)).to be_nil
       end
     end
 
@@ -1298,6 +1338,140 @@ RSpec.describe ExchangesController do
 
         expect(response.body).not_to include(edit_exchange_book_path(exchange, mine))
         expect(response.body).not_to include('登録を取り消します')
+      end
+    end
+
+    # 希望の受付が終わってから結果が出るまでの間（docs/spec.md 6.2）。
+    # 締め切られた事実だけを消して並びも消すと、自分が何を出したのかを
+    # 確かめる先がどこにも無くなる
+    describe 'マッチング実行待ち' do
+      def open_awaiting
+        open_page(at: awaiting_at)
+      end
+
+      it '提出した希望リストが並びを保ったまま残る' do
+        wish_for('1番目に欲しい本')
+        wish_for('2番目に欲しい本')
+
+        open_awaiting
+
+        expect(rows.map { it.text.squish })
+          .to eq(['1 1番目に欲しい本 佐藤 花子', '2 2番目に欲しい本 佐藤 花子'])
+      end
+
+      # 締め切られたことは見出しで言う。並びが残っているだけだと、
+      # まだ動かせるものなのか、もう出したものなのかが読み取れない
+      it '見出しが提出したものであることを言う' do
+        wish_for('欲しい本')
+
+        open_awaiting
+
+        expect(response.body).to include('提出した希望リスト')
+        expect(response.body).not_to include('あなたの希望リスト')
+      end
+
+      it '並べ替える口が外れる' do
+        wish_for_others(2)
+
+        open_awaiting
+
+        expect(wish_list.at_css('form')).to be_nil
+        expect(wish_list.css('button[aria-label="順位を上げる"]')).to be_empty
+        expect(wish_list.css('button[aria-label="順位を下げる"]')).to be_empty
+      end
+
+      it 'カードから希望を出し入れする口が外れる' do
+        wanted = wish_for('選んだ本')
+        ignored = book_by('佐藤 花子', title: '選ばなかった本')
+
+        open_awaiting
+
+        expect(wish_form(wanted)).to be_nil
+        expect(wish_form(ignored)).to be_nil
+      end
+
+      # 増やす道はもう残っていない。促す代わりに、いま何が起きるのかだけを書く
+      it '取得枠と繰り上がりの説明を添える' do
+        register_own(2)
+        wish_for_others(3)
+
+        open_awaiting
+
+        expect(response.body).to include('繰り上がります')
+        expect(response.body).not_to include('もう少し増やすことを推奨します')
+      end
+
+      # 締切はもう過ぎている。次に来る日時として出すと、まだ間に合うように読める
+      it '希望提出の締切は出さない' do
+        wish_for('欲しい本')
+
+        open_awaiting
+
+        expect(response.body).not_to include('希望提出の締切')
+      end
+
+      it '1冊も出していなければその旨が出る' do
+        book_by('佐藤 花子')
+
+        open_awaiting
+
+        expect(wish_list.text).to include('希望を1冊も出しませんでした')
+      end
+
+      # 十数枚並ぶ中から自分が何を出したのかを、リストと見比べずに読めるようにする
+      it 'カードに自分が何位で出したかが出る' do
+        book = wish_for('選んだ本')
+
+        open_awaiting
+
+        expect(card_for(book).text).to include('希望に入れた 1位')
+      end
+
+      # 順位が出ている本が同じ画面に並んでいるので、出ていないことがそのまま
+      # 入れなかったことにあたる。入れなかった側にも書くと、十数枚のうち
+      # 大半が否定の一文を持つことになる
+      it '希望に入れなかった本には何も書かない' do
+        book = book_by('佐藤 花子', title: '選ばなかった本')
+
+        open_awaiting
+
+        expect(card_for(book).text).not_to include('希望には入れていません')
+        expect(card_for(book).text).not_to include('希望に入れた')
+      end
+
+      # 自分の本は希望に入れようがない。入れなかった本と同じ扱いで足りる
+      it '自分の本にも希望の状態を書かない' do
+        mine = create(:book, participation:, title: '自分の本')
+
+        open_awaiting
+
+        expect(card_for(mine).text).not_to include('希望に入れた')
+      end
+
+      # 何人がその本を希望しているかは誰にも見せない（docs/spec.md 8.）。
+      # 中身まで揃えた2冊を並べ、他の人に希望された側とされていない側で
+      # カードが1文字も変わらないことを見る
+      it '他人の希望も、その本を何人が希望したかも出ない' do
+        registrant = create(:participation, exchange:, user: create(:user, display_name: '佐藤 花子'))
+        same = { title: '同じ題の本', summary: '同じあらすじ', recommendation: '同じおすすめ' }
+        wanted = create(:book, participation: registrant, **same)
+        ignored = create(:book, participation: registrant, **same)
+        3.times { create(:wish, participation: create(:participation, exchange:), book: wanted) }
+
+        open_awaiting
+
+        expect(card_for(wanted).text).to eq(card_for(ignored).text)
+      end
+
+      # 希望リストが同じ幅を取り続けるので、カードの列も同じ数のまま。
+      # 締切をまたいだ瞬間に大きさが変わると、読み比べていた並びを覚え直すことになる
+      it '希望提出期間と同じ幅でカードが並ぶ' do
+        book_by('佐藤 花子')
+
+        open_awaiting
+
+        expect(response.parsed_body.at_css('#book_grid > ul')['class']).to include('sm:grid-cols-2')
+        expect(response.parsed_body.at_css('#book_grid > ul')['class']).not_to include('lg:grid-cols-3')
       end
     end
 

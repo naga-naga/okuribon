@@ -2,6 +2,10 @@
     下部に固定したシートにする。畳んでいる間も順位のチップが横に並ぶので、
     一覧を読んでいる間ずっと「いま何冊・何位まで選んだか」が見えている。
 
+    マッチング実行待ちには editable: false で入る。並びも置き場所もそのままで、
+    編集の口だけが外れる。同じ枠を通すのは、締切をまたいだ瞬間に希望リストが
+    別の場所へ移ったように見えるのを避けるため。
+
     開閉の状態はこの外枠が持つ。Turbo Stream で入れ替えるのは中身（#wish_list）だけで、
     ここを含めると、シートを開いて中身を操作した瞬間にシートが閉じる %>
 <aside data-controller="wish-sheet"
@@ -9,10 +13,14 @@
               bg-paper lg:sticky lg:top-6 lg:mt-6 lg:max-h-[calc(100dvh-3rem)] lg:w-[340px] lg:flex-none
               lg:rounded-[5px] lg:border">
   <div class="flex items-baseline gap-3 px-5 py-3.5 lg:px-6 lg:pt-6 lg:pb-0">
-    <h2 class="text-[15px] font-bold text-ink lg:text-[16px]">あなたの希望リスト</h2>
+    <h2 class="text-[15px] font-bold text-ink lg:text-[16px]">
+      <%= editable ? 'あなたの希望リスト' : '提出した希望リスト' %>
+    </h2>
 
-    <%# 追加と削除はその場で保存する。提出ボタンを探させないために言っておく %>
-    <span class="text-[11.5px] text-ink-subtle">自動保存</span>
+    <%# 追加と削除はその場で保存する。提出ボタンを探させないために言っておく。
+        締め切られたあとは、並びが残っているだけだとまだ動かせるように読めるので、
+        もう出したものであることを見出しの脇でも言う %>
+    <span class="text-[11.5px] text-ink-subtle"><%= editable ? '自動保存' : '確定済み' %></span>
 
     <%# 畳む口は狭い画面にだけ要る。広い画面では常に開いている %>
     <button type="button" data-action="wish-sheet#toggle" data-wish-sheet-target="toggle"
@@ -23,7 +31,7 @@
     </button>
   </div>
 
-  <%= render 'wishes/list', exchange:, wishes:, slots:, mine_only: %>
+  <%= render 'wishes/list', exchange:, wishes:, slots:, mine_only:, editable: %>
 
   <%# 締切と取得枠は差し替えで変わらないので、入れ替える中身の外に置く。
       取得枠は登録した冊数と同じで、この期間はもう本を足せない %>
@@ -32,12 +40,22 @@
       <span><%= t('wish.slots_label') %></span>
       <span class="tabular"><%= t('wish.slots_value', count: slots) %></span>
     </div>
-    <div class="mt-2 flex justify-between text-[12.5px] text-ink-muted">
-      <span>希望提出の締切</span>
-      <span class="tabular"><%= l(exchange.wish_ends_at, format: :schedule) %></span>
-    </div>
-    <p class="mt-2.5 text-[12px] leading-[1.8] text-ink-subtle">
-      締切の時点のリストがそのまま提出されます。提出ボタンはありません。
-    </p>
+
+    <% if editable %>
+      <div class="mt-2 flex justify-between text-[12.5px] text-ink-muted">
+        <span>希望提出の締切</span>
+        <span class="tabular"><%= l(exchange.wish_ends_at, format: :schedule) %></span>
+      </div>
+      <p class="mt-2.5 text-[12px] leading-[1.8] text-ink-subtle">
+        締切の時点のリストがそのまま提出されます。提出ボタンはありません。
+      </p>
+    <% else %>
+      <%# 締切はもう過ぎているので、次に来る日時としては出さない。
+          代わりに、この並びがこれから何に使われるのかを書く。
+          自分の順位と取得枠だけで語れる話で、何人がその本を希望したかは要らない %>
+      <p class="mt-2.5 text-[12px] leading-[1.8] text-ink-subtle">
+        上の順に割り当てられます。上位が他の人に渡ったときは、下の順位が繰り上がります。
+      </p>
+    <% end %>
   </div>
 </aside>

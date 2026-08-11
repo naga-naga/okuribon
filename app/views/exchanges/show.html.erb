@@ -13,6 +13,20 @@
 <% wishing = @exchange.writable?(:wish, at: requested_at) %>
 <% published = @exchange.published?(at: requested_at) %>
 
+<%# 何が並ぶかはフェーズそのもので決まる。登録が始まるより前の一覧が空なのは、
+    まだ誰も登録していないからではなく、登録できる人がまだ居ないため。
+    書き込みの可否から引くと、実行待ちと区別が付かない %>
+<% preparing = phase == :preparing %>
+
+<%# 希望の受付が終わってから結果が出るまでの間。提出した希望リストは並びを
+    保ったまま残り、編集の口だけが外れる。締め切られた事実だけを消して並びも
+    消すと、自分が何を出したのかを確かめる先がどこにも無くなる %>
+<% submitted = phase == :awaiting_matching %>
+
+<%# 希望リストが一覧の脇に並ぶのは、選んでいる間と、提出したものを読み返す間。
+    どちらも同じ幅を取るので、フェーズをまたいでもカードの大きさが変わらない %>
+<% wish_pane = wishing || submitted %>
+
 <%# 自分の本は取得枠の数でもあり、絞り込みの行き先でもある。
     読み込み済みの一覧から選ぶので、カードごとに COUNT が飛ばない %>
 <% my_books = @books.select { it.participation_id == @participation.id } %>
@@ -23,7 +37,7 @@
 <% returned_count = published ? @books.count { it.assignment.nil? || it.assignment.returned? } : 0 %>
 
 <%# 希望リストは狭い画面では下部に固定されるので、その高さぶん一覧の下を空ける %>
-<div class="mx-auto w-full max-w-[1180px] px-4 pt-8 sm:px-6 <%= wishing ? 'pb-44 lg:pb-10' : 'pb-10' %>">
+<div class="mx-auto w-full max-w-[1180px] px-4 pt-8 sm:px-6 <%= wish_pane ? 'pb-44 lg:pb-10' : 'pb-10' %>">
   <%# 状態ヘッダー。必ず一目で分かるべきは、今どのフェーズか・締切まであとどれくらいか・
       自分は今なにをすべきかの3点。高さは、開いた直後に本のカードが1行ぶん見える
       ところまでに抑える。全部を占めると、開くたびに状態を読ませてからでないと
@@ -211,18 +225,18 @@
     <% end %>
   </div>
 
-  <%# 希望を選ぶ間だけ、一覧の脇に希望リストが並ぶ。それ以外のフェーズでは
-      並べ替える対象が無いので、一覧が幅いっぱいを使う %>
-  <div class="<%= 'lg:flex lg:items-start lg:gap-6' if wishing %>">
+  <%# 希望を選ぶ間と、提出したものを読み返す間だけ、一覧の脇に希望リストが並ぶ。
+      それ以外のフェーズでは並べる対象が無いので、一覧が幅いっぱいを使う %>
+  <div class="<%= 'lg:flex lg:items-start lg:gap-6' if wish_pane %>">
     <div class="min-w-0 flex-1">
       <%= render 'books/grid', exchange: @exchange, books: listed,
                                participation: @participation, wishes: @wishes,
-                               registering:, wishing:, published:,
+                               registering:, wishing:, published:, preparing:, submitted:,
                                slots: my_books.size, mine_only: @mine_only %>
     </div>
 
-    <% if wishing %>
-      <%= render 'wishes/sheet', exchange: @exchange, wishes: @wishes,
+    <% if wish_pane %>
+      <%= render 'wishes/sheet', exchange: @exchange, wishes: @wishes, editable: wishing,
                                  slots: my_books.size, mine_only: @mine_only %>
     <% end %>
   </div>

@@ -63,13 +63,16 @@
             <div class="flex flex-1 flex-col gap-3.5">
               <%# 誰が登録したかは参加者全員に見える（docs/spec.md 8.） %>
               <div>
-                <div class="flex items-start justify-between gap-2.5">
+                <%# 題と、印とストアの口。入りきらないときは題を削らず、
+                    印と口のほうを次の行へ落とす。日本語の題はどこでも折り返せるので、
+                    詰めると「海辺のキオ／スク」のように1行に数文字しか残らない %>
+                <div class="flex flex-wrap items-start gap-x-2.5 gap-y-2">
                   <h2 class="text-[18px] font-bold leading-[1.45]
                              <%= dimmed ? 'text-ink-subtle' : 'text-ink' %>">
                     <%= book.title %>
                   </h2>
 
-                  <div class="flex flex-none items-center gap-2.5">
+                  <div class="ml-auto flex flex-none items-center gap-2.5">
                     <%# 自分の本は取得枠の数でもある。編集・削除の導線だけで見分けさせると、
                         登録期間を過ぎたとたんにどれが自分の本か分からなくなる %>
                     <% if received %>
@@ -82,10 +85,14 @@
 
                     <%# 買う先を見るのに本文を開かせる理由が無いので、閉じている間も出す。
                         下段に置くと、開く口が出ない本のカードでは左へ寄ってしまう。
-                        本文より上なら、下段に何が並んでも同じ場所にある %>
+                        本文より上なら、下段に何が並んでも同じ場所にある。
+                        文字の口ではなく押す形にする。この画面から出ていく唯一の口で、
+                        下段に並ぶ文字の口に混ぜると読み流される %>
                     <% if (store_url = book_store_url(book)) %>
                       <%= link_to 'ストアで見る ↗', store_url, target: '_blank', rel: 'noopener noreferrer',
-                                  class: 'whitespace-nowrap text-[12.5px]' %>
+                                  class: 'whitespace-nowrap rounded-[5px] border border-line-strong ' \
+                                         'px-3.5 py-2 text-[12.5px] font-medium text-ink no-underline ' \
+                                         'hover:bg-paper-hover' %>
                     <% end %>
                   </div>
                 </div>

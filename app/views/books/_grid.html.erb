@@ -46,8 +46,10 @@
   <% else %>
     <%# ざっと眺めるための密度で並べる。気になった1枚はその場で開き、
         読み終わったら列の元の位置に戻れる。狭い画面では1カラムに落ちる。
-        希望リストが脇に出ている間は、その幅のぶん1列減らす %>
-    <ul class="grid gap-4 sm:grid-cols-2 <%= 'lg:grid-cols-3' unless wishing %>">
+        希望リストが脇に出ている間は、その幅のぶん1列減らす。
+        実行待ちも同じだけ減らす。締切をまたいだ瞬間にカードの大きさが変わると、
+        読み比べていた並びを覚え直すことになる %>
+    <ul class="grid gap-4 sm:grid-cols-2 <%= 'lg:grid-cols-3' unless wishing || submitted %>">
       <% books.each do |book| %>
         <% mine = book.participation_id == participation.id %>
         <% actions = registering && mine %>

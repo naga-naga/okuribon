@@ -1467,6 +1467,17 @@ RSpec.describe ExchangesController do
         expect(dragging_styles(rows.first)).to be_present
       end
 
+      # つまんだ行はポインタに追従するので、隣の行と重なる。重ね順を上げないと
+      # 持ち上げた行が隣の下へ潜る
+      it 'つまんでいる行が隣の行の上に出る' do
+        wish_for('1冊目')
+
+        open_page_while_wishing
+
+        expect(dragging_styles(rows.first))
+          .to include(a_string_matching(/:relative/)).and include(a_string_matching(/:z-/))
+      end
+
       # 階層は文字と色と輪郭で作る（docs/spec.md 10.1）
       it 'つまんでも影は落とさない' do
         wish_for('1冊目')

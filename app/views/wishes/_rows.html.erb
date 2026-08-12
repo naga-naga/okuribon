@@ -3,10 +3,17 @@
     偶然そう見えているだけになり、片方の見た目を直したときに揃わなくなる %>
 <ol class="flex flex-col gap-2">
   <% wishes.each_with_index do |wish, index| %>
+    <%# つまんでいる間は面も朱に寄せる。輪郭の線種だけを変えても、ハンドルを
+        捉えられたのかが読み取れない。指には cursor が無いので合図は色で持つ。
+        描き分けはすべて data-dragging の変種で書き、落とせばそのまま消える。
+        持ち上げた行はポインタに追従して隣と重なるので、重ね順を上げる %>
     <%= tag.li data: (editable ? { wish_reorder_target: 'row' } : {}),
                class: ['flex items-center gap-3 rounded-[4px] border border-line px-3.5 py-3',
                        if editable
-                         'bg-paper data-dragging:border-dashed data-dragging:border-accent'
+                         'group/row bg-paper data-dragging:relative data-dragging:z-10
+                          data-dragging:cursor-grabbing
+                          data-dragging:border-dashed data-dragging:border-accent
+                          data-dragging:bg-accent-soft'
                        else
                          'bg-surface-sunken'
                        end] do %>
@@ -31,11 +38,14 @@
             押しても何も起きないボタンになる。連結したときに controller が外す %>
         <div hidden data-wish-reorder-target="controls" class="flex flex-none items-center gap-1">
           <%# つまむ口。読み上げには順位のボタンで足りるので、こちらは渡さない。
-              touch-none を置かないと、指で下ろした瞬間に画面のほうが動く %>
+              touch-none を置かないと、指で下ろした瞬間に画面のほうが動く。
+              つかんでいる間は行から降りてくる cursor を自前の grab が上書きするので、
+              ここでも grabbing へ差し替える %>
           <span data-wish-reorder-target="handle" data-action="pointerdown->wish-reorder#grab"
                 aria-hidden="true"
                 class="flex h-11 w-6 flex-none cursor-grab touch-none items-center justify-center
-                       text-[14px] text-ink-subtle lg:h-9">⠿</span>
+                       text-[14px] text-ink-subtle group-data-dragging/row:cursor-grabbing
+                       group-data-dragging/row:text-accent lg:h-9">⠿</span>
 
           <%# つまめない人にも1つずつ動かす道を残す。端の行に行き先は無いので落とす %>
           <button type="button" aria-label="順位を上げる" data-action="wish-reorder#moveUp"

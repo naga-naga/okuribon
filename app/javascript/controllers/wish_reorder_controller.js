@@ -48,6 +48,11 @@ export default class extends Controller {
     this.dragging = this.rowTargets[this.handleTargets.indexOf(event.currentTarget)]
     this.dragging.setAttribute("data-dragging", "")
 
+    // 持ち上げた行はポインタと同じだけ動かす。つまんだ位置を起点にするので、
+    // ハンドルのどこを掴んでも指の下から行がずれない
+    this.grabbedAt = event.clientY
+    this.shift = 0
+
     window.addEventListener("pointermove", this.#drag)
     window.addEventListener("pointerup", this.#drop)
     // 着信などで取り上げられたときも、動かしたところまでは保存する。
@@ -56,7 +61,11 @@ export default class extends Controller {
   }
 
   // 重ねた行の半分を越えたら、その前か後ろへ差し込む。行そのものが動くので、
-  // 落ちる位置を別に描かなくても、いまどこへ入るかが順位ごと見えている
+  // 落ちる位置を別に描かなくても、いまどこへ入るかが順位ごと見えている。
+  //
+  // 差し込みで動くのは行の居場所で、持ち上げた見た目のほうはポインタに置いていく。
+  // 居場所が1つぶん飛んだぶんを shift に溜めて打ち消さないと、順位が入れ替わる
+  // たびに行が指から離れて跳ねる
   #drag = (event) => {
     const over = this.rowTargets.find((row) => {
       if (row === this.dragging) return false
@@ -64,12 +73,21 @@ export default class extends Controller {
       const { top, bottom } = row.getBoundingClientRect()
       return event.clientY >= top && event.clientY <= bottom
     })
-    if (!over) return
 
-    const { top, height } = over.getBoundingClientRect()
-    event.clientY > top + height / 2 ? over.after(this.dragging) : over.before(this.dragging)
+    if (over) {
+      const before = this.dragging.getBoundingClientRect().top
 
-    this.#renumber()
+      const { top, height } = over.getBoundingClientRect()
+      event.clientY > top + height / 2 ? over.after(this.dragging) : over.before(this.dragging)
+
+      this.shift += before - this.dragging.getBoundingClientRect().top
+
+      this.#renumber()
+    }
+
+    // 一覧の外へ出ても追従は続ける。指は止まっていないのに行だけ止まると、
+    // つまんだものが手から外れたように見える
+    this.dragging.style.transform = `translateY(${event.clientY - this.grabbedAt + this.shift}px)`
   }
 
   #drop = () => {
@@ -83,6 +101,7 @@ export default class extends Controller {
     if (!this.dragging) return
 
     this.dragging.removeAttribute("data-dragging")
+    this.dragging.style.transform = ""
     this.dragging = null
 
     window.removeEventListener("pointermove", this.#drag)

@@ -383,6 +383,12 @@ RSpec.describe ExchangesController do
       wish_list.css('ol li')
     end
 
+    # つまんでいる間だけの描き分け。落とせば消えるように、行と中身の
+    # どちらも data-dragging の変種で書く
+    def dragging_styles(row)
+      [row, *row.css('*')].flat_map { it['class'].to_s.split }.grep(/dragging/)
+    end
+
     # 希望リストの末尾に1冊足す。順位は足した順の連番になる
     def wish_for(title)
       book = book_by('佐藤 花子', title:)
@@ -1368,6 +1374,10 @@ RSpec.describe ExchangesController do
         row.at_css(%(button[aria-label="#{label}"]))
       end
 
+      def handle(row)
+        row.at_css('[data-wish-reorder-target~="handle"]')
+      end
+
       # 並べ替えは順序だけをまとめて送る（docs/spec.md 6.2）。
       # ここで確かめるのは送る材料が画面に揃っていることまで。
       # つまんで動かす操作そのものはブラウザでしか確かめられない
@@ -1422,6 +1432,58 @@ RSpec.describe ExchangesController do
         open_page_while_wishing
 
         expect(wish_list.css('li [hidden] button[aria-label="順位を上げる"]').size).to eq(2)
+      end
+
+      # つまむ前と後で輪郭の線種しか変わらないと、ハンドルを捉えられたのかが
+      # 読み取れない。指には cursor が無いので、つかめた合図は色で持つ
+      it 'つかんだことがハンドルで分かる' do
+        wish_for('1冊目')
+
+        open_page_while_wishing
+
+        held = handle(rows.first)['class'].split.grep(/dragging/)
+        expect(held).to include(a_string_matching(/:text-/)).and include(a_string_matching(/cursor-grabbing/))
+      end
+
+      # ハンドルだけが変わっても、動かしているのがどの行かは分からない。
+      # 行そのものの面と輪郭で示す
+      it 'つまんでいる行が面と輪郭で分かる' do
+        wish_for('1冊目')
+
+        open_page_while_wishing
+
+        expect(dragging_styles(rows.first))
+          .to include(a_string_matching(/:bg-/)).and include(a_string_matching(/:border-dashed/))
+      end
+
+      # 描き分けは data-dragging が付いている間だけのもので、落とせば
+      # controller が外す。サーバーはつまんでいる状態を描かない
+      it '落とせば元の見た目へ戻る' do
+        wish_for('1冊目')
+
+        open_page_while_wishing
+
+        expect(rows.first['data-dragging']).to be_nil
+        expect(dragging_styles(rows.first)).to be_present
+      end
+
+      # 階層は文字と色と輪郭で作る（docs/spec.md 10.1）
+      it 'つまんでも影は落とさない' do
+        wish_for('1冊目')
+
+        open_page_while_wishing
+
+        expect(dragging_styles(rows.first)).not_to include(a_string_matching(/shadow/))
+      end
+
+      # つまむのは狭い画面のほうが多い。広い画面にだけ合図を出すと、
+      # ドラッグを主に使う側に何も残らない
+      it 'つかんだ合図は画面の幅で変わらない' do
+        wish_for('1冊目')
+
+        open_page_while_wishing
+
+        expect(dragging_styles(rows.first)).not_to include(a_string_matching(/\b(sm|md|lg|xl):/))
       end
 
       # 絞り込みは URL に残る（docs/spec.md 6.2）
@@ -1578,6 +1640,16 @@ RSpec.describe ExchangesController do
         expect(wish_list.at_css('form')).to be_nil
         expect(wish_list.css('button[aria-label="順位を上げる"]')).to be_empty
         expect(wish_list.css('button[aria-label="順位を下げる"]')).to be_empty
+      end
+
+      # 動かせない並びにつまんだときの描き分けが残っていると、
+      # 押せば動くように読める
+      it 'つまんだときの描き分けも残らない' do
+        wish_for_others(2)
+
+        open_awaiting
+
+        expect(dragging_styles(rows.first)).to be_empty
       end
 
       it 'カードから希望を出し入れする口が外れる' do

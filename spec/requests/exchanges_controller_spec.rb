@@ -1428,6 +1428,36 @@ RSpec.describe ExchangesController do
         expect(wish_list.css('button[aria-label="順位を下げる"]')).to be_empty
       end
 
+      # つまむ口は順位そのもの。⠿ と × が隣り合っていた間は、44pxの的が4pxの
+      # 隙間で並び、並べ替えようとして希望から外す取り違えが起こりえた。
+      # 順位へ移すと、押すものが行の両端に離れる（docs/spec.md 6.2）
+      it 'つまむ口が順位そのものである' do
+        wish_for('1冊目')
+
+        open_page_while_wishing
+
+        expect(handle(rows.first).text).to include('1')
+      end
+
+      it '専用のつまむ口を別に置かない' do
+        wish_for('1冊目')
+
+        open_page_while_wishing
+
+        expect(rows.first.text).not_to include('⠿')
+      end
+
+      # 順位は数字なので、⠿ のように形だけでつまめることを言えない。字はもとから
+      # 朱なので合図を色で足す道も無い。止まっている間から輪郭を持たせて、
+      # 押せるものであることを見て分かるようにする
+      it 'つまめることが押す前に分かる' do
+        wish_for('1冊目')
+
+        open_page_while_wishing
+
+        expect(handle(rows.first)['class']).to include('border-line')
+      end
+
       # ドラッグはつまめる人にしか使えない。↑↓ を落とした以上、キーボードと
       # 読み上げに渡る道はハンドル自身が持つほかない
       it 'ハンドルがキーボードから届く' do
@@ -1439,13 +1469,16 @@ RSpec.describe ExchangesController do
         expect(handle(rows.first)['aria-hidden']).to be_nil
       end
 
-      # 十数行が同じ名前で並ぶと、読み上げたときにどの行の口なのかが分からない
-      it 'ハンドルの名前がどの本のものかを言う' do
+      # 十数行が同じ名前で並ぶと、読み上げたときにどの行の口なのかが分からない。
+      # 名前は見えている数字と続けて組む。aria-label で上書きすると、動かすたびに
+      # 振り直す先が数字と名前の2か所になり、片方だけ古くなる
+      it 'ハンドルの名前がどの本の何位かを言う' do
         wish_for('動かしたい本')
 
         open_page_while_wishing
 
-        expect(handle(rows.first)['aria-label']).to include('動かしたい本')
+        expect(handle(rows.first).text.squish).to include('1').and include('動かしたい本')
+        expect(handle(rows.first)['aria-label']).to be_nil
       end
 
       # ↑↓ のボタンを落としたので、押して動かす道はキーへ移る
@@ -1465,20 +1498,33 @@ RSpec.describe ExchangesController do
         open_page_while_wishing
 
         help = wish_list.at_css("##{handle(rows.first)['aria-describedby']}")
-        expect(help.text).to include('↑↓').and include('Home')
+        expect(help.text).to include('順位').and include('↑↓').and include('Home')
+        expect(help.text).not_to include('⠿')
       end
 
       # 並べ替えは JavaScript でしか動かない。動かない環境に押せる口を残すと、
       # 押しても何も起きないボタンになる。説明も同じで、できない操作を書くことになる。
       # カードからの追加・削除はそのまま通る
-      it '並べ替えの口と説明は JavaScript が動くまで出さない' do
+      it '並べ替えの口と説明は JavaScript が動くまで押せない' do
         wish_for('1冊目')
         wish_for('2冊目')
 
         open_page_while_wishing
 
-        expect(wish_list.css('li [hidden][data-wish-reorder-target~="handle"]').size).to eq(2)
+        expect(wish_list.css('li [disabled][data-wish-reorder-target~="handle"]').size).to eq(2)
+        expect(handle(rows.first)['class']).to include('disabled:border-transparent')
         expect(wish_list.at_css('#wish_reorder_help[hidden]')).to be_present
+      end
+
+      # 順位は口である前に読むもの。⠿ のように伏せると、JavaScript が動かない間は
+      # 何位なのかがどこにも出なくなる
+      it '順位は JavaScript が動かなくても読める' do
+        wish_for('1冊目')
+
+        open_page_while_wishing
+
+        expect(wish_list.css('li [hidden][data-wish-reorder-target~="handle"]')).to be_empty
+        expect(rows.first.text).to include('1')
       end
 
       # 動かした結果は、画面では順位が振り直されて見えるが、読み上げには何も届かない
@@ -1500,15 +1546,16 @@ RSpec.describe ExchangesController do
         expect(wish_list.at_css('#wish_reorder_status')).to be_nil
       end
 
-      # つまむ前と後で輪郭の線種しか変わらないと、ハンドルを捉えられたのかが
-      # 読み取れない。指には cursor が無いので、つかめた合図は色で持つ
+      # つまむ前と後で行の輪郭の線種しか変わらないと、ハンドルを捉えられたのかが
+      # 読み取れない。指には cursor が無いので、つかめた合図は色で持つ。
+      # 順位の字はもとから朱なので、変えるのは輪郭のほうにあたる
       it 'つかんだことがハンドルで分かる' do
         wish_for('1冊目')
 
         open_page_while_wishing
 
         held = handle(rows.first)['class'].split.grep(/dragging/)
-        expect(held).to include(a_string_matching(/:text-/)).and include(a_string_matching(/cursor-grabbing/))
+        expect(held).to include(a_string_matching(/:border-accent/)).and include(a_string_matching(/cursor-grabbing/))
       end
 
       # ハンドルだけが変わっても、動かしているのがどの行かは分からない。
@@ -1785,6 +1832,17 @@ RSpec.describe ExchangesController do
 
         expect(wish_list.at_css('form')).to be_nil
         expect(wish_list.at_css('[data-wish-reorder-target~="handle"]')).to be_nil
+      end
+
+      # つまむ口が順位そのものなので、押せない順位と押せる順位が同じ数字で並ぶ。
+      # 締め切られた側は button ごと外し、輪郭も持たせない
+      it '順位が押せる見た目にならない' do
+        wish_for_others(2)
+
+        open_awaiting
+
+        expect(rows.first.at_css('button')).to be_nil
+        expect(rows.first.text).to include('1')
       end
 
       # 動かせない並びに読み上げる区画だけが残ると、伝える先の無い口になる

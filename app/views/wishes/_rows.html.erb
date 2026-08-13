@@ -26,9 +26,38 @@
 
       <%# 順位が朱なのは動かせる間だけ。朱は押すものと締切の担当なので、
           もう動かせない並びに残すと、押せるものが混じっているように読める %>
-      <%= tag.span wish.position, data: (editable ? { wish_reorder_target: 'position' } : {}),
-                                  class: ['tabular w-4 flex-none text-[13px] font-bold',
-                                          editable ? 'text-accent' : 'text-ink-subtle'] %>
+      <% if editable %>
+        <%# つまむ口であり、キーボードから並べ替える唯一の口でもある。⠿ を右端に
+            置いていた間は外す口と隣り合い、44pxの的が4pxの隙間で並んでいた。
+            順位へ移すと押すものが行の両端に離れる（docs/spec.md 6.2）。
+
+            順位は数字なので、⠿ のように形だけでつまめることを言えない。輪郭を
+            止まっている間から出して、押せるものであることを見せる。字はもとから
+            朱なので、つかんだ合図はその輪郭を朱に変えて出す。
+
+            並べ替えは JavaScript でしか動かない。ただし順位は口である前に読むもの
+            なので、⠿ のように伏せられない。連結するまでは disabled にして、
+            押せる見た目のほうを外しておく。
+
+            touch-none を置かないと、指で下ろした瞬間に画面のほうが動く %>
+        <button type="button" disabled data-wish-reorder-target="handle"
+                data-action="pointerdown->wish-reorder#grab keydown->wish-reorder#key"
+                aria-describedby="wish_reorder_help"
+                class="tabular flex h-11 w-11 flex-none touch-none items-center justify-center
+                       rounded-[4px] border border-line text-[13px] font-bold text-accent
+                       cursor-grab enabled:hover:bg-paper-hover
+                       disabled:cursor-default disabled:border-transparent
+                       group-data-dragging/row:cursor-grabbing
+                       group-data-dragging/row:border-accent lg:h-8 lg:w-8">
+          <span data-wish-reorder-target="position"><%= wish.position %></span>
+          <%# 名前は見えている数字と続けて読まれる。題まで入れるのは、十数行が
+              同じ名前で並ぶと、読み上げたときにどの行の口かが分からなくなるため。
+              数字を外に出しておくと、動かしたあとに振り直す先が1か所で済む %>
+          <span class="sr-only">位「<%= wish.book.title %>」を動かす</span>
+        </button>
+      <% else %>
+        <%= tag.span wish.position, class: 'tabular w-4 flex-none text-[13px] font-bold text-ink-subtle' %>
+      <% end %>
 
       <div class="flex min-w-0 flex-1 flex-col gap-0.5">
         <%= tag.span wish.book.title, data: (editable ? { wish_reorder_target: 'title' } : {}),
@@ -37,41 +66,18 @@
       </div>
 
       <% if editable %>
-        <%# 口は2つ。狭い画面は44px、広い画面はリストが340pxしかないので、
-            指で押す必要のないぶん32pxへ詰める %>
-        <div class="flex flex-none items-center gap-1">
-          <%# つまむ口であり、キーボードから並べ替える唯一の口でもある。↑↓ のボタンを
-              置くと行の口が4つになり、題に6文字しか残らない（docs/spec.md 6.2）。
-              名前に題を入れるのは、十数行が同じ名前で並ぶと、読み上げたときに
-              どの行の口なのかが分からなくなるため。操作は説明の1行へ繋ぐ。
-
-              並べ替えは JavaScript でしか動かない。動かない環境に押せる口を残すと、
-              押しても何も起きないボタンになる。連結したときに controller が外す。
-
-              touch-none を置かないと、指で下ろした瞬間に画面のほうが動く。
-              つかんでいる間は行から降りてくる cursor を自前の grab が上書きするので、
-              ここでも grabbing へ差し替える %>
-          <button type="button" hidden data-wish-reorder-target="controls handle"
-                  data-action="pointerdown->wish-reorder#grab keydown->wish-reorder#key"
-                  aria-label="<%= wish.book.title %>の順位を動かす"
-                  aria-describedby="wish_reorder_help"
-                  class="flex h-11 w-11 flex-none cursor-grab touch-none items-center justify-center
-                         rounded-[4px] text-[15px] text-ink-subtle hover:bg-paper-hover
-                         group-data-dragging/row:cursor-grabbing
-                         group-data-dragging/row:text-accent lg:h-8 lg:w-8">⠿</button>
-
-          <%# 外す口。並べ替えと違って JavaScript が無くても押せるので、伏せない。
-              送り先はカードの「希望から外す」と同じで、押せば順位も繰り上がる。
-              文字を生成りに落とすのは、リストの中で押してほしいのが並べ替えの
-              ほうにあたるため。濃い字で置くと、消す口が先に目に入る。
-              ハンドルと同じ濃さで並ぶが、輪郭を持つのはこちらだけなので取り違えない %>
-          <%= button_to '×', exchange_book_wish_path(exchange, wish.book), method: :delete,
-                        params: (mine_only ? { filter: 'mine' } : {}),
-                        aria: { label: '希望から外す' },
-                        class: 'flex h-11 w-11 flex-none cursor-pointer items-center ' \
-                               'justify-center rounded-[4px] border border-line text-[15px] ' \
-                               'text-ink-subtle hover:bg-paper-hover hover:text-accent lg:h-8 lg:w-8' %>
-        </div>
+        <%# 外す口。並べ替えと違って JavaScript が無くても押せる。
+            送り先はカードの「希望から外す」と同じで、押せば順位も繰り上がる。
+            文字を生成りに落とすのは、リストの中で押してほしいのが並べ替えの
+            ほうにあたるため。濃い字で置くと、消す口が先に目に入る。
+            順位と同じ輪郭で並ぶが、行の反対の端にあるので取り違えない。
+            狭い画面は44px、広い画面はリストが340pxしかないので32pxへ詰める %>
+        <%= button_to '×', exchange_book_wish_path(exchange, wish.book), method: :delete,
+                      params: (mine_only ? { filter: 'mine' } : {}),
+                      aria: { label: '希望から外す' },
+                      class: 'flex h-11 w-11 flex-none cursor-pointer items-center ' \
+                             'justify-center rounded-[4px] border border-line text-[15px] ' \
+                             'text-ink-subtle hover:bg-paper-hover hover:text-accent lg:h-8 lg:w-8' %>
       <% end %>
     <% end %>
   <% end %>

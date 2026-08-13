@@ -71,19 +71,25 @@
         <% end %>
       </div>
     <% elsif editable %>
-      <%# 並べ替えは順序だけをまとめて送る。送る並びは行の並びそのもので、
-          行を動かせば中の hidden も一緒に動く。順位は送らず、サーバー側で1から振り直す %>
-      <%= form_with url: exchange_wish_list_path(exchange), method: :patch,
-                    data: { controller: 'wish-reorder' } do %>
-        <%# 絞り込みは URL に残る。JavaScript が無い経路へ倒れても同じ並びで戻す %>
-        <%= hidden_field_tag :filter, 'mine', id: nil if mine_only %>
+      <div data-controller="wish-reorder">
+        <%= render 'wishes/rows', exchange:, wishes:, mine_only:, editable: %>
 
-        <%= render 'wishes/rows', wishes:, editable: %>
-      <% end %>
+        <%# 並べ替えは順序だけをまとめて送る。送る並びは行の並びそのもので、
+            行を動かせば中の hidden も一緒に動く。順位は送らず、サーバー側で1から振り直す。
+
+            form が行を包まないのは、行の中に外す口の form があるため。
+            form は入れ子にできず、内側はブラウザに落とされる。送られる順は
+            form の中の並びではなく DOM の並び順なので、外へ出しても並びは変わらない %>
+        <%= form_with url: exchange_wish_list_path(exchange), method: :patch,
+                      id: 'wish_reorder', data: { wish_reorder_target: 'form' } do %>
+          <%# 絞り込みは URL に残る。JavaScript が無い経路へ倒れても同じ並びで戻す %>
+          <%= hidden_field_tag :filter, 'mine', id: nil if mine_only %>
+        <% end %>
+      </div>
     <% else %>
       <%# 送り先が無いので form で包まない。空の form を残すと、
           押せば何かが起きるように読める %>
-      <%= render 'wishes/rows', wishes:, editable: %>
+      <%= render 'wishes/rows', exchange:, wishes:, mine_only:, editable: %>
     <% end %>
   </div>
 </div>

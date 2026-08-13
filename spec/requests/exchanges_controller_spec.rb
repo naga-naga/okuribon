@@ -1378,6 +1378,21 @@ RSpec.describe ExchangesController do
         row.at_css('[data-wish-reorder-target~="handle"]')
       end
 
+      # 並べ替えの送り先。行を包まないので、行の中の form とは別のものになる
+      def reorder_form
+        wish_list.at_css('#wish_reorder')
+      end
+
+      # 行から希望を外す口。行の中にある form はこれだけ
+      def removal_form(row)
+        row.at_css('form')
+      end
+
+      # 畳んでいる間に出る側。ここに並ぶのは順位付きのチップだけ
+      def collapsed_sheet
+        wish_summary.parent
+      end
+
       # 並べ替えは順序だけをまとめて送る（docs/spec.md 6.2）。
       # ここで確かめるのは送る材料が画面に揃っていることまで。
       # つまんで動かす操作そのものはブラウザでしか確かめられない
@@ -1396,7 +1411,7 @@ RSpec.describe ExchangesController do
 
         open_page_while_wishing
 
-        expect(wish_list.at_css('form')['action']).to eq(exchange_wish_list_path(exchange))
+        expect(reorder_form['action']).to eq(exchange_wish_list_path(exchange))
       end
 
       # ドラッグはつまめる人にしか使えない。順位を1つずつ動かす口を別に置く
@@ -1503,7 +1518,76 @@ RSpec.describe ExchangesController do
 
         open_mine(at: wishing_at)
 
-        expect(wish_list.at_css('input[name="filter"]')['value']).to eq('mine')
+        expect(reorder_form.at_css('input[name="filter"]')['value']).to eq('mine')
+      end
+
+      # 外す口をカードの側にしか置かないと、リストを見て「これを消したい」と
+      # 思った人が、同じ本のカードを一覧から探し直すことになる（docs/spec.md 6.2）
+      it '各行から希望を外せる' do
+        first = wish_for('1冊目')
+        second = wish_for('2冊目')
+
+        open_page_while_wishing
+
+        expect(rows.map { removal_form(it)['action'] })
+          .to eq([exchange_book_wish_path(exchange, first), exchange_book_wish_path(exchange, second)])
+      end
+
+      it '外す口の送り方は希望の削除' do
+        wish_for('1冊目')
+
+        open_page_while_wishing
+
+        expect(removal_form(rows.first).at_css('input[name="_method"]')['value']).to eq('delete')
+        expect(removal_form(rows.first).at_css('button')['aria-label']).to eq('希望から外す')
+      end
+
+      # form は入れ子にできない。並べ替えの form が行を包んだままだと、
+      # 行の中の外す口はブラウザに落とされ、押しても何も起きない
+      it '外す口の form が並べ替えの form に入れ子にならない' do
+        wish_for('1冊目')
+
+        open_page_while_wishing
+
+        expect(wish_list.css('form form')).to be_empty
+      end
+
+      # 送る並びは行の並びそのもの。form の外へ出しても、送られる順は
+      # DOM の並び順なので、hidden は行の中に置いたまま form 属性で結ぶ
+      it '並べ替えの hidden は form の外から結ぶ' do
+        wish_for('1冊目')
+        wish_for('2冊目')
+
+        open_page_while_wishing
+
+        expect(wish_list.css('input[name="book_ids[]"]').pluck('form')).to eq(['wish_reorder', 'wish_reorder'])
+      end
+
+      # 並べ替えと違い、外すほうにはカードの側と同じ JavaScript の無い経路がある
+      it '外す口は JavaScript が動くまで伏せない' do
+        wish_for('1冊目')
+
+        open_page_while_wishing
+
+        expect(rows.first.at_css('[hidden] form')).to be_nil
+      end
+
+      it '絞り込みを保ったまま外せる' do
+        wish_for('1冊目')
+
+        open_mine(at: wishing_at)
+
+        expect(removal_form(rows.first).at_css('input[name="filter"]')['value']).to eq('mine')
+      end
+
+      # 畳んだ側のチップは横に流れる要約。44px の口を並べると、
+      # 一覧を読む間ずっと見えているはずの並びが1画面に2冊ぶんしか入らない
+      it '畳んだシートのチップには外す口を置かない' do
+        wish_for('1冊目')
+
+        open_page_while_wishing
+
+        expect(collapsed_sheet.css('form')).to be_empty
       end
 
       it '1冊も選んでいなければ並べ替えるものが無い' do
@@ -1651,6 +1735,14 @@ RSpec.describe ExchangesController do
         expect(wish_list.at_css('form')).to be_nil
         expect(wish_list.css('button[aria-label="順位を上げる"]')).to be_empty
         expect(wish_list.css('button[aria-label="順位を下げる"]')).to be_empty
+      end
+
+      it '外す口も外れる' do
+        wish_for_others(2)
+
+        open_awaiting
+
+        expect(wish_list.css('button[aria-label="希望から外す"]')).to be_empty
       end
 
       # 動かせない並びにつまんだときの描き分けが残っていると、

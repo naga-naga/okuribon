@@ -14,7 +14,7 @@ const SAVE_DELAY = 250
 // つまむ口と ↑↓ の2つを置く。ドラッグはつまめる人にしか使えず、
 // キーボードからは届かない。↑↓ だけが読み上げにも渡る道になる
 export default class extends Controller {
-  static targets = ["row", "controls", "position", "handle", "up", "down", "book"]
+  static targets = ["row", "controls", "position", "handle", "up", "down", "book", "form"]
 
   connect() {
     // 並べ替えは JavaScript でしか動かない。動く環境になって初めて口を出す
@@ -132,7 +132,9 @@ export default class extends Controller {
     pendingFocus = { bookId: this.#bookIdOf(row), step }
 
     clearTimeout(this.timer)
-    this.timer = setTimeout(() => this.element.requestSubmit(), SAVE_DELAY)
+    // 送り先の form は行を包まない。行の中には外す口の form があり、
+    // form は入れ子にできないため、順序を送る hidden は form 属性で結んである
+    this.timer = setTimeout(() => this.formTarget.requestSubmit(), SAVE_DELAY)
   }
 
   // 押していたボタンへ戻す。端まで来て押せなくなった行は、そこで手が止まるので戻さない

@@ -71,7 +71,16 @@
         <% end %>
       </div>
     <% elsif editable %>
-      <div data-controller="wish-reorder">
+      <div data-controller="wish-reorder" data-wish-reorder-status-value="wish_reorder_status">
+        <%# つまむのもキーで動かすのも、画面には何も書かれていない操作にあたる。
+            説明はここ1か所に置き、行のハンドルから aria-describedby で繋ぐ。
+            並べ替えごと JavaScript でしか動かないので、口と一緒に伏せておく。
+            出したままにすると、できない操作の手順が残る %>
+        <p hidden id="wish_reorder_help" data-wish-reorder-target="controls"
+           class="mb-2 text-[12px] leading-[1.8] text-ink-subtle">
+          つまんで動かすか、⠿ を選んで ↑↓ で動かします。Home / End で端まで送れます。
+        </p>
+
         <%= render 'wishes/rows', exchange:, wishes:, mine_only:, editable: %>
 
         <%# 並べ替えは順序だけをまとめて送る。送る並びは行の並びそのもので、

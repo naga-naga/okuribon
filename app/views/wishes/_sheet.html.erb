@@ -33,6 +33,13 @@
 
   <%= render 'wishes/list', exchange:, wishes:, slots:, mine_only:, editable: %>
 
+  <%# 動かした結果は、画面では順位が振り直されて見えるが、読み上げには何も届かない。
+      区画は差し替えの外に置く。中身と一緒に入れ替わると、読み上げる先が保存のたびに
+      作り直され、伝える前に消える。締め切られたあとは動かせないので置かない %>
+  <% if editable %>
+    <p id="wish_reorder_status" role="status" aria-live="polite" class="sr-only"></p>
+  <% end %>
+
   <%# 締切と取得枠は差し替えで変わらないので、入れ替える中身の外に置く。
       取得枠は登録した冊数と同じで、この期間はもう本を足せない %>
   <div class="hidden border-t border-line px-5 py-4 group-data-open/sheet:block lg:block lg:px-6">

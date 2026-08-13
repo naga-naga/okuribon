@@ -18,7 +18,9 @@
                          'bg-surface-sunken'
                        end] do %>
       <% if editable %>
-        <%= hidden_field_tag 'book_ids[]', wish.book_id, id: nil,
+        <%# 送る並びは行の並びそのものなので、hidden は行の中に置く。
+            並べ替えの form は行を包まないため、form 属性で結ぶ %>
+        <%= hidden_field_tag 'book_ids[]', wish.book_id, id: nil, form: 'wish_reorder',
                                            data: { wish_reorder_target: 'book' } %>
       <% end %>
 
@@ -34,32 +36,47 @@
       </div>
 
       <% if editable %>
-        <%# 並べ替えは JavaScript でしか動かない。動かない環境に押せる口を残すと、
-            押しても何も起きないボタンになる。連結したときに controller が外す %>
-        <div hidden data-wish-reorder-target="controls" class="flex flex-none items-center gap-1">
-          <%# つまむ口。読み上げには順位のボタンで足りるので、こちらは渡さない。
-              touch-none を置かないと、指で下ろした瞬間に画面のほうが動く。
-              つかんでいる間は行から降りてくる cursor を自前の grab が上書きするので、
-              ここでも grabbing へ差し替える %>
-          <span data-wish-reorder-target="handle" data-action="pointerdown->wish-reorder#grab"
-                aria-hidden="true"
-                class="flex h-11 w-6 flex-none cursor-grab touch-none items-center justify-center
-                       text-[14px] text-ink-subtle group-data-dragging/row:cursor-grabbing
-                       group-data-dragging/row:text-accent lg:h-9">⠿</span>
+        <%# 口が3つ並ぶ。広い画面のリストは340pxしかないので、指で押す必要のない
+            こちらだけ32pxへ詰める。狭い画面は44pxのまま %>
+        <div class="flex flex-none items-center gap-1">
+          <%# 並べ替えは JavaScript でしか動かない。動かない環境に押せる口を残すと、
+              押しても何も起きないボタンになる。連結したときに controller が外す %>
+          <div hidden data-wish-reorder-target="controls" class="flex items-center gap-1">
+            <%# つまむ口。読み上げには順位のボタンで足りるので、こちらは渡さない。
+                touch-none を置かないと、指で下ろした瞬間に画面のほうが動く。
+                つかんでいる間は行から降りてくる cursor を自前の grab が上書きするので、
+                ここでも grabbing へ差し替える %>
+            <span data-wish-reorder-target="handle" data-action="pointerdown->wish-reorder#grab"
+                  aria-hidden="true"
+                  class="flex h-11 w-6 flex-none cursor-grab touch-none items-center justify-center
+                         text-[14px] text-ink-subtle group-data-dragging/row:cursor-grabbing
+                         group-data-dragging/row:text-accent lg:h-8">⠿</span>
 
-          <%# つまめない人にも1つずつ動かす道を残す。端の行に行き先は無いので落とす %>
-          <button type="button" aria-label="順位を上げる" data-action="wish-reorder#moveUp"
-                  data-wish-reorder-target="up" <%= 'disabled' if index.zero? %>
-                  class="flex h-11 w-11 flex-none items-center justify-center rounded-[4px] border
-                         border-line text-[15px] text-ink enabled:cursor-pointer
-                         enabled:hover:bg-paper-hover disabled:border-fill
-                         disabled:text-line-strong lg:h-9 lg:w-9">↑</button>
-          <button type="button" aria-label="順位を下げる" data-action="wish-reorder#moveDown"
-                  data-wish-reorder-target="down" <%= 'disabled' if index == wishes.size - 1 %>
-                  class="flex h-11 w-11 flex-none items-center justify-center rounded-[4px] border
-                         border-line text-[15px] text-ink enabled:cursor-pointer
-                         enabled:hover:bg-paper-hover disabled:border-fill
-                         disabled:text-line-strong lg:h-9 lg:w-9">↓</button>
+            <%# つまめない人にも1つずつ動かす道を残す。端の行に行き先は無いので落とす %>
+            <button type="button" aria-label="順位を上げる" data-action="wish-reorder#moveUp"
+                    data-wish-reorder-target="up" <%= 'disabled' if index.zero? %>
+                    class="flex h-11 w-11 flex-none items-center justify-center rounded-[4px] border
+                           border-line text-[15px] text-ink enabled:cursor-pointer
+                           enabled:hover:bg-paper-hover disabled:border-fill
+                           disabled:text-line-strong lg:h-8 lg:w-8">↑</button>
+            <button type="button" aria-label="順位を下げる" data-action="wish-reorder#moveDown"
+                    data-wish-reorder-target="down" <%= 'disabled' if index == wishes.size - 1 %>
+                    class="flex h-11 w-11 flex-none items-center justify-center rounded-[4px] border
+                           border-line text-[15px] text-ink enabled:cursor-pointer
+                           enabled:hover:bg-paper-hover disabled:border-fill
+                           disabled:text-line-strong lg:h-8 lg:w-8">↓</button>
+          </div>
+
+          <%# 外す口。並べ替えと違って JavaScript が無くても押せるので、伏せない。
+              送り先はカードの「希望から外す」と同じで、押せば順位も繰り上がる。
+              文字を生成りに落とすのは、リストの中で押してほしいのが並べ替えの
+              ほうにあたるため。↑↓ と同じ濃さで並べると、消す口が先に目に入る %>
+          <%= button_to '×', exchange_book_wish_path(exchange, wish.book), method: :delete,
+                        params: (mine_only ? { filter: 'mine' } : {}),
+                        aria: { label: '希望から外す' },
+                        class: 'flex h-11 w-11 flex-none cursor-pointer items-center ' \
+                               'justify-center rounded-[4px] border border-line text-[15px] ' \
+                               'text-ink-subtle hover:bg-paper-hover hover:text-accent lg:h-8 lg:w-8' %>
         </div>
       <% end %>
     <% end %>

@@ -1,6 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 
-// 保存すると希望リストごと差し替わるので、押していたボタンは消え、この controller も
+// 保存すると希望リストごと差し替わるので、掴んでいたハンドルは消え、この controller も
 // 作り直される。戻す先はインスタンスに持てないため、モジュールの側に置く
 let pendingFocus = null
 
@@ -8,16 +8,27 @@ let pendingFocus = null
 // 1回ごとに往復すると押している最中に画面が入れ替わる
 const SAVE_DELAY = 250
 
+// キーが行を送る先。↑↓ は隣へ、Home / End は端へ。ポインタで触れる人はドラッグで
+// 一息に動かせるので、端まで送る道をキーの側にも置く。口は1つも増えない
+const STEPS = {
+  ArrowUp: () => -1,
+  ArrowDown: () => 1,
+  Home: (index) => -index,
+  End: (index, length) => length - 1 - index,
+}
+
 // 希望リストを並べ替える。行の並びがそのまま送る並びで、hidden は行の中にあるので
 // 行を動かせば一緒に動く。順位は送らず、サーバー側で1から振り直す。
 //
-// つまむ口と ↑↓ の2つを置く。ドラッグはつまめる人にしか使えず、
-// キーボードからは届かない。↑↓ だけが読み上げにも渡る道になる
+// 口はハンドル1つ。つまんで動かすほかに、フォーカスしてキーでも動かせる。
+// ↑↓ のボタンを並べると行の口が4つになり、題に6文字しか残らないので、
+// キーボードと読み上げに渡る道はハンドル自身が持つ（docs/spec.md 6.2）
 export default class extends Controller {
-  static targets = ["row", "controls", "position", "handle", "up", "down", "book", "form"]
+  static targets = ["row", "controls", "position", "title", "handle", "book", "form"]
+  static values = { status: String }
 
   connect() {
-    // 並べ替えは JavaScript でしか動かない。動く環境になって初めて口を出す
+    // 並べ替えは JavaScript でしか動かない。動く環境になって初めて口と説明を出す
     this.controlsTargets.forEach((controls) => (controls.hidden = false))
 
     this.#restoreFocus()
@@ -27,12 +38,19 @@ export default class extends Controller {
     this.#release()
   }
 
-  moveUp(event) {
-    this.#move(this.upTargets.indexOf(event.currentTarget), -1)
-  }
+  // ハンドルを掴んだままキーで動かす。ドラッグと同じ口に載せるので、
+  // 「並べ替えはここ」と言える場所が行に1つしかない
+  key(event) {
+    const index = this.handleTargets.indexOf(event.currentTarget)
+    const step = STEPS[event.key]?.(index, this.rowTargets.length)
 
-  moveDown(event) {
-    this.#move(this.downTargets.indexOf(event.currentTarget), 1)
+    // 端の行で Home / End を押したときは step が 0 になる。行き先が無い
+    if (!step) return
+
+    // 押しっぱなしで画面が一緒に流れると、動かしている行を目で追えなくなる
+    event.preventDefault()
+
+    this.#move(index, step)
   }
 
   // つまんだところから離すまでを1回の並べ替えとして扱う。
@@ -114,9 +132,17 @@ export default class extends Controller {
     const neighbor = this.rowTargets[index + step]
     if (!row || !neighbor) return
 
+    const handle = this.handleTargets[index]
+
     step < 0 ? neighbor.before(row) : neighbor.after(row)
 
     this.#renumber()
+
+    // 行を DOM から抜き差しした時点でフォーカスが外れる。掴んでいた口は行と一緒に
+    // 動いた先へ移っているので、そこで掴み直す。戻さないと、続けてもう1つ動かせない
+    handle.focus()
+    this.#announce(row)
+
     this.#save(row, step)
   }
 
@@ -124,8 +150,21 @@ export default class extends Controller {
   // 画面に出ている順位とリストの何番目かが食い違う
   #renumber() {
     this.positionTargets.forEach((position, index) => (position.textContent = index + 1))
-    this.upTargets.forEach((button, index) => (button.disabled = index === 0))
-    this.downTargets.forEach((button, index) => (button.disabled = index === this.downTargets.length - 1))
+  }
+
+  // 振り直した順位は画面では見えるが、読み上げには何も届かない。
+  //
+  // 題まで言うのは、前と同じ文になると読み上げそのものが飛ぶため。順位だけだと、
+  // 別の本を続けて1位へ送ったときに二度とも「1位に移動しました」になる。
+  //
+  // 区画は希望リストの外にある。中身と一緒に差し替わると、読み上げる先が
+  // 保存のたびに作り直される
+  #announce(row) {
+    const status = document.getElementById(this.statusValue)
+    if (!status) return
+
+    const index = this.rowTargets.indexOf(row)
+    status.textContent = `${this.titleTargets[index].textContent}を${index + 1}位に移動しました`
   }
 
   #save(row, step = 0) {
@@ -137,7 +176,8 @@ export default class extends Controller {
     this.timer = setTimeout(() => this.formTarget.requestSubmit(), SAVE_DELAY)
   }
 
-  // 押していたボタンへ戻す。端まで来て押せなくなった行は、そこで手が止まるので戻さない
+  // 掴んでいたハンドルへ戻す。ドラッグで動かしたぶんは戻さない。
+  // ポインタは行の上にあるので、焦点の輪郭だけが後から付くことになる
   #restoreFocus() {
     const focus = pendingFocus
     pendingFocus = null
@@ -146,8 +186,7 @@ export default class extends Controller {
     const index = this.bookTargets.findIndex((input) => input.value === focus.bookId)
     if (index < 0) return
 
-    const button = (focus.step < 0 ? this.upTargets : this.downTargets)[index]
-    if (button && !button.disabled) button.focus()
+    this.handleTargets[index]?.focus()
   }
 
   #bookIdOf(row) {

@@ -1370,12 +1370,14 @@ RSpec.describe ExchangesController do
         wish_list.at_css('#wish_summary')
       end
 
-      def move_button(row, label)
-        row.at_css(%(button[aria-label="#{label}"]))
-      end
-
       def handle(row)
         row.at_css('[data-wish-reorder-target~="handle"]')
+      end
+
+      # 順位が変わったことを読み上げる区画。差し替えの外にあるので、
+      # 希望リストの中身ではなくページ全体から引く
+      def reorder_status
+        response.parsed_body.at_css('#wish_reorder_status')
       end
 
       # 並べ替えの送り先。行を包まないので、行の中の form とは別のものになる
@@ -1414,39 +1416,88 @@ RSpec.describe ExchangesController do
         expect(reorder_form['action']).to eq(exchange_wish_list_path(exchange))
       end
 
-      # ドラッグはつまめる人にしか使えない。順位を1つずつ動かす口を別に置く
-      it '各行に順位を上げ下げする口がある' do
+      # 行に口が4つ並ぶと、広い画面の340pxのリストでは題に92pxしか残らず、
+      # 6文字で切れる。並べ替えはハンドル1つに寄せる（docs/spec.md 6.2）
+      it '行の口は並べ替えと外すの2つだけ' do
         wish_for('1冊目')
-        wish_for('2冊目')
 
         open_page_while_wishing
 
-        expect(wish_list.css('button[aria-label="順位を上げる"]').size).to eq(2)
-        expect(wish_list.css('button[aria-label="順位を下げる"]').size).to eq(2)
+        expect(rows.first.css('button').size).to eq(2)
+        expect(wish_list.css('button[aria-label="順位を上げる"]')).to be_empty
+        expect(wish_list.css('button[aria-label="順位を下げる"]')).to be_empty
       end
 
-      # 端の行に行き先は無い。押せるように見えて何も起きないボタンを置かない
-      it '先頭は上げられず、末尾は下げられない' do
+      # ドラッグはつまめる人にしか使えない。↑↓ を落とした以上、キーボードと
+      # 読み上げに渡る道はハンドル自身が持つほかない
+      it 'ハンドルがキーボードから届く' do
         wish_for('1冊目')
-        wish_for('2冊目')
 
         open_page_while_wishing
 
-        expect(move_button(rows.first, '順位を上げる')[:disabled]).to be_present
-        expect(move_button(rows.first, '順位を下げる')[:disabled]).to be_nil
-        expect(move_button(rows.last, '順位を上げる')[:disabled]).to be_nil
-        expect(move_button(rows.last, '順位を下げる')[:disabled]).to be_present
+        expect(handle(rows.first).name).to eq('button')
+        expect(handle(rows.first)['aria-hidden']).to be_nil
+      end
+
+      # 十数行が同じ名前で並ぶと、読み上げたときにどの行の口なのかが分からない
+      it 'ハンドルの名前がどの本のものかを言う' do
+        wish_for('動かしたい本')
+
+        open_page_while_wishing
+
+        expect(handle(rows.first)['aria-label']).to include('動かしたい本')
+      end
+
+      # ↑↓ のボタンを落としたので、押して動かす道はキーへ移る
+      it 'ハンドルがキー入力を受ける' do
+        wish_for('1冊目')
+
+        open_page_while_wishing
+
+        expect(handle(rows.first)['data-action']).to include('keydown->wish-reorder#key')
+      end
+
+      # つまむのもキーで動かすのも、画面には何も書かれていない操作にあたる。
+      # 説明を1か所に置き、行のハンドルからそこへ繋ぐ
+      it 'ハンドルから操作の説明へ繋がる' do
+        wish_for('1冊目')
+
+        open_page_while_wishing
+
+        help = wish_list.at_css("##{handle(rows.first)['aria-describedby']}")
+        expect(help.text).to include('↑↓').and include('Home')
       end
 
       # 並べ替えは JavaScript でしか動かない。動かない環境に押せる口を残すと、
-      # 押しても何も起きないボタンになる。カードからの追加・削除はそのまま通る
-      it '並べ替えの口は JavaScript が動くまで出さない' do
+      # 押しても何も起きないボタンになる。説明も同じで、できない操作を書くことになる。
+      # カードからの追加・削除はそのまま通る
+      it '並べ替えの口と説明は JavaScript が動くまで出さない' do
         wish_for('1冊目')
         wish_for('2冊目')
 
         open_page_while_wishing
 
-        expect(wish_list.css('li [hidden] button[aria-label="順位を上げる"]').size).to eq(2)
+        expect(wish_list.css('li [hidden][data-wish-reorder-target~="handle"]').size).to eq(2)
+        expect(wish_list.at_css('#wish_reorder_help[hidden]')).to be_present
+      end
+
+      # 動かした結果は、画面では順位が振り直されて見えるが、読み上げには何も届かない
+      it '順位が変わったことを読み上げる区画がある' do
+        wish_for('1冊目')
+
+        open_page_while_wishing
+
+        expect(reorder_status['aria-live']).to eq('polite')
+      end
+
+      # 中身と一緒に入れ替わると、読み上げる先が保存のたびに作り直される
+      it '読み上げる区画は差し替えの外にある' do
+        wish_for('1冊目')
+
+        open_page_while_wishing
+
+        expect(reorder_status).to be_present
+        expect(wish_list.at_css('#wish_reorder_status')).to be_nil
       end
 
       # つまむ前と後で輪郭の線種しか変わらないと、ハンドルを捉えられたのかが
@@ -1733,8 +1784,16 @@ RSpec.describe ExchangesController do
         open_awaiting
 
         expect(wish_list.at_css('form')).to be_nil
-        expect(wish_list.css('button[aria-label="順位を上げる"]')).to be_empty
-        expect(wish_list.css('button[aria-label="順位を下げる"]')).to be_empty
+        expect(wish_list.at_css('[data-wish-reorder-target~="handle"]')).to be_nil
+      end
+
+      # 動かせない並びに読み上げる区画だけが残ると、伝える先の無い口になる
+      it '順位を読み上げる区画も外れる' do
+        wish_for_others(2)
+
+        open_awaiting
+
+        expect(response.parsed_body.at_css('#wish_reorder_status')).to be_nil
       end
 
       it '外す口も外れる' do

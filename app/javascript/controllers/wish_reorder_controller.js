@@ -28,8 +28,12 @@ export default class extends Controller {
   static values = { status: String }
 
   connect() {
-    // 並べ替えは JavaScript でしか動かない。動く環境になって初めて口と説明を出す
+    // 並べ替えは JavaScript でしか動かない。動く環境になって初めて説明を出す
     this.controlsTargets.forEach((controls) => (controls.hidden = false))
+
+    // 口のほうは順位そのものなので、伏せるのではなく押せるようにする。
+    // 順位は動かせない間も読むものなので、消してしまうわけにいかない
+    this.handleTargets.forEach((handle) => (handle.disabled = false))
 
     this.#restoreFocus()
   }

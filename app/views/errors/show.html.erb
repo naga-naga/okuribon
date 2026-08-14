@@ -1,0 +1,38 @@
+<%# 例外から描かれる 400 / 404 / 422（docs/spec.md 6.10）。
+    ガイドの組み立てに合わせ、控えの数字 → 見出し → 一文 → 次の一手 の順に置く。
+    数字は見出しにしない。押せるものは必ず1つ出し、行き止まりにしない。
+
+    交換会も利用者の状態も引かない。何が見つからなかったのかを本文に出すと、
+    URL を試すだけで実在を確かめられる（8.）。3つのステータスで変わるのは
+    文言だけで、出し分けはロケールに寄せる %>
+<% content_for :title, t("error.#{@status}.heading") %>
+
+<div class="mx-auto w-full max-w-[560px] px-4 py-16 sm:px-6 sm:py-24">
+  <div class="flex flex-col gap-6">
+    <span class="text-[10.5px] font-medium tracking-[0.14em] text-ink-subtle">
+      <%= t("error.#{@status}.code") %>
+    </span>
+
+    <h1 class="text-[26px] font-bold leading-[1.5] text-ink sm:text-[30px]">
+      <%= t("error.#{@status}.heading") %>
+    </h1>
+
+    <p class="text-[14.5px] leading-[2] text-ink">
+      <%= t("error.#{@status}.body") %>
+    </p>
+
+    <%# 未ログインで交換会一覧へ送ると require_login がログイン画面へ跳ね返すので、
+        行き先は最初からログイン画面にする。ログアウトの口は共通ヘッダーにある %>
+    <div class="pt-1">
+      <% if logged_in? %>
+        <%= link_to t('error.actions.exchanges'), exchanges_path,
+                    class: 'inline-block rounded-[5px] bg-accent px-6 py-3.5 text-[14.5px] ' \
+                           'font-medium text-paper no-underline hover:bg-accent-hover' %>
+      <% else %>
+        <%= link_to t('error.actions.login'), login_path,
+                    class: 'inline-block rounded-[5px] bg-accent px-6 py-3.5 text-[14.5px] ' \
+                           'font-medium text-paper no-underline hover:bg-accent-hover' %>
+      <% end %>
+    </div>
+  </div>
+</div>

@@ -39,14 +39,25 @@ RSpec.describe ExchangesController do
                     **attributes)
     end
 
-    # #new はどこからもリンクされておらず、URL を直に打つ以外に辿り着けなかった。
-    # 作成の口は交換会一覧の共通ヘッダーが持つ（docs/spec.md 6.6）。
-    # 交換会が1つも無い人にも要るので、一覧の中身ではなくヘッダーに置く
-    it '共通ヘッダーから交換会をつくれる' do
-      get exchanges_path
+    # 主催をはじめる道はこの画面にしかない。共通ヘッダーに置いていた頃は、
+    # 並ぶものが1件でもあると本文から消え、いちばん小さい字だけが残っていた
+    # （docs/spec.md 6.6）
+    it '参加している交換会があっても本文から交換会をつくれる' do
+      registration_exchange(name: '夏の交換会')
 
-      expect(response.parsed_body.at_css("header a[href='#{new_exchange_path}']").text)
+      travel_to(now) { get exchanges_path }
+
+      expect(response.parsed_body.at_css("main a[href='#{new_exchange_path}']").text)
         .to eq('交換会をつくる')
+    end
+
+    # 同じ行き先を1画面に2つ置くと、どちらが正しい口なのかを押す前に考えることになる
+    it 'つくる口が1画面に1つしか無い' do
+      registration_exchange(name: '夏の交換会')
+
+      travel_to(now) { get exchanges_path }
+
+      expect(response.parsed_body.css("a[href='#{new_exchange_path}']").size).to eq(1)
     end
 
     it '参加している交換会が並ぶ' do
@@ -233,10 +244,14 @@ RSpec.describe ExchangesController do
         expect(response.body).to include('招待URL')
       end
 
-      # 主催をはじめる道はこの画面にしかない。共通ヘッダーの口は小さく、
-      # 本文が真っ白なこの画面でこそ、押してよいものだと分かる必要がある
+      # 本文が真っ白なこの画面でこそ、押してよいものだと分かる大きさが要る
       it '本文からも交換会をつくれる' do
         expect(response.parsed_body.at_css("main a[href='#{new_exchange_path}']")).to be_present
+      end
+
+      # 並ぶものが有るときと同じく、口は1つ
+      it 'つくる口が1画面に1つしか無い' do
+        expect(response.parsed_body.css("a[href='#{new_exchange_path}']").size).to eq(1)
       end
 
       # 何人でどれくらいの期間かの見当が付かないと、つくる側は日時を決められない

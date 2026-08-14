@@ -1,11 +1,5 @@
 <% content_for :title, '交換会一覧' %>
 
-<%# 主催をはじめる口はここにしかない。一覧の中身に置くと、まだ1つも
-    交換会を持たない人に出す先が無くなる %>
-<% content_for :header_action do %>
-  <%= link_to '交換会をつくる', new_exchange_path, class: 'text-[12.5px]' %>
-<% end %>
-
 <%# カードが左右2列に分かれるので、他の画面より広く取る。
     640px のままだと締切の欄に「あと6日」が収まらず、行ごと折り返る %>
 <div class="mx-auto w-full max-w-[900px] px-4 py-10 sm:px-6">
@@ -28,25 +22,40 @@
         </p>
       </div>
 
-      <%# 主催をはじめる道はこの画面にしかない。共通ヘッダーにも口はあるが小さく、
-          本文が真っ白なこの画面でこそ、押してよいものだと分かる必要がある %>
+      <%# 主催をはじめる道はこの画面にしかない。並ぶものが有るときは輪郭に落とすが、
+          こちらは塗りのまま。競る相手のカードが1枚も無く、本文が真っ白なこの画面では、
+          押してよいものだと分かる大きさが要る %>
       <%= link_to '交換会をつくる', new_exchange_path,
                   class: 'mt-6 inline-block rounded-[5px] bg-accent px-6 py-3 text-[14px] ' \
                          'font-medium text-paper no-underline hover:bg-accent-hover' %>
     </div>
   <% else %>
-    <h1 class="text-[26px] font-bold leading-[1.45] text-ink">あなたの交換会</h1>
+    <%# つくる口は見出しの右に置く。カードの並びに混ぜると、交換会でないものが
+        1枚だけ紛れる。塗りにしないのは、締切が24時間を切ったカードの朱の面と
+        競るため。ざっと見て目に飛び込む朱の面は1枚だけにしておく（6.6） %>
+    <div class="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+      <div>
+        <h1 class="text-[26px] font-bold leading-[1.45] text-ink">あなたの交換会</h1>
 
-    <%# 何件あるかより先に知りたいのは、そのうち何件が自分の番か。
-        「0つ」と書くと、待てばよいのか誘われ待ちなのか読み取れないので言い方を変える %>
-    <% active = @cards.count(&:active) %>
-    <p class="mt-1.5 text-[13px] text-ink-muted">
-      <% if active.zero? %>
-        いま動いている交換会はありません。締切の近いものから並びます。
-      <% else %>
-        いま動いているのは<span class="tabular"><%= active %></span>つ。締切の近いものから並びます。
-      <% end %>
-    </p>
+        <%# 何件あるかより先に知りたいのは、そのうち何件が自分の番か。
+            「0つ」と書くと、待てばよいのか誘われ待ちなのか読み取れないので言い方を変える %>
+        <% active = @cards.count(&:active) %>
+        <p class="mt-1.5 text-[13px] text-ink-muted">
+          <% if active.zero? %>
+            いま動いている交換会はありません。締切の近いものから並びます。
+          <% else %>
+            いま動いているのは<span class="tabular"><%= active %></span>つ。締切の近いものから並びます。
+          <% end %>
+        </p>
+      </div>
+
+      <%# 狭い画面では的を44pxにする。指で押す口の大きさはガイドが全画面で
+          決めているので、この画面だけ小さいままにしない %>
+      <%= link_to '交換会をつくる', new_exchange_path,
+                  class: 'flex-none rounded-[5px] border border-accent bg-paper px-5 py-3 ' \
+                         'text-[13px] font-medium text-accent no-underline ' \
+                         'hover:bg-paper-hover sm:py-2.5' %>
+    </div>
 
     <ul class="mt-6 flex flex-col gap-3">
       <% @cards.each do |card| %>

@@ -43,8 +43,10 @@ class WishesController < ApplicationController
     @book = @exchange.books.find(params.expect(:book_id))
   end
 
+  # こちらは例外ではなく検証の失敗なので、戻り先は引いてきた交換会から渡す
   def deny_wish(wish)
     render 'errors/denied', status: :unprocessable_content,
-                            locals: { message: wish.errors.full_messages.to_sentence }
+                            locals: { message: wish.errors.full_messages.to_sentence,
+                                      exchange: @exchange }
   end
 end

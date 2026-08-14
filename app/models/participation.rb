@@ -5,8 +5,12 @@ class Participation < ApplicationRecord
   # 食い違うのは別のタブで追加・削除したときなので、届いた並びを正として
   # 差分を反映すると、そちらの変更が黙って消える
   class WishListMismatch < StandardError
-    def initialize(message = I18n.t('participation.wish_list_mismatch'))
-      super
+    attr_reader :exchange
+
+    def initialize(exchange)
+      @exchange = exchange
+
+      super(I18n.t('participation.wish_list_mismatch'))
     end
   end
 
@@ -91,7 +95,7 @@ class Participation < ApplicationRecord
       wishes_by_book_id = wishes.reload.index_by(&:book_id)
       # 集合ではなく並べた数ごと突き合わせる。Set にすると重複が潰れ、[A, A, B] が
       # [A, B] と同じものとして通る。A に順位を2度振ることになり、1番が空く
-      raise WishListMismatch unless ordered_ids.sort == wishes_by_book_id.keys.sort
+      raise WishListMismatch, exchange unless ordered_ids.sort == wishes_by_book_id.keys.sort
 
       ordered_ids.each_with_index do |book_id, index|
         wishes_by_book_id.fetch(book_id).update!(position: index + 1)

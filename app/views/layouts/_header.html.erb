@@ -32,7 +32,9 @@
     </nav>
 
     <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-      <%# 交換会をつくる口のように、その画面にしか無い行き先が入る %>
+      <%# その画面にしか無い行き先の枠。いま使っている画面は無い。
+          交換会をつくる口はここにあったが、本文の見出しの右へ移した
+          （docs/spec.md 6.6）。枠のほうは共通ヘッダーの仕組みとして残す %>
       <%= yield :header_action %>
 
       <% if logged_in? %>

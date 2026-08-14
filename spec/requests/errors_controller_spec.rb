@@ -127,4 +127,20 @@ RSpec.describe ErrorsController, :rendered_error_pages do
       expect(main_text).to include('失われていません')
     end
   end
+
+  # アプリのレイアウトを通らない2枚は、Tailwind のビルド結果を参照できないため
+  # 配色を生の色コードで持っている。@theme を直しても追従しないので、
+  # 食い違いはここで気付く。片方だけ動いた配色は、見比べないと分からない
+  describe '静的 HTML の配色' do
+    let!(:theme) { Rails.root.join('app/assets/tailwind/application.css').read }
+
+    ['public/500.html', 'public/406-unsupported-browser.html'].each do |path|
+      it "#{path} の色が @theme にある" do
+        colors = Rails.root.join(path).read.scan(/#\h{6}\b/).uniq
+
+        expect(colors).to be_present
+        expect(colors).to all(satisfy { |color| theme.include?(color) })
+      end
+    end
+  end
 end

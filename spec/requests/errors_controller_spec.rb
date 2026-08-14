@@ -82,4 +82,49 @@ RSpec.describe ErrorsController, :rendered_error_pages do
       expect(main_text).to include('この URL は読み取れませんでした')
     end
   end
+
+  # 500 だけはアプリのビューを通さない。DB もセッションも読めないことがあり、
+  # ビューを通すとエラー画面そのものが描けなくなる
+  describe '500' do
+    # 既定の :rescuable では、拾う先の決まっていない例外は再送出されて
+    # 画面にならない。5xx の経路を見るこの節だけ :all に倒す
+    around do |example|
+      env_config = Rails.application.env_config
+      key = 'action_dispatch.show_exceptions'
+      original = env_config[key]
+      env_config[key] = :all
+      example.run
+    ensure
+      env_config[key] = original
+    end
+
+    before do
+      stub_const('BoomController', Class.new(ApplicationController) do
+        def show
+          raise 'boom'
+        end
+      end)
+
+      Rails.application.routes.draw { get '/boom' => 'boom#show' }
+    end
+
+    after { Rails.application.reload_routes! }
+
+    it 'アプリのビューを通さず、揃えた静的 HTML を返す' do
+      get '/boom'
+
+      expect(response).to have_http_status(:internal_server_error)
+      expect(main_text).to include('こちらの不具合で表示できませんでした')
+      # ビューを通していれば必ず入るもの。入っていたら経路を取り違えている
+      expect(response.body).not_to include('csrf-token')
+    end
+
+    # 登録した本や希望リストが消えたと読ませない。3. の取得枠の勘定は
+    # 登録済みの冊数で決まるので、消えたと思えば登録し直しに来る
+    it 'データが失われていないことを書く' do
+      get '/boom'
+
+      expect(main_text).to include('失われていません')
+    end
+  end
 end

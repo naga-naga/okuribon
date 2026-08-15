@@ -19,10 +19,12 @@
               押しても同じ画面が返るだけのものを、行き先があるように見せない。
               root も交換会一覧を描くので、両方の URL を見る %>
           <% if logged_in? && !current_page?(exchanges_path) && !current_page?(root_path) %>
-            <%= link_to '読書交換会', exchanges_path %>
+            <%= link_to '交換会一覧', exchanges_path %>
           <% else %>
-            <%# 未ログインのときは現在地ではなく、ただ行けないだけなので aria-current を付けない %>
-            <%= tag.span '読書交換会', class: 'font-bold text-ink',
+            <%# 未ログインのときは現在地ではなく、ただ行けないだけなので aria-current を付けない。
+                行き先にならない画面の名前を置いても読む用がないので、
+                ここだけサービス名を名乗る（docs/spec.md 5.） %>
+            <%= tag.span (logged_in? ? '交換会一覧' : t('service.name')), class: 'font-bold text-ink',
                          aria: { current: ('page' if logged_in?) } %>
           <% end %>
         </li>

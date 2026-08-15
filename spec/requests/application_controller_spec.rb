@@ -28,32 +28,63 @@ RSpec.describe ApplicationController do
     end
   end
 
+  # タブに並んだときに、どの道具のどの画面かが読めること。静的な 500 / 406 が
+  # 同じ形の題を持っているので（6.10）、アプリ側だけ画面名しか出さないと、
+  # エラーへ落ちた瞬間に題の形が変わる
+  describe 'ページの題' do
+    def title = response.parsed_body.at_css('title').text
+
+    it '画面の名前にサービス名を添える' do
+      get login_path
+
+      expect(title).to eq('ログイン — おくりぼん')
+    end
+
+    it 'ログイン後の画面にも添える' do
+      log_in_as(user)
+
+      get exchanges_path
+
+      expect(title).to eq('交換会一覧 — おくりぼん')
+    end
+  end
+
   describe '共通ヘッダー' do
     context 'ログイン済み' do
       before { log_in_as(user) }
 
-      it 'サービス名から交換会一覧へ戻れる' do
+      # 根が名乗るのは行き先の名前で、サービス名ではない。パンくずは祖先を
+      # 連ねるもので、全段が画面の名前で揃う（docs/spec.md 5.）
+      it 'パンくずの根から交換会一覧へ戻れる' do
         exchange = create(:exchange)
         exchange.participations.create!(user:)
 
         get exchange_path(exchange)
 
-        expect(header.at_css("a[href='#{exchanges_path}']").text).to eq('読書交換会')
+        expect(header.at_css("a[href='#{exchanges_path}']").text).to eq('交換会一覧')
       end
 
       # 現在地はリンクにしない。押しても同じ画面が返るだけのものを、
       # 行き先があるように見せない
-      it '交換会一覧そのものではサービス名をリンクにしない' do
+      it '交換会一覧そのものではパンくずの根をリンクにしない' do
         get exchanges_path
 
         expect(header.at_css("a[href='#{exchanges_path}']")).to be_nil
-        expect(header.at_css('[aria-current="page"]').text).to eq('読書交換会')
+        expect(header.at_css('[aria-current="page"]').text).to eq('交換会一覧')
+      end
+
+      # ログイン後にサービス名を出す場所は持たない。名前が画面に大きく出るのは
+      # ログイン画面だけで、その先はどの交換会に居るかのほうが要る
+      it 'サービス名を共通ヘッダーに出さない' do
+        get exchanges_path
+
+        expect(header.text).not_to include(I18n.t('service.name'))
       end
 
       # root も交換会一覧を描く。URL が違うだけで同じ画面なので、
       # 現在地の判定を exchanges_path だけで書くと、root で開いたときに
       # 自分自身へのリンクが出る
-      it 'root でもサービス名をリンクにしない' do
+      it 'root でもパンくずの根をリンクにしない' do
         get root_path
 
         expect(header.at_css("a[href='#{exchanges_path}']")).to be_nil
@@ -84,8 +115,19 @@ RSpec.describe ApplicationController do
 
         get invitation_path(exchange.invite_token)
 
-        expect(header.text).to include('読書交換会')
         expect(header.at_css("form[action='#{logout_path}']")).to be_nil
+      end
+
+      # 未ログインの人にとって交換会一覧は祖先ではない。ログインしないと開けない
+      # 画面の名前を置いても行き先にならないので、ここだけはサービス名を名乗る。
+      # この画面が、招待された人がこの道具の名前を最初に見る場所にあたる
+      it '招待URL着地ではパンくずの根がサービス名になる' do
+        exchange = create(:exchange)
+
+        get invitation_path(exchange.invite_token)
+
+        expect(header.text).to include(I18n.t('service.name'))
+        expect(header.text).not_to include('交換会一覧')
       end
 
       # ログイン画面はまだ誰でもなく、行き先もログアウトも無い。加えて、

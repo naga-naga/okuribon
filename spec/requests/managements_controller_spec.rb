@@ -49,7 +49,7 @@ RSpec.describe ManagementsController do
       it 'パンくずから交換会トップへ戻れる' do
         travel_to(registration_phase) { get exchange_management_path(exchange) }
 
-        expect(breadcrumb).to eq('読書交換会' => exchanges_path,
+        expect(breadcrumb).to eq('交換会一覧' => exchanges_path,
                                  '冬の読書交換会' => exchange_path(exchange))
       end
 

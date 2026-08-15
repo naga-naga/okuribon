@@ -493,7 +493,7 @@ RSpec.describe ExchangesController do
     it 'パンくずは交換会一覧までで、この画面は入らない' do
       open_page
 
-      expect(breadcrumb).to eq('読書交換会' => exchanges_path)
+      expect(breadcrumb).to eq('交換会一覧' => exchanges_path)
     end
 
     it '主催者名が出る' do
@@ -2313,7 +2313,7 @@ RSpec.describe ExchangesController do
     it 'パンくずから交換会トップと主催者管理へ戻れる' do
       get edit_exchange_path(exchange)
 
-      expect(breadcrumb).to eq('読書交換会' => exchanges_path,
+      expect(breadcrumb).to eq('交換会一覧' => exchanges_path,
                                '春の交換会' => exchange_path(exchange),
                                '主催者管理' => exchange_management_path(exchange))
     end

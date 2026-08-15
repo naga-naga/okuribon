@@ -20,6 +20,14 @@ RSpec.describe SessionsController do
       expect(response).to have_http_status(:ok)
     end
 
+    # サービス名が画面に大きく出るのはここだけ。共通ヘッダーのパンくずの根は
+    # 行き先の名前（交換会一覧）を名乗るので、ログイン後は名前が画面から消える
+    it '見出しにサービス名を出す' do
+      get '/login'
+
+      expect(response.parsed_body.at_css('h1').text).to eq('おくりぼん')
+    end
+
     # root は交換会一覧へ渡した。ログインを促すのは require_login の仕事で、
     # 未ログインならそこからこの画面へ戻ってくる
     it '未ログインで root を開くとここへ送られる' do

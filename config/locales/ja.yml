@@ -1,4 +1,12 @@
 ja:
+  # サービス名。画面と文書はかな、識別子（リポジトリ名・Kamal の service・DB 名・
+  # サブドメイン）はローマ字の okuribon で通す（docs/spec.md 1.）。
+  # 名前を書く場所はここ1つに絞る。以前は画面ごとに「読書交換会」と「Okuribon」が
+  # 別々に書かれており、片方だけ直した状態に気付けなかった。
+  # レイアウトを通らない public/500.html と 406 だけは直に持つ（6.10）。
+  # そちらがここと食い違わないことは spec/requests/errors_controller_spec.rb で押さえる
+  service:
+    name: おくりぼん
   date:
     formats:
       # 表に詰めて並べる日付。rails-i18n の :short は月日を0で詰めるため、

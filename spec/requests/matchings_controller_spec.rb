@@ -61,7 +61,7 @@ RSpec.describe MatchingsController do
       it 'パンくずから交換会トップと主催者管理へ戻れる' do
         open_confirmation
 
-        expect(breadcrumb).to eq('読書交換会' => exchanges_path,
+        expect(breadcrumb).to eq('交換会一覧' => exchanges_path,
                                  exchange.name => exchange_path(exchange),
                                  '主催者管理' => exchange_management_path(exchange))
       end

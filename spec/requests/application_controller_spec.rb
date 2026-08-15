@@ -97,4 +97,80 @@ RSpec.describe ApplicationController do
       end
     end
   end
+
+  # 書き込みを断ったときの画面（docs/spec.md 6.10）。ステータスの使い分けと
+  # メッセージの中身は phase_guard_spec が押さえる。ここで見るのは画面のほうで、
+  # 断られた人がどこへ行けるかを持っているかどうか
+  describe '書き込みを拒否したときの画面' do
+    let!(:exchange) do
+      create(
+        :exchange,
+        name: '夏の交換会',
+        registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
+        registration_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
+        wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone
+      )
+    end
+
+    let!(:wish_period) { '2026-08-11T00:00:00+09:00'.in_time_zone }
+
+    def main_text
+      response.parsed_body.css('main').text.squish
+    end
+
+    context 'フェーズが許していないとき（409）' do
+      before do
+        exchange.participations.create!(user:)
+        log_in_as(user)
+
+        travel_to(wish_period) do
+          post exchange_books_path(exchange), params: { book: { title: '本' } }
+        end
+      end
+
+      it '409 を返す' do
+        expect(response).to have_http_status(:conflict)
+      end
+
+      # 断られた人が、どの交換会の話なのかを画面から読めるようにする。
+      # 書き込みの口は交換会をまたいで同じ形をしているので、
+      # メッセージだけだと、どれを操作していたのかが分からない
+      it 'どの交換会でのことかを出す' do
+        expect(main_text).to include('夏の交換会')
+      end
+
+      # 11. の求めるもの。待てば書けるのかどうかが分かる必要がある
+      it '現在のフェーズとできなかった操作を出す' do
+        expect(main_text).to include('希望提出期間')
+        expect(main_text).to include('本の登録・編集はできません')
+      end
+
+      # 行き止まりにしない。統合で交換会の中の画面は交換会ページに集まったので、
+      # 戻る先は1つでよい（docs/spec.md 6.1）
+      it '交換会ページへ戻る口がある' do
+        expect(response.parsed_body.css("main a[href='#{exchange_path(exchange)}']")).to be_present
+      end
+    end
+
+    # 役割による拒否。待てば通るフェーズの拒否とは別のステータスで、
+    # 画面の組み立ては同じにする
+    context '主催者が自分の参加を動かそうとしたとき（403）' do
+      before do
+        log_in_as(exchange.owner)
+
+        travel_to('2026-08-04T00:00:00+09:00'.in_time_zone) do
+          delete invitation_participation_path(exchange.invite_token)
+        end
+      end
+
+      it '403 を返す' do
+        expect(response).to have_http_status(:forbidden)
+      end
+
+      it '同じ組み立てで、交換会ページへ戻る口がある' do
+        expect(main_text).to include('夏の交換会')
+        expect(response.parsed_body.css("main a[href='#{exchange_path(exchange)}']")).to be_present
+      end
+    end
+  end
 end

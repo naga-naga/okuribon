@@ -82,6 +82,16 @@ Rails.application.routes.draw do
     post '/dev/login/:user_id' => 'dev/sessions#create', as: :dev_login_as
   end
 
+  # エラー画面。例外を拾った exceptions_app がここへ流す（config/application.rb）。
+  # 直に開ける経路としても残す。development と test は
+  # consider_all_requests_local が真で例外の詳細ページが先に出るため、
+  # この経路を持たないと手元で見た目を確かめられない
+  # exceptions_app は元のリクエストの種別を問わず GET に書き換えて渡すため、
+  # ここも GET だけを受ければよい
+  Okuribon::RENDERED_ERROR_PATHS.each do |path|
+    get path => 'errors#show'
+  end
+
   # ログイン済みの着地は交換会一覧。未ログインなら require_login が
   # ログイン画面へ送り、認証を終えるとここへ戻ってくる
   root 'exchanges#index'

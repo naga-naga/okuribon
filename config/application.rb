@@ -17,6 +17,11 @@ require 'action_cable/engine'
 Bundler.require(*Rails.groups)
 
 module Okuribon
+  # アプリのルーティングを通して描くエラー画面。ここに挙げないステータスは
+  # public/*.html を返す。exceptions_app と config/routes.rb の両方が引く。
+  # 片方にだけ足すと、ルートの無いパスへ流れて本文の空の応答になる
+  RENDERED_ERROR_PATHS = ['/400', '/404', '/422'].freeze
+
   class Application < Rails::Application
     # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 8.1
@@ -39,6 +44,18 @@ module Okuribon
 
     # 画面もエラーメッセージも日本語だけを出す。ロケールの切り替えは持たない
     config.i18n.default_locale = :ja
+
+    # エラー画面のうち 4xx はアプリのルーティングへ流し、共通ヘッダーと
+    # デザイントークンを通して描く。5xx は Rails 既定のまま public/*.html を返す。
+    # 500 が出ている状況では DB もセッションも読めないことがあり、
+    # ビューを通すとエラー画面そのものが描けなくなる（docs/spec.md 6.10）
+    config.exceptions_app = lambda do |env|
+      if RENDERED_ERROR_PATHS.include?(env['PATH_INFO'])
+        Rails.application.routes.call(env)
+      else
+        ActionDispatch::PublicExceptions.new(Rails.public_path).call(env)
+      end
+    end
 
     # Don't generate system test files.
     config.generators.system_tests = nil

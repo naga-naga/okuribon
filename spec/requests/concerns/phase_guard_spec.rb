@@ -63,6 +63,10 @@ RSpec.describe PhaseGuard do
         get '/books/requested_at' => 'books_guard_test#show'
         post '/wishes' => 'wishes_guard_test#create'
       end
+
+      # 拒否の画面が戻り先として引く（app/views/errors/denied.html.erb）。
+      # 描き直したルートには本物の交換会が無いので、行き先だけを置く
+      resources :exchanges, only: [:show]
     end
   end
 

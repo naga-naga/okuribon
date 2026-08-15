@@ -34,9 +34,15 @@ class Exchange < ApplicationRecord
   }.freeze
 
   # フェーズが許さない書き込みを拒否するときに投げる。
-  # 応答の組み立ては ApplicationController の rescue_from に集約する
+  # 応答の組み立ては ApplicationController の rescue_from に集約する。
+  # 交換会を持たせるのは、拒否の画面が戻り先を出すため。コントローラの
+  # インスタンス変数から拾うと、変数を置き忘れた口だけ行き止まりになる
   class PhaseViolation < StandardError
+    attr_reader :exchange
+
     def initialize(exchange, operation, at:)
+      @exchange = exchange
+
       super(I18n.t('exchange.phase_violation',
                    phase: exchange.phase_name(at:),
                    operation: I18n.t(operation, scope: 'exchange.operations')))
@@ -47,8 +53,12 @@ class Exchange < ApplicationRecord
   # 理由は同じ「主催者は必ず参加者を兼ねる」なので、操作ごとに例外を分けない。
   # 応答の組み立ては ApplicationController の rescue_from に集約する
   class OwnerLocked < StandardError
-    def initialize(message = I18n.t('exchange.owner_locked'))
-      super
+    attr_reader :exchange
+
+    def initialize(exchange)
+      @exchange = exchange
+
+      super(I18n.t('exchange.owner_locked'))
     end
   end
 
@@ -229,7 +239,7 @@ class Exchange < ApplicationRecord
   def remove_participant!(user, at:)
     # 役割をフェーズより先に見る。主催者が抜けられないのは期間によらないため、
     # 順を逆にすると締切後に押したときだけ理由が入れ替わる
-    raise OwnerLocked if owner?(user)
+    raise OwnerLocked, self if owner?(user)
     raise PhaseViolation.new(self, :participation, at:) unless writable?(:participation, at:)
 
     participations.find_by(user:)&.destroy!

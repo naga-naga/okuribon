@@ -27,6 +27,11 @@ RSpec.describe 'Solid Queue の設定' do
       YAML.safe_load(ERB.new(Rails.root.join('config/recurring.yml').read).result, aliases: true)
     end
 
+    it '開発と本番の両方にある' do
+      expect(definitions['development']).to be_present
+      expect(definitions['production']).to be_present
+    end
+
     it 'すべて定期実行として読める' do
       definitions.each do |environment, tasks|
         tasks.each do |key, options|

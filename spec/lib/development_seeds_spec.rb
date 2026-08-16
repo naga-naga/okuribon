@@ -93,6 +93,15 @@ RSpec.describe DevelopmentSeeds do
       expect(idle).to be_present
     end
 
+    # 交換会一覧の空状態（docs/spec.md 6.6）と、招待URL着地画面の「これから参加する」
+    # （6.7）は、どこにも参加していない人としてしか見られない。主役はすべての
+    # 交換会に入っているので、主役として見ているかぎり一生出てこない
+    it 'どこにも参加していない利用者がいる' do
+      outsiders = User.all.reject { |user| user.exchanges.any? }
+
+      expect(outsiders).to be_present
+    end
+
     it '参加者が自分ひとりしかいない' do
       solo = Exchange.all.select { |exchange| exchange.participations.map(&:user) == [viewer] }
 

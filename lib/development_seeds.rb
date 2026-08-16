@@ -19,12 +19,16 @@ class DevelopmentSeeds
   # シナリオの主役。作ったデータは、この人として見ることを前提に組んである
   VIEWER_UID = 'you'
 
+  # どこにも参加していない利用者。招待URLを渡される前の人にあたる
+  OUTSIDER_UID = 'oda'
+
   CAST = {
     VIEWER_UID => 'あなた',
     'mochida' => '持田さくら',
     'kawai' => '川井たける',
     'shibata' => '芝田みのり',
     'aizawa' => '相沢ゆう',
+    OUTSIDER_UID => '小田はるか',
   }.freeze
 
   # タイトル、あらすじ、おすすめポイント。カードの見え方を確かめたいので、
@@ -91,6 +95,9 @@ class DevelopmentSeeds
     ActiveRecord::Base.transaction do
       @cast = CAST.to_h { |uid, display_name| [uid, find_or_create_user(uid, display_name)] }
 
+      # 小田はるかはどの交換会にも入れない。交換会一覧の空状態（docs/spec.md 6.6）と、
+      # 招待URL着地画面の「これから参加する」（6.7）は、参加していない人としてしか
+      # 見られない。/dev/login でこの人になり、登録期間の交換会の招待URLを開く
       solo_preparing
       registration_without_books
       registration_in_progress

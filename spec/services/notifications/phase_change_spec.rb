@@ -74,6 +74,18 @@ RSpec.describe Notifications::PhaseChange do
     end
   end
 
+  # リンクのホストが未設定のまま動かした状況（APP_HOST）。記録を先に進めてしまうと、
+  # 設定を直してもその交換会の変わり目は二度と出ない
+  context '本文を組めないとき' do
+    before { allow(Rails.application.routes).to receive(:default_url_options).and_return({}) }
+
+    it '記録を進めず、次の走査でやり直せる状態で落ちる' do
+      expect { deliver }.to raise_error(ArgumentError, /host/)
+
+      expect(exchange.reload.notified_phase).to eq('preparing')
+    end
+  end
+
   # 交換会が作られた直後の状態にあたる。始まりを知らせる変わり目ではない
   context '準備中のとき' do
     let!(:exchange) do

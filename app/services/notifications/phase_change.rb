@@ -29,10 +29,15 @@ module Notifications
     end
 
     def deliver
-      phase = claim
-      return if phase.nil? || NOTIFIABLE_PHASES.exclude?(phase)
+      phase = @exchange.phase(at: @at)
+      return if notified?(phase)
 
-      Notifications::DeliveryJob.perform_later(@exchange, message(phase))
+      # 本文を先に組む。組めないまま記録だけ進めると、原因を直しても
+      # その交換会の変わり目は二度と出ない。組めなければ落ちて、次の走査に任せる
+      text = message(phase) if NOTIFIABLE_PHASES.include?(phase)
+      return unless claim(phase)
+
+      Notifications::DeliveryJob.perform_later(@exchange, text) if text
     end
 
     private
@@ -41,15 +46,21 @@ module Notifications
     # 同じフェーズを二度は出さない。積む前に落ちれば取りこぼすが、
     # チャンネルへの投稿は取りこぼしより重複のほうが困る。
     # 飛ばしたフェーズは通らない。いまのフェーズをそのまま記録するので、
-    # 定期実行が止まっている間にまたいだ分はここで捨てる
-    def claim
+    # 定期実行が止まっている間にまたいだ分はここで捨てる。
+    # 本文を組んでいる間に主催者が日時を動かすかマッチングを実行すると、
+    # 行を押さえて読み直したフェーズが変わる。そのときは何もせず次の走査に任せる。
+    # 組んだ本文と記録するフェーズが食い違うほうが困る
+    def claim(phase)
       @exchange.with_lock do
-        phase = @exchange.phase(at: @at)
-        next nil if @exchange.notified_phase == phase.to_s
+        next false unless @exchange.phase(at: @at) == phase && !notified?(phase)
 
         @exchange.update!(notified_phase: phase)
-        phase
+        true
       end
+    end
+
+    def notified?(phase)
+      @exchange.notified_phase == phase.to_s
     end
 
     def message(phase)

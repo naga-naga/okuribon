@@ -19,6 +19,15 @@ RSpec.describe 'ログのパラメータフィルタ' do
     expect(filtered['invite_token']).not_to eq('secret-token')
   end
 
+  # Webhook URL は交換会の作成・編集フォームから送られる。パスにトークンが載っており、
+  # URL を知られた時点で誰でもそのチャンネルへ投稿できる
+  it 'Webhook URL をログに残さない' do
+    url = 'https://discord.com/api/webhooks/123456789012345678/token'
+    filtered = filter.filter('exchange' => { 'webhook_url' => url })
+
+    expect(filtered['exchange']['webhook_url']).not_to eq(url)
+  end
+
   # OAuth のコールバックは認可コードをクエリ文字列で受け取る。
   # 短命で1回しか使えないが、アクセストークンと交換できる資格情報には違いない
   it 'OAuth の認可コードをログに残さない' do

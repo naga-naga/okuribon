@@ -11,8 +11,7 @@ module Exchanges
     # @param participation [Participation] 見ている本人の参加。取得枠を出すのに要る
     # @param headline [String] すべきことの1行。交換会トップと同じ文言を並べる
     # @param participants_count [Integer] 参加人数
-    # @param active [Boolean] 書き込みが開いているか。見出しの下の一文が数える
-    Card = Data.define(:exchange, :participation, :headline, :participants_count, :active)
+    Card = Data.define(:exchange, :participation, :headline, :participants_count)
 
     # @param user [User] 見ている本人
     # @param at [Time] 基準時刻。既定値は置かない。呼ぶたびに現在時刻が進むと、
@@ -50,8 +49,7 @@ module Exchanges
 
       Card.new(exchange:, participation:,
                headline: Todo.new(participation, at: @at).call.headline,
-               participants_count: participants_counts.fetch(exchange.id, 0),
-               active: exchange.writable?(:book, at: @at) || exchange.writable?(:wish, at: @at))
+               participants_count: participants_counts.fetch(exchange.id, 0))
     end
 
     # 参加人数は1回の問い合わせでまとめて数える。カードごとに数えると、

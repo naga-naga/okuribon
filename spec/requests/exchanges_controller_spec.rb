@@ -205,8 +205,18 @@ RSpec.describe ExchangesController do
       expect(response.body).not_to include('2026年7月20日 00:00')
     end
 
-    # 交換会が何件あるかより先に、そのうち何件が自分の番かを知りたい
-    it '見出しの下に、いま動いている件数が出る' do
+    # 並びが日時の1本の軸であることは、カードを見ても分からない
+    it '見出しの下に並び順の説明が出る' do
+      registration_exchange
+
+      travel_to(now) { get exchanges_path }
+
+      expect(response.body).to include('あなたの交換会')
+      expect(response.body).to include('締切の近いものから並びます')
+    end
+
+    # 朱になるカードの枚数と一致する数字で、目で数えられるものを文字でも数えていた
+    it '動いている件数は出さない' do
       registration_exchange
       participating(registration_starts_at: '2026-08-20T00:00:00+09:00'.in_time_zone,
                     registration_ends_at: '2026-08-27T00:00:00+09:00'.in_time_zone,
@@ -214,20 +224,20 @@ RSpec.describe ExchangesController do
 
       travel_to(now) { get exchanges_path }
 
-      expect(response.body).to include('あなたの交換会')
-      # 件数は等幅の span で包むため、地の文とつなげて読む。準備中はまだ動いていない
-      expect(response.parsed_body.text).to include('いま動いているのは1つ')
+      # 件数は等幅の span で包んでいたので、地の文とつなげて読む
+      expect(response.parsed_body.text).not_to include('いま動いているのは')
     end
 
-    # 「いま動いているのは0つ」では、待てばよいのか誘われ待ちなのか読み取れない
-    it '動いているものが無ければ、その旨を出す' do
+    # 件数を出さないなら、0を出す場面も無い
+    it '動いているものが無くても、その言い分けを出さない' do
       participating(registration_starts_at: '2026-08-20T00:00:00+09:00'.in_time_zone,
                     registration_ends_at: '2026-08-27T00:00:00+09:00'.in_time_zone,
                     wish_ends_at: '2026-09-03T00:00:00+09:00'.in_time_zone)
 
       travel_to(now) { get exchanges_path }
 
-      expect(response.body).to include('いま動いている交換会はありません')
+      expect(response.body).not_to include('いま動いている交換会はありません')
+      expect(response.body).to include('締切の近いものから並びます')
     end
 
     # 何も無い画面を白紙で返すと、壊れているのか参加していないのか区別がつかない

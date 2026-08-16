@@ -31,6 +31,13 @@ class DevelopmentSeeds
     OUTSIDER_UID => '小田はるか',
   }.freeze
 
+  # 通知の送信先（docs/spec.md 11.）。交換会は Webhook URL を1つしか持たないので、
+  # Discord と Slack の両方の形式を手元で試すには、別々の交換会に入れる。
+  # ホストは本物にして送信側の見分けを試せるようにし、ID とトークンは偽物にする。
+  # 叩いても 404 が返るだけで、どこのチャンネルにも届かない
+  DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/000000000000000000/not-a-real-token'
+  SLACK_WEBHOOK_URL = 'https://hooks.slack.com/services/T00000000/B00000000/not-a-real-token'
+
   # タイトル、あらすじ、おすすめポイント。カードの見え方を確かめたいので、
   # 長さはばらつかせてある
   BOOKS = [
@@ -147,11 +154,12 @@ class DevelopmentSeeds
     exchange = build_exchange(
       'registration',
       name: '夏の文庫本交換会',
-      description: "Kindle のみ。1000円前後を目安に。\n（開発用データ: 登録期間のなかば。本が集まってきた状態）",
+      description: "Kindle のみ。1000円前後を目安に。\n（開発用データ: 登録期間のなかば。本が集まってきた状態。Discord の Webhook URL 入り）",
       owner: viewer,
       registration_starts_at: @at - 4.days,
       registration_ends_at: @at + 6.days,
-      wish_ends_at: @at + 13.days
+      wish_ends_at: @at + 13.days,
+      webhook_url: DISCORD_WEBHOOK_URL
     )
 
     you, sakura, takeru, minori =
@@ -272,11 +280,12 @@ class DevelopmentSeeds
     exchange = build_exchange(
       'awaiting',
       name: '梅雨の長編交換会',
-      description: "500ページ以上のものを1冊。\n（開発用データ: 希望提出が締め切られ、マッチングの実行待ち。自分が主催者）",
+      description: "500ページ以上のものを1冊。\n（開発用データ: マッチングの実行待ち。自分が主催者。Slack の Webhook URL 入り）",
       owner: viewer,
       registration_starts_at: @at - 21.days,
       registration_ends_at: @at - 11.days,
-      wish_ends_at: @at - 1.day
+      wish_ends_at: @at - 1.day,
+      webhook_url: SLACK_WEBHOOK_URL
     )
 
     you, sakura, takeru, yuu =

@@ -124,6 +124,15 @@ RSpec.describe DevelopmentSeeds do
       expect(deadline_within(6.hours, at:)).to be_present
     end
 
+    # 通知（#42）は Discord と Slack の両方の形式に対応する。交換会は Webhook URL を
+    # 1つしか持たないので、両方を手元で試すには形式ごとに1件ずつ要る
+    it 'Discord と Slack の Webhook URL がそれぞれ入っている' do
+      urls = Exchange.where.not(webhook_url: nil).pluck(:webhook_url)
+
+      expect(urls).to include(a_string_including('discord.com'),
+                              a_string_including('hooks.slack.com'))
+    end
+
     it '自分の本が返却された' do
       returned = Assignment.where(returned: true)
                            .select { |assignment| assignment.book.participation.user == viewer }

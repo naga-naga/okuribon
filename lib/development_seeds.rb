@@ -116,6 +116,7 @@ class DevelopmentSeeds
       published
       published_without_slots
       published_without_luck
+      published_without_books
     end
   end
 
@@ -397,6 +398,28 @@ class DevelopmentSeeds
     add_wishes(minori, [hers.last])
 
     run_matching(exchange, at: @at - 13.days)
+  end
+
+  # 誰も1冊も登録しないまま実行された交換会（docs/spec.md 9.）。
+  # 結果画面の全体の成立結果が、節ごと畳まれることを確かめるための状態（6.5）。
+  #
+  # マッチング実行サービスは冊数を条件にしていない。拒むのは「そのフェーズでは
+  # 書き込めない」ときだけなので（Matching::Execution）、0冊でも実行を通す。
+  # 割当が1つも作られず、抽選順だけが記録される
+  def published_without_books
+    exchange = build_exchange(
+      'published-without-books',
+      name: '写経の本を交換する会',
+      description: "声をかけたものの、集まりませんでした。\n（開発用データ: 結果公開。誰も1冊も登録しないまま実行された）",
+      owner: member('aizawa'),
+      registration_starts_at: @at - 46.days,
+      registration_ends_at: @at - 40.days,
+      wish_ends_at: @at - 34.days
+    )
+
+    join(exchange, [viewer, member('aizawa'), member('shibata')])
+
+    run_matching(exchange, at: @at - 33.days)
   end
 
   # 本番と同じ経路で割当を作る。返却を手で書くと本物と違う形のデータが残る。

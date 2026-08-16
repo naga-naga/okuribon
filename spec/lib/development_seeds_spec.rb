@@ -162,6 +162,14 @@ RSpec.describe DevelopmentSeeds do
       expect(unlucky).to be_present
     end
 
+    # 全体の成立結果は、並べるものが無ければ節ごと畳む（docs/spec.md 6.5）。
+    # 見出しと列名だけの表が残っていないかを、この交換会でしか確かめられない
+    it '本が1冊も登録されないまま実行された結果公開の交換会がある' do
+      empty = in_phase(:published, at:).select { |exchange| exchange.result_books.empty? }
+
+      expect(empty).to be_present
+    end
+
     # 受け取った本が1冊も無いと、結果画面もギフトコードの可視性も確かめられない。
     # 見えるかどうかは本人に訊く。作る側の意図ではなく、実際の可視性の規則で見る
     it '自分が受け取った本のギフトコードが開ける' do

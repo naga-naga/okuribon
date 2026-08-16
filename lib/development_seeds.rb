@@ -22,8 +22,15 @@ class DevelopmentSeeds
   # どこにも参加していない利用者。招待URLを渡される前の人にあたる
   OUTSIDER_UID = 'oda'
 
+  # 主役の名前は人名の形を借りつつ、ほかの5人には混ざらない姓にする。
+  #
+  # 「あなた」にはできない。交換会一覧は主催者が自分のとき、名前の代わりに
+  # 「あなた」と書く（docs/spec.md 6.6）。名前まで「あなた」だと、画面に出た
+  # 「あなた」が置き換えの結果なのか名前そのものなのかを見分けられない。
+  # ギフトコードの注記も「見えるのはあなたと あなた さんだけ」になる。
+  # かといって普通の人名にすると、今度はほかの参加者と見分けが付かなくなる
   CAST = {
-    VIEWER_UID => 'あなた',
+    VIEWER_UID => '開発たろう',
     'mochida' => '持田さくら',
     'kawai' => '川井たける',
     'shibata' => '芝田みのり',
@@ -441,10 +448,13 @@ class DevelopmentSeeds
     @cast.fetch(uid)
   end
 
+  # 名前は二度目以降も書き直す。build_exchange が交換会の属性を毎回上書きするのと
+  # 同じ扱いで、顔ぶれの名前を変えたときに、古い開発用データだけ前の名前で残らない
   def find_or_create_user(uid, display_name)
-    User.find_or_create_by!(provider: PROVIDER, uid:) do |user|
-      user.display_name = display_name
-    end
+    user = User.find_or_initialize_by(provider: PROVIDER, uid:)
+    user.update!(display_name:)
+
+    user
   end
 
   # 招待トークンをここで決め打ちにして、二度目以降も同じ交換会を引けるようにする。

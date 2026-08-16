@@ -31,7 +31,7 @@ RSpec.describe DevelopmentSeeds do
 
     # 一覧に並ぶのは参加している交換会だけ。参加していない交換会は、
     # 作ってあっても画面から辿り着けない
-    it '「あなた」がすべての交換会に参加していて一覧から辿れる' do
+    it '主役がすべての交換会に参加していて一覧から辿れる' do
       expect(viewer.exchanges).to match_array(Exchange.all)
     end
 
@@ -52,6 +52,15 @@ RSpec.describe DevelopmentSeeds do
 
       expect { seed(at: later) }
         .to change { deadline_within(6.hours, at: later) }.from(be_empty).to(be_present)
+    end
+
+    # 名前を変えたときに、古い開発用データだけ前の名前で残ると、画面に出ている
+    # 人が誰なのかを読み違える。交換会の属性を毎回上書きするのと同じ扱いにする
+    it '二度目以降は利用者の名前が書き直される' do
+      user = viewer
+      user.update!(display_name: '古い名前')
+
+      expect { seed(at:) }.to change { user.reload.display_name }.from('古い名前')
     end
 
     # 実行日時だけ据え置くと、ほかの日時が動いたぶんだけ結果公開の日付が取り残される

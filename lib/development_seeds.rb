@@ -101,6 +101,7 @@ class DevelopmentSeeds
       solo_preparing
       registration_without_books
       registration_in_progress
+      registration_imbalanced
       registration_closing_soon
       wish_in_progress
       wish_closing_soon
@@ -160,6 +161,30 @@ class DevelopmentSeeds
     add_books(sakura, 2)
     add_books(takeru, 1)
     add_books(minori, 2)
+  end
+
+  # 登録冊数の偏りの警告（docs/spec.md 6.8）。1人の登録冊数がほかの全員の合計を
+  # 超えると、超えた分は誰にも渡す先がなく登録者へ返る。5冊対2冊で3冊が返る。
+  #
+  # 警告が出るのは主催者管理画面で、本を登録できるあいだだけなので、
+  # 主役を主催者にしたうえで登録期間のなかばに置く。偏っているのは主役ではなく
+  # 持田で、主催者が他人の冊数を見て打つ手を考える場面にあたる
+  def registration_imbalanced
+    exchange = build_exchange(
+      'registration-imbalanced',
+      name: '写真集を持ち寄る会',
+      description: "大きい判のものは送料にご注意を。\n（開発用データ: 登録期間のなかば。持田さんに偏っていて、管理画面に警告が出る）",
+      owner: viewer,
+      registration_starts_at: @at - 3.days,
+      registration_ends_at: @at + 4.days,
+      wish_ends_at: @at + 11.days
+    )
+
+    you, sakura, takeru = join(exchange, [viewer, member('mochida'), member('kawai')])
+
+    add_books(sakura, 5)
+    add_books(you, 1)
+    add_books(takeru, 1)
   end
 
   # docs/spec.md 9.「期間の締切まで残り数時間」「自分がまだ1冊も登録していない」。

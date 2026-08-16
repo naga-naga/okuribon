@@ -108,6 +108,18 @@ RSpec.describe DevelopmentSeeds do
       expect(solo).to be_present
     end
 
+    # 警告は主催者管理画面にしか出ず、出るのは本を登録できるあいだだけ（6.8）。
+    # 主役が主催者でなければ画面自体を開けないので、そこまで含めて見る。
+    # 出るかどうかは画面と同じサービスに訊く
+    it '登録冊数の偏りの警告を主催者として見られる' do
+      warned = Exchange.all.select do |exchange|
+        exchange.owner == viewer && exchange.writable?(:book, at:) &&
+          Exchanges::BookImbalance.new(exchange.participations.with_counts).call.present?
+      end
+
+      expect(warned).to be_present
+    end
+
     it '期間の締切まで残り数時間' do
       expect(deadline_within(6.hours, at:)).to be_present
     end

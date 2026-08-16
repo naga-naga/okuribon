@@ -47,4 +47,9 @@ Rails.application.configure do
   # テスト DB に守るべきデータは無いので、鍵を秘密にする意味もない
   config.active_record.encryption.primary_key = 'test-primary-key'
   config.active_record.encryption.key_derivation_salt = 'test-key-derivation-salt'
+
+  # ジョブのアダプタは Rails が test 環境で :test にする。積むところで止まるので、
+  # 実行まで見たい spec だけが perform_enqueued_jobs で回す。
+  # Solid Queue のテーブルは、アダプタを差し替えた spec から触れるよう繋いでおく
+  config.solid_queue.connects_to = { database: { writing: :queue } }
 end

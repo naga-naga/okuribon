@@ -21,42 +21,59 @@ default: &default
 
 
 development:
-  <<: *default
-  database: okuribon_development
+  primary:
+    <<: *default
+    database: okuribon_development
 
-  # The specified database role being used to connect to PostgreSQL.
-  # To create additional roles in PostgreSQL see `$ createuser --help`.
-  # When left blank, PostgreSQL will use the default role. This is
-  # the same name as the operating system user running Rails.
-  #username: okuribon
+    # The specified database role being used to connect to PostgreSQL.
+    # To create additional roles in PostgreSQL see `$ createuser --help`.
+    # When left blank, PostgreSQL will use the default role. This is
+    # the same name as the operating system user running Rails.
+    #username: okuribon
 
-  # The password associated with the PostgreSQL role (username).
-  #password:
+    # The password associated with the PostgreSQL role (username).
+    #password:
 
-  # Connect on a TCP socket. Omitted by default since the client uses a
-  # domain socket that doesn't need configuration. Windows does not have
-  # domain sockets, so uncomment these lines.
-  #host: localhost
+    # Connect on a TCP socket. Omitted by default since the client uses a
+    # domain socket that doesn't need configuration. Windows does not have
+    # domain sockets, so uncomment these lines.
+    #host: localhost
 
-  # The TCP port the server listens on. Defaults to 5432.
-  # If your server runs on a different port number, change accordingly.
-  #port: 5432
+    # The TCP port the server listens on. Defaults to 5432.
+    # If your server runs on a different port number, change accordingly.
+    #port: 5432
 
-  # Schema search path. The server defaults to $user,public
-  #schema_search_path: myapp,sharedapp,public
+    # Schema search path. The server defaults to $user,public
+    #schema_search_path: myapp,sharedapp,public
 
-  # Minimum log levels, in increasing order:
-  #   debug5, debug4, debug3, debug2, debug1,
-  #   log, notice, warning, error, fatal, and panic
-  # Defaults to warning.
-  #min_messages: notice
+    # Minimum log levels, in increasing order:
+    #   debug5, debug4, debug3, debug2, debug1,
+    #   log, notice, warning, error, fatal, and panic
+    # Defaults to warning.
+    #min_messages: notice
+  # Solid Queue のテーブルは production と同じく別のデータベースに置く。
+  # 主のデータベースに相乗りさせると db/schema.rb にジョブのテーブルが並び、
+  # production だけ別という食い違いも残る。
+  #
+  # DATABASE_URL は primary という名前の設定にしかマージされないため、
+  # queue には接続先を url で明示する。database: は yml の値が優先され、
+  # DATABASE_URL が無い環境では url ごと落ちて default の既定に戻る。
+  queue: &queue
+    <<: *default
+    database: okuribon_development_queue
+    migrations_paths: db/queue_migrate
+    url: <%= ENV["DATABASE_URL"] %>
 
 # Warning: The database defined as "test" will be erased and
 # re-generated from your development database when you run "rake".
 # Do not set this db to the same as development or production.
 test:
-  <<: *default
-  database: okuribon_test
+  primary:
+    <<: *default
+    database: okuribon_test
+  queue:
+    <<: *queue
+    database: okuribon_test_queue
 
 # As with config/credentials.yml, you never want to store sensitive information,
 # like your database password, in your source code. If your source code is

@@ -12,10 +12,9 @@ module Notifications
   # Book#gift_code_for の1つに保つため（docs/spec.md 8.）、
   # 照合のために2つ目の復号経路を作ることになるほうが危うい
   class Webhook
-    # 送り先ごとの作法。いま違うのは本文を載せるキーだけだが、送り方（https の限定、
-    # 失敗の分け方、例外に URL を書かないこと）はどの送り先でも同じでなければ困る。
-    # 作法をここに切り出しておくと、リンクの記法が割れたとき（#43）に足す先が
-    # 分かれず、送り方の側を写さずに済む
+    # 送り先ごとの作法を、送り方から切り離して置く。送り方（https の限定、失敗の
+    # 分け方、例外に URL を書かないこと）はどの送り先でも同じでなければ困るため。
+    # リンクの記法が Discord と Slack で割れたとき（#43）に足す先もここになる
     Format = Data.define(:name, :body_key) do
       def payload(text)
         { body_key => text }
@@ -25,10 +24,9 @@ module Notifications
     DISCORD = Format.new(name: :discord, body_key: 'content')
     SLACK = Format.new(name: :slack, body_key: 'text')
 
-    # 対応するのは Discord と Slack だけ。ホストで見分ける。
     # 交換会は URL を1つしか持たないので、形式を選ばせる項目は要らない。
-    # 表を1枚にしておく。ホストと作法を別の表に置くと、送り先を足す人が
-    # 片方だけを直したときに、送信のときになって初めて落ちる
+    # ホストと作法を別の表に分けると、送り先を足す人が片方だけを直したときに、
+    # 起動時には何も起きず、送信のときになって初めて落ちる
     FORMATS = {
       'discord.com' => DISCORD,
       'discordapp.com' => DISCORD,
@@ -41,14 +39,10 @@ module Notifications
     READ_TIMEOUT = 5
 
     class Error < StandardError; end
-
-    # 時間をおけば通りうるもの。相手側の不調と、つながらないとき
     class TransientFailure < Error; end
-
-    # 待っても変わらないもの。Webhook が消された、失効した、URL が違う
     class PermanentFailure < Error; end
 
-    # 送り先が無ければ nil を返す。呼ぶ側それぞれに URL の有無と対応可否を書かせない。
+    # 呼ぶ側それぞれに URL の有無と対応可否を書かせない。
     # 未設定は異常ではない。通知は交換会ごとの任意の設定にあたる
     def self.for(exchange)
       uri = parse(exchange.webhook_url)

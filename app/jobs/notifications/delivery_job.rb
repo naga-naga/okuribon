@@ -12,8 +12,8 @@ module Notifications
   # ギフトコードと招待トークンは載せない（docs/spec.md 11.）。本文にそれらを
   # 混ぜないのは、文面を組む側（#43 #44）の責任にあたる
   class DeliveryJob < ApplicationJob
-    # 諦めるまでに試す回数。相手の不調が数分で直ることを見込む。
-    # 通知が数分遅れて困るものではない一方、何時間も積み直しても届かないものは届かない
+    # 相手の不調が数分で直ることを見込む。通知が数分遅れて困るものではない一方、
+    # 何時間も積み直しても届かないものは届かない
     MAX_ATTEMPTS = 5
 
     retry_on Webhook::TransientFailure, attempts: MAX_ATTEMPTS, wait: :polynomially_longer do |job, error|
@@ -29,7 +29,6 @@ module Notifications
     discard_on ActiveJob::DeserializationError
 
     def perform(exchange, text)
-      # 送り先が無ければ何もしない。未設定と非対応ホストの判定は Webhook.for が持つ
       Webhook.for(exchange)&.deliver(text)
     end
 

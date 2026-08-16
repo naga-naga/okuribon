@@ -20,6 +20,14 @@ bin/dev
 `bin/dev` は Rails サーバーと Tailwind の watch を同時に動かす（`Procfile.dev`）。
 http://localhost:3000 で開く。
 
+ジョブは `SOLID_QUEUE_IN_PUMA=true` で Puma の中の Solid Queue が実行する。
+`bin/rails server` を直に叩くとワーカーが立たず、積んだジョブは待ったままになる。
+積んだジョブが走るところは、たとえば次で確かめられる。
+
+```
+bin/rails runner 'SolidQueue::RecurringJob.perform_later("Rails.logger.info(%q(job ran))")'
+```
+
 OAuth のクライアント ID と秘密鍵は credentials に置く。未設定でもログイン画面までは開ける。
 
 ```

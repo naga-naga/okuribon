@@ -12,16 +12,28 @@ module Notifications
   # Book#gift_code_for の1つに保つため（docs/spec.md 8.）、
   # 照合のために2つ目の復号経路を作ることになるほうが危うい
   class Webhook
-    # 対応するのは Discord と Slack だけ。ホストで見分ける。
-    # 交換会は URL を1つしか持たないので、形式を選ばせる項目は要らない
-    FORMATS = {
-      'discord.com' => :discord,
-      'discordapp.com' => :discord,
-      'hooks.slack.com' => :slack,
-    }.freeze
+    # 送り先ごとの作法。いま違うのは本文を載せるキーだけだが、送り方（https の限定、
+    # 失敗の分け方、例外に URL を書かないこと）はどの送り先でも同じでなければ困る。
+    # 作法をここに切り出しておくと、リンクの記法が割れたとき（#43）に足す先が
+    # 分かれず、送り方の側を写さずに済む
+    Format = Data.define(:name, :body_key) do
+      def payload(text)
+        { body_key => text }
+      end
+    end
 
-    # 本文を載せるキー。Discord と Slack の違いはここだけ
-    BODY_KEYS = { discord: 'content', slack: 'text' }.freeze
+    DISCORD = Format.new(name: :discord, body_key: 'content')
+    SLACK = Format.new(name: :slack, body_key: 'text')
+
+    # 対応するのは Discord と Slack だけ。ホストで見分ける。
+    # 交換会は URL を1つしか持たないので、形式を選ばせる項目は要らない。
+    # 表を1枚にしておく。ホストと作法を別の表に置くと、送り先を足す人が
+    # 片方だけを直したときに、送信のときになって初めて落ちる
+    FORMATS = {
+      'discord.com' => DISCORD,
+      'discordapp.com' => DISCORD,
+      'hooks.slack.com' => SLACK,
+    }.freeze
 
     # 通知が遅れて困るものではない。相手が黙り込んだときに、
     # ジョブのスレッドを長く握らせない
@@ -78,7 +90,7 @@ module Notifications
     def post(text)
       request = Net::HTTP::Post.new(@uri)
       request['Content-Type'] = 'application/json'
-      request.body = { BODY_KEYS.fetch(@format) => text }.to_json
+      request.body = @format.payload(text).to_json
 
       http.request(request)
     rescue Timeout::Error, IOError, SystemCallError, OpenSSL::SSL::SSLError, SocketError => e

@@ -10,13 +10,13 @@ RSpec.describe Notifications::Webhook do
     it 'Discord の URL なら Discord の形式を選ぶ' do
       exchange = build(:exchange, webhook_url: discord_url)
 
-      expect(described_class.for(exchange).format).to eq(:discord)
+      expect(described_class.for(exchange).format.name).to eq(:discord)
     end
 
     it 'Slack の URL なら Slack の形式を選ぶ' do
       exchange = build(:exchange, webhook_url: slack_url)
 
-      expect(described_class.for(exchange).format).to eq(:slack)
+      expect(described_class.for(exchange).format.name).to eq(:slack)
     end
 
     # 通知は交換会ごとの任意の設定なので、未設定は異常ではない。
@@ -50,7 +50,7 @@ RSpec.describe Notifications::Webhook do
     # 形式を手元で見分けられることが、そうしてある理由そのものにあたる
     it '開発用データの URL を見分けられる' do
       formats = [DevelopmentSeeds::DISCORD_WEBHOOK_URL, DevelopmentSeeds::SLACK_WEBHOOK_URL]
-                .map { described_class.for(build(:exchange, webhook_url: it))&.format }
+                .map { described_class.for(build(:exchange, webhook_url: it))&.format&.name }
 
       expect(formats).to eq([:discord, :slack])
     end

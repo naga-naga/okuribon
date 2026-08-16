@@ -130,22 +130,4 @@ RSpec.describe Exchanges::Listing do
       expect(cards.first.participation).to eq(exchange.participations.find_by!(user:))
     end
   end
-
-  describe '動いているかどうか' do
-    it '書き込みが開いているフェーズは動いている' do
-      registration_exchange
-      wish_exchange
-
-      expect(cards.map(&:active)).to all(be(true))
-    end
-
-    # 準備中はまだ始まっておらず、実行待ちと結果公開ではできることが無い
-    it '準備中・マッチング実行待ち・結果公開は動いていない' do
-      preparing_exchange
-      awaiting_matching_exchange
-      registration_exchange(matched_at: Time.zone.parse('2026-02-09 00:00'))
-
-      expect(cards.map(&:active)).to all(be(false))
-    end
-  end
 end

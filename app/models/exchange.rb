@@ -87,6 +87,12 @@ class Exchange < ApplicationRecord
 
   after_initialize :assign_generated_attributes, if: :new_record?
 
+  # フェーズの変わり目に通知するため、切り替わる時刻を予約する。
+  # 日時を書き込む口は作成と編集の2つあるが、どちらも保存を通るのでここに集める。
+  # 口ごとに積むと、あとから足された経路だけ通知が来ない状態に気付けない。
+  # commit のあとに積むのは、巻き戻った日時の予約を残さないため
+  after_commit :reserve_phase_notifications, if: :saved_change_to_phase_boundaries?
+
   # 希望提出期間は登録期間の終了と同時に始まる。
   # カラムに分けると等値をバリデーションでしか守れず二重管理になるため、導出する
   def wish_starts_at
@@ -260,6 +266,18 @@ class Exchange < ApplicationRecord
   end
 
   private
+
+  def saved_change_to_phase_boundaries?
+    changed_phase_boundaries.any?
+  end
+
+  def reserve_phase_notifications
+    Notifications::PhaseCheckJob.reserve(self, changed_phase_boundaries)
+  end
+
+  def changed_phase_boundaries
+    Notifications::PhaseCheckJob::BOUNDARY_COLUMNS.select { saved_change_to_attribute?(it) }
+  end
 
   # 招待トークンと乱数シードは交換会の作成時に発行する。
   # とくにシードは、マッチングの実行時に生成すると結果を作り直せてしまう

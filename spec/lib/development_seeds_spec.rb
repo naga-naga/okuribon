@@ -31,7 +31,7 @@ RSpec.describe DevelopmentSeeds do
 
     # 一覧に並ぶのは参加している交換会だけ。参加していない交換会は、
     # 作ってあっても画面から辿り着けない
-    it '「あなた」がすべての交換会に参加していて一覧から辿れる' do
+    it '主役がすべての交換会に参加していて一覧から辿れる' do
       expect(viewer.exchanges).to match_array(Exchange.all)
     end
 
@@ -52,6 +52,15 @@ RSpec.describe DevelopmentSeeds do
 
       expect { seed(at: later) }
         .to change { deadline_within(6.hours, at: later) }.from(be_empty).to(be_present)
+    end
+
+    # 名前を変えたときに、古い開発用データだけ前の名前で残ると、画面に出ている
+    # 人が誰なのかを読み違える。交換会の属性を毎回上書きするのと同じ扱いにする
+    it '二度目以降は利用者の名前が書き直される' do
+      user = viewer
+      user.update!(display_name: '古い名前')
+
+      expect { seed(at:) }.to change { user.reload.display_name }.from('古い名前')
     end
 
     # 実行日時だけ据え置くと、ほかの日時が動いたぶんだけ結果公開の日付が取り残される
@@ -93,14 +102,44 @@ RSpec.describe DevelopmentSeeds do
       expect(idle).to be_present
     end
 
+    # 交換会一覧の空状態（docs/spec.md 6.6）と、招待URL着地画面の「これから参加する」
+    # （6.7）は、どこにも参加していない人としてしか見られない。主役はすべての
+    # 交換会に入っているので、主役として見ているかぎり一生出てこない
+    it 'どこにも参加していない利用者がいる' do
+      outsiders = User.all.reject { |user| user.exchanges.any? }
+
+      expect(outsiders).to be_present
+    end
+
     it '参加者が自分ひとりしかいない' do
       solo = Exchange.all.select { |exchange| exchange.participations.map(&:user) == [viewer] }
 
       expect(solo).to be_present
     end
 
+    # 警告は主催者管理画面にしか出ず、出るのは本を登録できるあいだだけ（6.8）。
+    # 主役が主催者でなければ画面自体を開けないので、そこまで含めて見る。
+    # 出るかどうかは画面と同じサービスに訊く
+    it '登録冊数の偏りの警告を主催者として見られる' do
+      warned = Exchange.all.select do |exchange|
+        exchange.owner == viewer && exchange.writable?(:book, at:) &&
+          Exchanges::BookImbalance.new(exchange.participations.with_counts).call.present?
+      end
+
+      expect(warned).to be_present
+    end
+
     it '期間の締切まで残り数時間' do
       expect(deadline_within(6.hours, at:)).to be_present
+    end
+
+    # 通知（#42）は Discord と Slack の両方の形式に対応する。交換会は Webhook URL を
+    # 1つしか持たないので、両方を手元で試すには形式ごとに1件ずつ要る
+    it 'Discord と Slack の Webhook URL がそれぞれ入っている' do
+      urls = Exchange.where.not(webhook_url: nil).pluck(:webhook_url)
+
+      expect(urls).to include(a_string_including('discord.com'),
+                              a_string_including('hooks.slack.com'))
     end
 
     it '自分の本が返却された' do
@@ -108,6 +147,36 @@ RSpec.describe DevelopmentSeeds do
                            .select { |assignment| assignment.book.participation.user == viewer }
 
       expect(returned).to be_present
+    end
+
+    # 受け取りが0冊のとき、結果画面は枠が無かったのか回ってこなかったのかを
+    # 言い分ける（docs/spec.md 6.5）。言い分けを見るための状態なので、
+    # どちらも主役が0冊であること。他人として見ても文面は出ない
+    it '取得枠が0のまま結果公開を迎えた交換会がある' do
+      no_slots = published_participations_of(viewer, at:).select do |participation|
+        participation.books.empty? && participation.received_assignments.empty?
+      end
+
+      expect(no_slots).to be_present
+    end
+
+    # もう片方の言い分け。枠はあったのに割り当てられる本が残らなかった場合。
+    # 総冊数と総取得枠は必ず等しいので、枠が空いたまま終わるには、
+    # 残った本が自分のものでなければならない。返却が伴うのは避けられない
+    it '取得枠はあったのに1冊も回ってこなかった交換会がある' do
+      unlucky = published_participations_of(viewer, at:).select do |participation|
+        participation.books.any? && participation.received_assignments.empty?
+      end
+
+      expect(unlucky).to be_present
+    end
+
+    # 全体の成立結果は、並べるものが無ければ節ごと畳む（docs/spec.md 6.5）。
+    # 見出しと列名だけの表が残っていないかを、この交換会でしか確かめられない
+    it '本が1冊も登録されないまま実行された結果公開の交換会がある' do
+      empty = in_phase(:published, at:).select { |exchange| exchange.result_books.empty? }
+
+      expect(empty).to be_present
     end
 
     # 受け取った本が1冊も無いと、結果画面もギフトコードの可視性も確かめられない。
@@ -155,6 +224,11 @@ RSpec.describe DevelopmentSeeds do
 
   def participation_of(user, exchange)
     exchange.participations.find_by!(user:)
+  end
+
+  # 結果公開を迎えた交換会での、その人の参加。結果画面が見るものはここから引ける
+  def published_participations_of(user, at:)
+    in_phase(:published, at:).map { |exchange| participation_of(user, exchange) }
   end
 
   # 次の締切が指定した時間内に迫っている交換会

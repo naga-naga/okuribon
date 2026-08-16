@@ -4,7 +4,7 @@
 #
 # 現在時刻を差し替える仕組みは持たないため（docs/spec.md 11.）、見たい状況は
 # 基準時刻からの相対で日時を決めて作る。交換会1つにシナリオ1つを持たせ、
-# 何を見るための交換会かは概要に書いてある。
+# 何を見るための交換会かは名前が言う。名前に入り切らない細部は概要の末尾に書く。
 #
 # 二度目以降は日時が新しい基準時刻から数え直される。「締切まで残り数時間」は
 # 放置すれば次のフェーズへ移るので、見たくなったらもう一度通す。
@@ -19,13 +19,31 @@ class DevelopmentSeeds
   # シナリオの主役。作ったデータは、この人として見ることを前提に組んである
   VIEWER_UID = 'you'
 
+  # どこにも参加していない利用者。招待URLを渡される前の人にあたる
+  OUTSIDER_UID = 'oda'
+
+  # 主役の名前は人名の形を借りつつ、ほかの5人には混ざらない姓にする。
+  #
+  # 「あなた」にはできない。交換会一覧は主催者が自分のとき、名前の代わりに
+  # 「あなた」と書く（docs/spec.md 6.6）。名前まで「あなた」だと、画面に出た
+  # 「あなた」が置き換えの結果なのか名前そのものなのかを見分けられない。
+  # ギフトコードの注記も「見えるのはあなたと あなた さんだけ」になる。
+  # かといって普通の人名にすると、今度はほかの参加者と見分けが付かなくなる
   CAST = {
-    VIEWER_UID => 'あなた',
+    VIEWER_UID => '開発たろう',
     'mochida' => '持田さくら',
     'kawai' => '川井たける',
     'shibata' => '芝田みのり',
     'aizawa' => '相沢ゆう',
+    OUTSIDER_UID => '小田はるか',
   }.freeze
+
+  # 通知の送信先（docs/spec.md 11.）。交換会は Webhook URL を1つしか持たないので、
+  # Discord と Slack の両方の形式を手元で試すには、別々の交換会に入れる。
+  # ホストは本物にして送信側の見分けを試せるようにし、ID とトークンは偽物にする。
+  # 叩いても 404 が返るだけで、どこのチャンネルにも届かない
+  DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/000000000000000000/not-a-real-token'
+  SLACK_WEBHOOK_URL = 'https://hooks.slack.com/services/T00000000/B00000000/not-a-real-token'
 
   # タイトル、あらすじ、おすすめポイント。カードの見え方を確かめたいので、
   # 長さはばらつかせてある
@@ -91,14 +109,21 @@ class DevelopmentSeeds
     ActiveRecord::Base.transaction do
       @cast = CAST.to_h { |uid, display_name| [uid, find_or_create_user(uid, display_name)] }
 
+      # 小田はるかはどの交換会にも入れない。交換会一覧の空状態（docs/spec.md 6.6）と、
+      # 招待URL着地画面の「これから参加する」（6.7）は、参加していない人としてしか
+      # 見られない。/dev/login でこの人になり、登録期間の交換会の招待URLを開く
       solo_preparing
       registration_without_books
       registration_in_progress
+      registration_imbalanced
       registration_closing_soon
       wish_in_progress
       wish_closing_soon
       awaiting_matching
       published
+      published_without_slots
+      published_without_luck
+      published_without_books
     end
   end
 
@@ -109,8 +134,8 @@ class DevelopmentSeeds
   def solo_preparing
     build_exchange(
       'solo-preparing',
-      name: '冬に読む一冊の交換会',
-      description: "年末に集まる分です。詳細は追って。\n（開発用データ: 準備中。参加者は自分ひとりで、本はまだ登録できない）",
+      name: 'ひとりだけの準備中の交換会',
+      description: "年末に集まる分です。詳細は追って。\n（開発用データ: 登録期間の開始まで3日。自分が主催で、本はまだ登録できない）",
       owner: viewer,
       registration_starts_at: @at + 3.days,
       registration_ends_at: @at + 10.days,
@@ -123,8 +148,8 @@ class DevelopmentSeeds
   def registration_without_books
     exchange = build_exchange(
       'registration-empty',
-      name: '春のミステリ交換会',
-      description: "ミステリなら何でも。既読でも構いません。\n（開発用データ: 登録期間の初日。まだ誰も1冊も登録していない）",
+      name: '本が1冊もない交換会',
+      description: "ミステリなら何でも。既読でも構いません。\n（開発用データ: 登録期間の初日。4人いるが、まだ誰も登録していない）",
       owner: member('mochida'),
       registration_starts_at: @at - 2.hours,
       registration_ends_at: @at + 13.days,
@@ -138,12 +163,13 @@ class DevelopmentSeeds
   def registration_in_progress
     exchange = build_exchange(
       'registration',
-      name: '夏の文庫本交換会',
-      description: "Kindle のみ。1000円前後を目安に。\n（開発用データ: 登録期間のなかば。本が集まってきた状態）",
+      name: '登録期間のふつうの交換会',
+      description: "Kindle のみ。1000円前後を目安に。\n（開発用データ: 本が集まってきた標準形。自分が主催。Discord の Webhook URL 入り）",
       owner: viewer,
       registration_starts_at: @at - 4.days,
       registration_ends_at: @at + 6.days,
-      wish_ends_at: @at + 13.days
+      wish_ends_at: @at + 13.days,
+      webhook_url: DISCORD_WEBHOOK_URL
     )
 
     you, sakura, takeru, minori =
@@ -155,13 +181,37 @@ class DevelopmentSeeds
     add_books(minori, 2)
   end
 
+  # 登録冊数の偏りの警告（docs/spec.md 6.8）。1人の登録冊数がほかの全員の合計を
+  # 超えると、超えた分は誰にも渡す先がなく登録者へ返る。5冊対2冊で3冊が返る。
+  #
+  # 警告が出るのは主催者管理画面で、本を登録できるあいだだけなので、
+  # 主役を主催者にしたうえで登録期間のなかばに置く。偏っているのは主役ではなく
+  # 持田で、主催者が他人の冊数を見て打つ手を考える場面にあたる
+  def registration_imbalanced
+    exchange = build_exchange(
+      'registration-imbalanced',
+      name: '登録が偏っている交換会',
+      description: "大きい判のものは送料にご注意を。\n（開発用データ: 持田さんが5冊、ほかが合わせて2冊。自分が主催で、管理画面に警告が出る）",
+      owner: viewer,
+      registration_starts_at: @at - 3.days,
+      registration_ends_at: @at + 4.days,
+      wish_ends_at: @at + 11.days
+    )
+
+    you, sakura, takeru = join(exchange, [viewer, member('mochida'), member('kawai')])
+
+    add_books(sakura, 5)
+    add_books(you, 1)
+    add_books(takeru, 1)
+  end
+
   # docs/spec.md 9.「期間の締切まで残り数時間」「自分がまだ1冊も登録していない」。
   # 取得枠は登録冊数と同数なので、このまま締切を迎えると1冊も受け取れない
   def registration_closing_soon
     exchange = build_exchange(
       'registration-closing',
-      name: '積読を減らす会',
-      description: "読まないまま持っている本を出しましょう。\n（開発用データ: 登録の締切まで5時間20分。自分だけまだ登録していない）",
+      name: '登録の締切が迫っている交換会',
+      description: "読まないまま持っている本を出しましょう。\n（開発用データ: 締切まで5時間20分。自分だけまだ登録していない）",
       owner: member('kawai'),
       registration_starts_at: @at - 6.days,
       # 端数のある残り時間にしておく。残り24時間を切ると分まで出す想定なので、
@@ -182,8 +232,8 @@ class DevelopmentSeeds
   def wish_in_progress
     exchange = build_exchange(
       'wish',
-      name: '秋の翻訳小説交換会',
-      description: "翻訳ものに限ります。国は問いません。\n（開発用データ: 希望提出期間。自分の希望を4冊まで並べてある）",
+      name: '希望提出期間のふつうの交換会',
+      description: "翻訳ものに限ります。国は問いません。\n（開発用データ: 自分の希望を4冊まで並べてある標準形）",
       owner: member('mochida'),
       registration_starts_at: @at - 12.days,
       registration_ends_at: @at - 2.days,
@@ -209,8 +259,8 @@ class DevelopmentSeeds
   def wish_closing_soon
     exchange = build_exchange(
       'wish-closing',
-      name: '技術書もちより会',
-      description: "去年出た本を中心に。\n（開発用データ: 希望提出の締切まで3時間8分。自分の希望リストは空のまま）",
+      name: '希望を出さないまま締切が迫る交換会',
+      description: "去年出た本を中心に。\n（開発用データ: 締切まで3時間8分。本が12冊並び、自分の希望リストだけ空）",
       owner: member('shibata'),
       registration_starts_at: @at - 14.days,
       registration_ends_at: @at - 4.days,
@@ -239,12 +289,13 @@ class DevelopmentSeeds
   def awaiting_matching
     exchange = build_exchange(
       'awaiting',
-      name: '梅雨の長編交換会',
-      description: "500ページ以上のものを1冊。\n（開発用データ: 希望提出が締め切られ、マッチングの実行待ち。自分が主催者）",
+      name: 'マッチングの実行を待つ交換会',
+      description: "500ページ以上のものを1冊。\n（開発用データ: 希望提出は締め切り済み。自分が主催。Slack の Webhook URL 入り）",
       owner: viewer,
       registration_starts_at: @at - 21.days,
       registration_ends_at: @at - 11.days,
-      wish_ends_at: @at - 1.day
+      wish_ends_at: @at - 1.day,
+      webhook_url: SLACK_WEBHOOK_URL
     )
 
     you, sakura, takeru, yuu =
@@ -270,8 +321,8 @@ class DevelopmentSeeds
   def published
     exchange = build_exchange(
       'published',
-      name: '新年度の実用書交換会',
-      description: "仕事で使えるものを。\n（開発用データ: 結果公開。自分は2冊受け取り、出した本のうち1冊が返却されている）",
+      name: '結果公開のふつうの交換会',
+      description: "仕事で使えるものを。\n（開発用データ: 自分は2冊受け取り、出した本のうち1冊が返却されている）",
       owner: member('mochida'),
       registration_starts_at: @at - 40.days,
       registration_ends_at: @at - 30.days,
@@ -290,6 +341,92 @@ class DevelopmentSeeds
 
     # 実行日時はここで直に書かない。マッチングを通した結果として記録させる
     run_matching(exchange, at: @at - 19.days)
+  end
+
+  # 受け取りが0冊で、取得枠が0だった場合（docs/spec.md 6.5）。
+  # 登録期間に1冊も登録しなければ取得枠は0になり、受け取る本が無い。
+  # 言い分けの文面は主役にしか出ないので、0冊なのは主役でなければならない
+  def published_without_slots
+    exchange = build_exchange(
+      'published-without-slots',
+      name: '取得枠が0だった交換会',
+      description: "作ったことのないものが載っている本を。\n（開発用データ: 自分は1冊も登録しなかったので、受け取る本がない）",
+      owner: member('mochida'),
+      registration_starts_at: @at - 34.days,
+      registration_ends_at: @at - 26.days,
+      wish_ends_at: @at - 18.days
+    )
+
+    _you, sakura, takeru, minori =
+      join(exchange, [viewer, member('mochida'), member('kawai'), member('shibata')])
+
+    hers = add_books(sakura, 2)
+    his = add_books(takeru, 2)
+    theirs = add_books(minori, 1)
+
+    # 主役は登録も希望もしていない。取得枠が0なので、希望を出しても受け取れない
+    add_wishes(sakura, his + theirs)
+    add_wishes(takeru, hers + theirs)
+    add_wishes(minori, hers + his)
+
+    run_matching(exchange, at: @at - 17.days)
+  end
+
+  # 受け取りが0冊で、枠はあったのに回ってこなかった場合（docs/spec.md 6.5）。
+  #
+  # 総冊数と総取得枠は必ず等しいので、主役の枠が空いたまま終わるには、余った本が
+  # 主役のものでなければならない。ほかの人の本が余れば、余り物の割当が空いた枠へ
+  # 回してしまう。そのため、この状態には自分の本の返却が必ず伴う。
+  #
+  # 主役の本を誰も希望せず、ほかの4冊がドラフトで出払う形にする。希望リストを
+  # 互いに重ならないように配ってあるのは、抽選順がどう出ても同じ結果にするため。
+  # 重ねると、取り合いに負けた人の枠が空いて、余り物が主役へ回ることがある
+  def published_without_luck
+    exchange = build_exchange(
+      'published-without-luck',
+      name: '本が回ってこなかった交換会',
+      description: "行ったことのない土地の本を。\n（開発用データ: 取得枠は1冊あったのに回ってこず、出した本が戻ってきた）",
+      owner: member('kawai'),
+      registration_starts_at: @at - 28.days,
+      registration_ends_at: @at - 21.days,
+      wish_ends_at: @at - 14.days
+    )
+
+    you, takeru, sakura, minori =
+      join(exchange, [viewer, member('kawai'), member('mochida'), member('shibata')])
+
+    add_books(you, 1)
+    hers = add_books(sakura, 2)
+    his = add_books(takeru, 2)
+    theirs = add_books(minori, 1)
+
+    add_wishes(sakura, his)
+    add_wishes(takeru, [hers.first, *theirs])
+    add_wishes(minori, [hers.last])
+
+    run_matching(exchange, at: @at - 13.days)
+  end
+
+  # 誰も1冊も登録しないまま実行された交換会（docs/spec.md 9.）。
+  # 結果画面の全体の成立結果が、節ごと畳まれることを確かめるための状態（6.5）。
+  #
+  # マッチング実行サービスは冊数を条件にしていない。拒むのは「そのフェーズでは
+  # 書き込めない」ときだけなので（Matching::Execution）、0冊でも実行を通す。
+  # 割当が1つも作られず、抽選順だけが記録される
+  def published_without_books
+    exchange = build_exchange(
+      'published-without-books',
+      name: '本が0冊のまま実行された交換会',
+      description: "声をかけたものの、集まりませんでした。\n（開発用データ: 全体の結果が節ごと畳まれる。誰も1冊も登録しなかった）",
+      owner: member('aizawa'),
+      registration_starts_at: @at - 46.days,
+      registration_ends_at: @at - 40.days,
+      wish_ends_at: @at - 34.days
+    )
+
+    join(exchange, [viewer, member('aizawa'), member('shibata')])
+
+    run_matching(exchange, at: @at - 33.days)
   end
 
   # 本番と同じ経路で割当を作る。返却を手で書くと本物と違う形のデータが残る。
@@ -311,10 +448,13 @@ class DevelopmentSeeds
     @cast.fetch(uid)
   end
 
+  # 名前は二度目以降も書き直す。build_exchange が交換会の属性を毎回上書きするのと
+  # 同じ扱いで、顔ぶれの名前を変えたときに、古い開発用データだけ前の名前で残らない
   def find_or_create_user(uid, display_name)
-    User.find_or_create_by!(provider: PROVIDER, uid:) do |user|
-      user.display_name = display_name
-    end
+    user = User.find_or_initialize_by(provider: PROVIDER, uid:)
+    user.update!(display_name:)
+
+    user
   end
 
   # 招待トークンをここで決め打ちにして、二度目以降も同じ交換会を引けるようにする。

@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Notifications::PhaseCheckJob do
+RSpec.describe Notifications::PhaseChangeJob do
   include ActiveJob::TestHelper
 
   # 登録期間に入ったまま、まだ知らせていない交換会

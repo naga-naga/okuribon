@@ -9,6 +9,14 @@ class Exchange < ApplicationRecord
   # フェーズは日時から導出する。状態カラムは持たない
   PHASES = [:preparing, :registration, :wish, :awaiting_matching, :published].freeze
 
+  # フェーズが切り替わりうる時刻を持つカラム。#phase が読む日時のすべてでもある。
+  # 通知はこの時刻を予約して確かめに行くので、#phase が読む日時を増やしたら
+  # ここにも足す。足し忘れると、そのフェーズへの変わり目だけ通知が来ない。
+  # マッチング実行日時が入っているのは、結果公開だけが日時では決まらないため
+  PHASE_BOUNDARIES = [
+    :registration_starts_at, :registration_ends_at, :wish_ends_at, :matched_at,
+  ].freeze
+
   # 操作ごとに書き込みを許すフェーズ。spec.md 4. フェーズの表と補足に対応する。
   # 結果公開はどの操作も許さないため、値のどこにも現れない
   WRITABLE_PHASES = {
@@ -272,11 +280,13 @@ class Exchange < ApplicationRecord
   end
 
   def reserve_phase_notifications
-    Notifications::PhaseCheckJob.reserve(self, changed_phase_boundaries)
+    Notifications::PhaseChangeJob.reserve(self, at: changed_phase_boundaries)
   end
 
+  # 動いた境目の時刻だけを返す。全部を渡すと、日時を1つ動かすたびに
+  # 動かしていない境目の予約まで増える
   def changed_phase_boundaries
-    Notifications::PhaseCheckJob::BOUNDARY_COLUMNS.select { saved_change_to_attribute?(it) }
+    PHASE_BOUNDARIES.filter_map { self[it] if saved_change_to_attribute?(it) }
   end
 
   # 招待トークンと乱数シードは交換会の作成時に発行する。

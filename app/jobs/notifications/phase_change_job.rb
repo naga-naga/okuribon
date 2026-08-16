@@ -10,23 +10,12 @@ module Notifications
   # 古い予約が残っても、Notifications::PhaseChange が実行時にフェーズを導出して
   # 記録と突き合わせるので、空振りするか正しい通知を出すかのどちらかにしかならない。
   # 予約は「この時刻に確認しに来て」という合図で、正しさはこのジョブの側が持つ
-  class PhaseCheckJob < ApplicationJob
-    # 予約する時刻を持つカラム。マッチング実行日時が入っているのは、結果公開だけが
-    # 日時で決まらないため。主催者がボタンを押した時刻はもう過ぎているので、
-    # 予約した時点で待たずに走る
-    BOUNDARY_COLUMNS = [
-      :registration_starts_at, :registration_ends_at, :wish_ends_at, :matched_at,
-    ].freeze
-
-    # 変わった時刻だけを予約する。全部を積み直すと、日時を1つ動かすたびに
-    # 動かしていない境目の予約まで増える
-    def self.reserve(exchange, columns)
-      columns.each do |column|
-        at = exchange.read_attribute(column)
-        next if at.nil?
-
-        set(wait_until: at).perform_later(exchange)
-      end
+  class PhaseChangeJob < ApplicationJob
+    # どの時刻を予約するかは交換会が決める（Exchange::PHASE_BOUNDARIES）。
+    # フェーズを導出する日時がどれかは交換会の持ちものなので、こちらからは尋ねない。
+    # 過ぎた時刻を渡されたら待たずに走る。マッチングの実行がこれにあたる
+    def self.reserve(exchange, at:)
+      at.each { set(wait_until: it).perform_later(exchange) }
     end
 
     # 予約は数週間先まで残る。その間に交換会が消えることがあり、消えていれば

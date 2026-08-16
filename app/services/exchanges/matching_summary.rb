@@ -34,7 +34,7 @@ module Exchanges
         without_books_count: @participations.length - targets.length,
         # 冊数だけから決まる下限。判定は登録期間中の警告と同じものを使う。
         # 別に書くと、確認画面と管理画面の警告で冊数が食い違う
-        returning_count: BookImbalance.new(@participations).call&.returning_count.to_i
+        returning_count: Exchanges::BookImbalance.new(@participations).call&.returning_count.to_i
       )
     end
   end

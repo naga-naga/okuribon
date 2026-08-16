@@ -87,7 +87,7 @@ module Matching
 
           @assigned_book_ids << pick
           @taken[participant] += 1
-          @assignments << Assignment.new(
+          @assignments << Matching::Assignment.new(
             book_id: pick, participant_id: participant, round:, returned: false
           )
           progressed = true
@@ -123,7 +123,7 @@ module Matching
         next if book_index.nil?
 
         matched << book_index
-        @assignments << Assignment.new(
+        @assignments << Matching::Assignment.new(
           book_id: @remaining[book_index].id,
           participant_id: @slots[slot_index],
           round: nil,
@@ -134,7 +134,7 @@ module Matching
       @remaining.each_with_index do |book, book_index|
         next if matched.include?(book_index)
 
-        @assignments << Assignment.new(
+        @assignments << Matching::Assignment.new(
           book_id: book.id, participant_id: book.owner_id, round: nil, returned: true
         )
       end

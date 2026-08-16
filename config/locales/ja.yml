@@ -356,6 +356,25 @@ ja:
       counts: 枠%{slots}冊／希望%{wishes}冊
       shortfall: あと%{count}冊推奨
       no_slots: 枠0冊・受け取れません
+  # Webhook でチャンネルへ投稿する通知（docs/spec.md 11.）。個人宛の通知は無く、
+  # 誰が読むかを選べないので、ギフトコードと個人の希望リストの中身は書かない。
+  # 促す相手は参加者全員なので、画面の「あなたがすること」（exchange.todos）とは
+  # 別に持つ。あちらは自分の登録冊数や希望冊数で言うことが変わる
+  notification:
+    phase_change:
+      headline:
+        registration: 【%{name}】登録期間が始まりました
+        wish: 【%{name}】希望提出期間が始まりました
+        awaiting_matching: 【%{name}】希望の提出を締め切りました
+        published: 【%{name}】結果を公開しました
+      detail:
+        registration: 贈りたい本を登録できます。登録した冊数と同じだけ受け取れます。
+        wish: 本の登録は締め切りました。受け取りたい本を希望リストに並べてください。
+        awaiting_matching: 主催者がマッチングを実行すると結果が出ます。
+        # ギフトコードそのものは載せない。見えてよい人は受け取った本人だけなので、
+        # 受け取る場所を案内するにとどめる（docs/spec.md 8.）
+        published: 受け取った本とギフトコードを結果画面で確認できます。
+      deadline: "%{name}: %{at}"
   # 例外から描かれるエラー画面（docs/spec.md 6.10）。
   # 何が起きたか → 次に押すもの の順で書き、原因の推測を並べない。
   # 数字は見出しにせず、控えとして code に置く。

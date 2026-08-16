@@ -32,7 +32,7 @@ module Notifications
       phase = claim
       return if phase.nil? || NOTIFIABLE_PHASES.exclude?(phase)
 
-      DeliveryJob.perform_later(@exchange, message(phase))
+      Notifications::DeliveryJob.perform_later(@exchange, message(phase))
     end
 
     private

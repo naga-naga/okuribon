@@ -12,7 +12,7 @@ module Notifications
     def perform
       # 現在時刻はここで1回だけ読む。走査の途中で読み直すと、境目にいる交換会を
       # 前半と後半で違うフェーズとして見る（docs/spec.md 11.）
-      PhaseChange.deliver_all(at: Time.current)
+      Notifications::PhaseChange.deliver_all(at: Time.current)
     end
   end
 end

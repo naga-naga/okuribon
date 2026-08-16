@@ -4,7 +4,7 @@
 #
 # 現在時刻を差し替える仕組みは持たないため（docs/spec.md 11.）、見たい状況は
 # 基準時刻からの相対で日時を決めて作る。交換会1つにシナリオ1つを持たせ、
-# 何を見るための交換会かは概要に書いてある。
+# 何を見るための交換会かは名前が言う。名前に入り切らない細部は概要の末尾に書く。
 #
 # 二度目以降は日時が新しい基準時刻から数え直される。「締切まで残り数時間」は
 # 放置すれば次のフェーズへ移るので、見たくなったらもう一度通す。
@@ -134,8 +134,8 @@ class DevelopmentSeeds
   def solo_preparing
     build_exchange(
       'solo-preparing',
-      name: '冬に読む一冊の交換会',
-      description: "年末に集まる分です。詳細は追って。\n（開発用データ: 準備中。参加者は自分ひとりで、本はまだ登録できない）",
+      name: 'ひとりだけの準備中の交換会',
+      description: "年末に集まる分です。詳細は追って。\n（開発用データ: 登録期間の開始まで3日。自分が主催で、本はまだ登録できない）",
       owner: viewer,
       registration_starts_at: @at + 3.days,
       registration_ends_at: @at + 10.days,
@@ -148,8 +148,8 @@ class DevelopmentSeeds
   def registration_without_books
     exchange = build_exchange(
       'registration-empty',
-      name: '春のミステリ交換会',
-      description: "ミステリなら何でも。既読でも構いません。\n（開発用データ: 登録期間の初日。まだ誰も1冊も登録していない）",
+      name: '本が1冊もない交換会',
+      description: "ミステリなら何でも。既読でも構いません。\n（開発用データ: 登録期間の初日。4人いるが、まだ誰も登録していない）",
       owner: member('mochida'),
       registration_starts_at: @at - 2.hours,
       registration_ends_at: @at + 13.days,
@@ -163,8 +163,8 @@ class DevelopmentSeeds
   def registration_in_progress
     exchange = build_exchange(
       'registration',
-      name: '夏の文庫本交換会',
-      description: "Kindle のみ。1000円前後を目安に。\n（開発用データ: 登録期間のなかば。本が集まってきた状態。Discord の Webhook URL 入り）",
+      name: '登録期間のふつうの交換会',
+      description: "Kindle のみ。1000円前後を目安に。\n（開発用データ: 本が集まってきた標準形。自分が主催。Discord の Webhook URL 入り）",
       owner: viewer,
       registration_starts_at: @at - 4.days,
       registration_ends_at: @at + 6.days,
@@ -190,8 +190,8 @@ class DevelopmentSeeds
   def registration_imbalanced
     exchange = build_exchange(
       'registration-imbalanced',
-      name: '写真集を持ち寄る会',
-      description: "大きい判のものは送料にご注意を。\n（開発用データ: 登録期間のなかば。持田さんに偏っていて、管理画面に警告が出る）",
+      name: '登録が偏っている交換会',
+      description: "大きい判のものは送料にご注意を。\n（開発用データ: 持田さんが5冊、ほかが合わせて2冊。自分が主催で、管理画面に警告が出る）",
       owner: viewer,
       registration_starts_at: @at - 3.days,
       registration_ends_at: @at + 4.days,
@@ -210,8 +210,8 @@ class DevelopmentSeeds
   def registration_closing_soon
     exchange = build_exchange(
       'registration-closing',
-      name: '積読を減らす会',
-      description: "読まないまま持っている本を出しましょう。\n（開発用データ: 登録の締切まで5時間20分。自分だけまだ登録していない）",
+      name: '登録の締切が迫っている交換会',
+      description: "読まないまま持っている本を出しましょう。\n（開発用データ: 締切まで5時間20分。自分だけまだ登録していない）",
       owner: member('kawai'),
       registration_starts_at: @at - 6.days,
       # 端数のある残り時間にしておく。残り24時間を切ると分まで出す想定なので、
@@ -232,8 +232,8 @@ class DevelopmentSeeds
   def wish_in_progress
     exchange = build_exchange(
       'wish',
-      name: '秋の翻訳小説交換会',
-      description: "翻訳ものに限ります。国は問いません。\n（開発用データ: 希望提出期間。自分の希望を4冊まで並べてある）",
+      name: '希望提出期間のふつうの交換会',
+      description: "翻訳ものに限ります。国は問いません。\n（開発用データ: 自分の希望を4冊まで並べてある標準形）",
       owner: member('mochida'),
       registration_starts_at: @at - 12.days,
       registration_ends_at: @at - 2.days,
@@ -259,8 +259,8 @@ class DevelopmentSeeds
   def wish_closing_soon
     exchange = build_exchange(
       'wish-closing',
-      name: '技術書もちより会',
-      description: "去年出た本を中心に。\n（開発用データ: 希望提出の締切まで3時間8分。自分の希望リストは空のまま）",
+      name: '希望を出さないまま締切が迫る交換会',
+      description: "去年出た本を中心に。\n（開発用データ: 締切まで3時間8分。本が12冊並び、自分の希望リストだけ空）",
       owner: member('shibata'),
       registration_starts_at: @at - 14.days,
       registration_ends_at: @at - 4.days,
@@ -289,8 +289,8 @@ class DevelopmentSeeds
   def awaiting_matching
     exchange = build_exchange(
       'awaiting',
-      name: '梅雨の長編交換会',
-      description: "500ページ以上のものを1冊。\n（開発用データ: マッチングの実行待ち。自分が主催者。Slack の Webhook URL 入り）",
+      name: 'マッチングの実行を待つ交換会',
+      description: "500ページ以上のものを1冊。\n（開発用データ: 希望提出は締め切り済み。自分が主催。Slack の Webhook URL 入り）",
       owner: viewer,
       registration_starts_at: @at - 21.days,
       registration_ends_at: @at - 11.days,
@@ -321,8 +321,8 @@ class DevelopmentSeeds
   def published
     exchange = build_exchange(
       'published',
-      name: '新年度の実用書交換会',
-      description: "仕事で使えるものを。\n（開発用データ: 結果公開。自分は2冊受け取り、出した本のうち1冊が返却されている）",
+      name: '結果公開のふつうの交換会',
+      description: "仕事で使えるものを。\n（開発用データ: 自分は2冊受け取り、出した本のうち1冊が返却されている）",
       owner: member('mochida'),
       registration_starts_at: @at - 40.days,
       registration_ends_at: @at - 30.days,
@@ -349,8 +349,8 @@ class DevelopmentSeeds
   def published_without_slots
     exchange = build_exchange(
       'published-without-slots',
-      name: '料理本の交換会',
-      description: "作ったことのないものが載っている本を。\n（開発用データ: 結果公開。自分は1冊も登録しなかったので取得枠が0）",
+      name: '取得枠が0だった交換会',
+      description: "作ったことのないものが載っている本を。\n（開発用データ: 自分は1冊も登録しなかったので、受け取る本がない）",
       owner: member('mochida'),
       registration_starts_at: @at - 34.days,
       registration_ends_at: @at - 26.days,
@@ -384,8 +384,8 @@ class DevelopmentSeeds
   def published_without_luck
     exchange = build_exchange(
       'published-without-luck',
-      name: '旅の本の交換会',
-      description: "行ったことのない土地の本を。\n（開発用データ: 結果公開。取得枠はあったのに1冊も回ってこず、出した本が戻ってきた）",
+      name: '本が回ってこなかった交換会',
+      description: "行ったことのない土地の本を。\n（開発用データ: 取得枠は1冊あったのに回ってこず、出した本が戻ってきた）",
       owner: member('kawai'),
       registration_starts_at: @at - 28.days,
       registration_ends_at: @at - 21.days,
@@ -416,8 +416,8 @@ class DevelopmentSeeds
   def published_without_books
     exchange = build_exchange(
       'published-without-books',
-      name: '写経の本を交換する会',
-      description: "声をかけたものの、集まりませんでした。\n（開発用データ: 結果公開。誰も1冊も登録しないまま実行された）",
+      name: '本が0冊のまま実行された交換会',
+      description: "声をかけたものの、集まりませんでした。\n（開発用データ: 全体の結果が節ごと畳まれる。誰も1冊も登録しなかった）",
       owner: member('aizawa'),
       registration_starts_at: @at - 46.days,
       registration_ends_at: @at - 40.days,

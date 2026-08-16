@@ -10,4 +10,7 @@ Rails.application.config.filter_parameters += [
   # ギフトコードと OAuth の認可コードは既定のパターンに引っかからないため明示する。
   # :code は部分一致なので gift_code も兼ねるが、意図が読めるよう両方を残す
   :gift_code, :code,
+  # Webhook URL はチャンネルへ投稿できる資格情報にあたる。パスにトークンが載るため、
+  # URL そのものを知られた時点で誰でも投稿できる
+  :webhook_url,
 ]

@@ -53,7 +53,7 @@ RSpec.describe BooksController do
     it 'パンくずから交換会ページへ戻れる' do
       open_form
 
-      expect(breadcrumb).to eq('読書交換会' => exchanges_path,
+      expect(breadcrumb).to eq('交換会一覧' => exchanges_path,
                                '夏の交換会' => exchange_path(exchange))
     end
 
@@ -246,7 +246,7 @@ RSpec.describe BooksController do
     it 'パンくずから交換会ページへ戻れる' do
       open_form
 
-      expect(breadcrumb).to eq('読書交換会' => exchanges_path,
+      expect(breadcrumb).to eq('交換会一覧' => exchanges_path,
                                '夏の交換会' => exchange_path(exchange))
     end
 

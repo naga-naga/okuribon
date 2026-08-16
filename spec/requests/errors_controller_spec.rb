@@ -128,6 +128,21 @@ RSpec.describe ErrorsController, :rendered_error_pages do
     end
   end
 
+  # 配色と同じで、この2枚はロケールも引けない。サービス名を直に持つので、
+  # ja.yml の service.name を変えても追従しない。名前が散らばっていたのが
+  # #134 の出所なので、増えた2つ目の置き場所はここで縛る
+  describe '静的 HTML のサービス名' do
+    ['public/500.html', 'public/406-unsupported-browser.html'].each do |path|
+      it "#{path} が ja.yml と同じ名前を名乗る" do
+        body = Rails.root.join(path).read
+        name = I18n.t('service.name')
+
+        expect(body).to include(%(<span class="service">#{name}</span>))
+        expect(body[%r{<title>(.*)</title>}, 1]).to end_with(" — #{name}")
+      end
+    end
+  end
+
   # アプリのレイアウトを通らない2枚は、Tailwind のビルド結果を参照できないため
   # 配色を生の色コードで持っている。@theme を直しても追従しないので、
   # 食い違いはここで気付く。片方だけ動いた配色は、見比べないと分からない

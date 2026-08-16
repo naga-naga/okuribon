@@ -56,7 +56,7 @@ RSpec.describe ResultsController do
 
         open_result
 
-        expect(breadcrumb).to eq('読書交換会' => exchanges_path,
+        expect(breadcrumb).to eq('交換会一覧' => exchanges_path,
                                  exchange.name => exchange_path(exchange))
       end
 
@@ -418,7 +418,7 @@ RSpec.describe ResultsController do
       it 'パンくずから交換会トップへ戻れる' do
         open_result(at: '2026-08-16T00:00:00+09:00'.in_time_zone)
 
-        expect(breadcrumb).to eq('読書交換会' => exchanges_path,
+        expect(breadcrumb).to eq('交換会一覧' => exchanges_path,
                                  exchange.name => exchange_path(exchange))
       end
 

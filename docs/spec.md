@@ -1127,6 +1127,27 @@ project_id は `d4c7c96c-beb2-4f1b-9128-5326c3412668`。
   実名で登録している人が多いプロバイダもあるため、参加者一覧に出す名前は本人が決められる必要がある。
   表示名の重複は許す。顔見知りの少人数で使うため、同名はアバターと本の登録内容で見分けが付く
 - メールは送らない。通知は Webhook のみ
+- 非同期処理と定期実行は Solid Queue。ワーカーは専用のプロセスを持たず、
+  `SOLID_QUEUE_IN_PUMA=true` で Puma の中に立てる。サーバーは1台で、
+  Web とジョブの負荷が競合するほどの量は流れない
+- ジョブのテーブルは、どの環境でも主のデータベースと分けた別のデータベースに置く。
+  主のデータベースに相乗りさせると、交換会のテーブルと同じ `db/schema.rb` に
+  ジョブのテーブルが並ぶ。production だけ別という食い違いも残る。
+  `DATABASE_URL` は `primary` という名前の設定にしかマージされないため、
+  development と test の queue には `config/database.yml` で接続先を明示する
+- ジョブの引数は queue のデータベースに平文で残る。ログのフィルタ（`filter_parameters`）は
+  ここに効かない。ギフトコードと招待トークンをジョブの引数に渡さない。
+  ジョブには本や交換会の id を渡し、必要な値はジョブの中で取り出す
+- 開発環境も production と同じ Solid Queue で動かす。Rails 既定の `:async` は
+  プロセス内のスレッドで走り、積まれたことも失敗したことも残らないため、
+  通知が飛ばなかったときに見るものが無くなる
+- 定期実行の定義は development にも置く。定義が拾われたかどうかは
+  `solid_queue_recurring_tasks` の行でしか分からず、production にしか定義が無いと
+  手元に確かめる足場が無い
+- test 環境ではジョブを実行せず、積まれたところで止める（Rails 既定の `:test`）。
+  通知の spec が見たいのは「送ろうとしたこと」で、実行まで見たい spec だけが
+  明示的に回す。設定ファイルの誤りは起動するまで分からないため、
+  `config/queue.yml` と `config/recurring.yml` が読めることは spec で固定する
 
 上記により、Rails 標準のうち Active Storage / Action Mailer / Action Mailbox / Action Text は使わない。
 `config/application.rb` で railtie ごと読み込まない。必要になった時点で戻す。

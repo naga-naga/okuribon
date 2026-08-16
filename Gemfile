@@ -70,6 +70,10 @@ group :development, :test do
   gem 'factory_bot_rails'
   gem 'faker'
   gem 'rspec-rails'
+
+  # 通知の Webhook を spec から本当に叩かないための封じ。
+  # 送信サービスに口を差し込むだけでは、そこを通らない経路が塞がらない
+  gem 'webmock', require: false
 end
 
 group :development do

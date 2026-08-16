@@ -140,6 +140,28 @@ RSpec.describe DevelopmentSeeds do
       expect(returned).to be_present
     end
 
+    # 受け取りが0冊のとき、結果画面は枠が無かったのか回ってこなかったのかを
+    # 言い分ける（docs/spec.md 6.5）。言い分けを見るための状態なので、
+    # どちらも主役が0冊であること。他人として見ても文面は出ない
+    it '取得枠が0のまま結果公開を迎えた交換会がある' do
+      no_slots = published_participations_of(viewer, at:).select do |participation|
+        participation.books.empty? && participation.received_assignments.empty?
+      end
+
+      expect(no_slots).to be_present
+    end
+
+    # もう片方の言い分け。枠はあったのに割り当てられる本が残らなかった場合。
+    # 総冊数と総取得枠は必ず等しいので、枠が空いたまま終わるには、
+    # 残った本が自分のものでなければならない。返却が伴うのは避けられない
+    it '取得枠はあったのに1冊も回ってこなかった交換会がある' do
+      unlucky = published_participations_of(viewer, at:).select do |participation|
+        participation.books.any? && participation.received_assignments.empty?
+      end
+
+      expect(unlucky).to be_present
+    end
+
     # 受け取った本が1冊も無いと、結果画面もギフトコードの可視性も確かめられない。
     # 見えるかどうかは本人に訊く。作る側の意図ではなく、実際の可視性の規則で見る
     it '自分が受け取った本のギフトコードが開ける' do
@@ -185,6 +207,11 @@ RSpec.describe DevelopmentSeeds do
 
   def participation_of(user, exchange)
     exchange.participations.find_by!(user:)
+  end
+
+  # 結果公開を迎えた交換会での、その人の参加。結果画面が見るものはここから引ける
+  def published_participations_of(user, at:)
+    in_phase(:published, at:).map { |exchange| participation_of(user, exchange) }
   end
 
   # 次の締切が指定した時間内に迫っている交換会

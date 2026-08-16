@@ -114,6 +114,8 @@ class DevelopmentSeeds
       wish_closing_soon
       awaiting_matching
       published
+      published_without_slots
+      published_without_luck
     end
   end
 
@@ -331,6 +333,70 @@ class DevelopmentSeeds
 
     # 実行日時はここで直に書かない。マッチングを通した結果として記録させる
     run_matching(exchange, at: @at - 19.days)
+  end
+
+  # 受け取りが0冊で、取得枠が0だった場合（docs/spec.md 6.5）。
+  # 登録期間に1冊も登録しなければ取得枠は0になり、受け取る本が無い。
+  # 言い分けの文面は主役にしか出ないので、0冊なのは主役でなければならない
+  def published_without_slots
+    exchange = build_exchange(
+      'published-without-slots',
+      name: '料理本の交換会',
+      description: "作ったことのないものが載っている本を。\n（開発用データ: 結果公開。自分は1冊も登録しなかったので取得枠が0）",
+      owner: member('mochida'),
+      registration_starts_at: @at - 34.days,
+      registration_ends_at: @at - 26.days,
+      wish_ends_at: @at - 18.days
+    )
+
+    _you, sakura, takeru, minori =
+      join(exchange, [viewer, member('mochida'), member('kawai'), member('shibata')])
+
+    hers = add_books(sakura, 2)
+    his = add_books(takeru, 2)
+    theirs = add_books(minori, 1)
+
+    # 主役は登録も希望もしていない。取得枠が0なので、希望を出しても受け取れない
+    add_wishes(sakura, his + theirs)
+    add_wishes(takeru, hers + theirs)
+    add_wishes(minori, hers + his)
+
+    run_matching(exchange, at: @at - 17.days)
+  end
+
+  # 受け取りが0冊で、枠はあったのに回ってこなかった場合（docs/spec.md 6.5）。
+  #
+  # 総冊数と総取得枠は必ず等しいので、主役の枠が空いたまま終わるには、余った本が
+  # 主役のものでなければならない。ほかの人の本が余れば、余り物の割当が空いた枠へ
+  # 回してしまう。そのため、この状態には自分の本の返却が必ず伴う。
+  #
+  # 主役の本を誰も希望せず、ほかの4冊がドラフトで出払う形にする。希望リストを
+  # 互いに重ならないように配ってあるのは、抽選順がどう出ても同じ結果にするため。
+  # 重ねると、取り合いに負けた人の枠が空いて、余り物が主役へ回ることがある
+  def published_without_luck
+    exchange = build_exchange(
+      'published-without-luck',
+      name: '旅の本の交換会',
+      description: "行ったことのない土地の本を。\n（開発用データ: 結果公開。取得枠はあったのに1冊も回ってこず、出した本が戻ってきた）",
+      owner: member('kawai'),
+      registration_starts_at: @at - 28.days,
+      registration_ends_at: @at - 21.days,
+      wish_ends_at: @at - 14.days
+    )
+
+    you, takeru, sakura, minori =
+      join(exchange, [viewer, member('kawai'), member('mochida'), member('shibata')])
+
+    add_books(you, 1)
+    hers = add_books(sakura, 2)
+    his = add_books(takeru, 2)
+    theirs = add_books(minori, 1)
+
+    add_wishes(sakura, his)
+    add_wishes(takeru, [hers.first, *theirs])
+    add_wishes(minori, [hers.last])
+
+    run_matching(exchange, at: @at - 13.days)
   end
 
   # 本番と同じ経路で割当を作る。返却を手で書くと本物と違う形のデータが残る。

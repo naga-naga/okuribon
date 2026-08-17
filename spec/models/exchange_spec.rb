@@ -1023,4 +1023,55 @@ RSpec.describe Exchange do
       expect(matching_result_for(exchange.reload.random_seed)).to eq(generated)
     end
   end
+
+  # フェーズが切り替わる時刻は交換会の日時カラムそのものなので、その時刻に
+  # 確認しに行くジョブを積む。定期的に全件を見に行くのは取りこぼしの網に回す
+  describe '通知の予約' do
+    include ActiveJob::TestHelper
+
+    let!(:starts_at) { Time.zone.parse('2026-09-01 10:00') }
+    let!(:ends_at) { Time.zone.parse('2026-09-20 21:00') }
+    let!(:wish_ends_at) { Time.zone.parse('2026-10-01 21:00') }
+
+    def reserved_times
+      enqueued_jobs.filter_map { it[:at] if it[:job] == Notifications::PhaseChangeJob }
+    end
+
+    it '作成すると、フェーズが切り替わる3つの時刻を予約する' do
+      create(:exchange, registration_starts_at: starts_at, registration_ends_at: ends_at,
+                        wish_ends_at:)
+
+      expect(reserved_times).to contain_exactly(starts_at.to_f, ends_at.to_f, wish_ends_at.to_f)
+    end
+
+    context '作成済みの交換会があるとき' do
+      let!(:exchange) do
+        create(:exchange, registration_starts_at: starts_at, registration_ends_at: ends_at,
+                          wish_ends_at:)
+      end
+
+      before { clear_enqueued_jobs }
+
+      it '締切を動かすと、新しい時刻を予約し直す' do
+        moved = Time.zone.parse('2026-09-25 21:00')
+
+        exchange.update!(registration_ends_at: moved)
+
+        expect(reserved_times).to contain_exactly(moved.to_f)
+      end
+
+      # 結果公開は日時では決まらず、主催者がボタンを押したときに起きる
+      it 'マッチングを実行すると、待たずに確認を積む' do
+        exchange.update!(matched_at: Time.zone.parse('2026-09-22 12:00'))
+
+        expect(enqueued_jobs.count { it[:job] == Notifications::PhaseChangeJob }).to eq(1)
+      end
+
+      it '日時に関わらない変更では予約しない' do
+        exchange.update!(name: '秋の交換会')
+
+        expect(reserved_times).to be_empty
+      end
+    end
+  end
 end

@@ -49,7 +49,7 @@ module Matching
     def engine_result
       participations = @exchange.participations.order(:id).to_a
 
-      Engine.new(
+      Matching::Engine.new(
         participants: participations.map(&:id),
         # Engine が見るのは識別子だけ。Book のレコードを読み込むと、暗号化された
         # ギフトコードまで一緒に運ばれてくる。取得経路は1つに限る（CLAUDE.md）ので、

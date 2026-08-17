@@ -142,6 +142,15 @@ RSpec.describe DevelopmentSeeds do
                               a_string_including('hooks.slack.com'))
     end
 
+    # seed が作るのは、日時だけを過去に置いた作り物にあたる。通知の記録を埋めずに
+    # 置くと、予約が一斉に走って偽の Webhook URL への送信が積まれる。
+    # 手元で通知を試すときは、日時を動かせば新しい予約が積まれる
+    it 'どの交換会も通知を知らせ済みにしてある' do
+      unnotified = Exchange.all.reject { |exchange| exchange.notified_phase == exchange.phase(at:).to_s }
+
+      expect(unnotified).to be_empty
+    end
+
     it '自分の本が返却された' do
       returned = Assignment.where(returned: true)
                            .select { |assignment| assignment.book.participation.user == viewer }

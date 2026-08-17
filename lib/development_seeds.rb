@@ -102,6 +102,7 @@ class DevelopmentSeeds
   def initialize(at:)
     @at = at
     @book_cursor = 0
+    @exchanges = []
   end
 
   # 途中で落ちたときに、半端な交換会を残さない
@@ -124,10 +125,21 @@ class DevelopmentSeeds
       published_without_slots
       published_without_luck
       published_without_books
+
+      mark_notified
     end
   end
 
   private
+
+  # 通知を知らせ済みにしておく。ここで作るのは日時だけを過去に置いた作り物なので、
+  # 記録が空のままだと予約（Notifications::PhaseChangeJob）が一斉に走り、
+  # 偽の Webhook URL への送信が積まれる。
+  # マッチングを済ませたあとに呼ぶ。結果公開のフェーズは matched_at で決まる。
+  # 手元で通知を試すときは、交換会の日時を動かせば新しい予約が積まれる
+  def mark_notified
+    @exchanges.each { it.update!(notified_phase: it.phase(at: @at)) }
+  end
 
   # 準備中。作った直後で、まだ誰も招待URLを踏んでいない。
   # docs/spec.md 9.「参加者が自分ひとりしかいない」
@@ -469,6 +481,7 @@ class DevelopmentSeeds
     # DB の制約では守れないので、交換会を作る口をここ1つに絞って必ず通す
     join(exchange, [owner])
 
+    @exchanges << exchange
     exchange
   end
 

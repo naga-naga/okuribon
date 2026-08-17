@@ -16,11 +16,12 @@ module Notifications
     # 何時間も積み直しても届かないものは届かない
     MAX_ATTEMPTS = 5
 
-    retry_on Webhook::TransientFailure, attempts: MAX_ATTEMPTS, wait: :polynomially_longer do |job, error|
+    retry_on Notifications::Webhook::TransientFailure,
+             attempts: MAX_ATTEMPTS, wait: :polynomially_longer do |job, error|
       job.record_failure(error)
     end
 
-    discard_on Webhook::PermanentFailure do |job, error|
+    discard_on Notifications::Webhook::PermanentFailure do |job, error|
       job.record_failure(error)
     end
 
@@ -29,7 +30,7 @@ module Notifications
     discard_on ActiveJob::DeserializationError
 
     def perform(exchange, text)
-      Webhook.for(exchange)&.deliver(text)
+      Notifications::Webhook.for(exchange)&.deliver(text)
     end
 
     # 諦めたことをログに残す。通知が来ないことに気付いた人が、

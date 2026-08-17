@@ -48,7 +48,7 @@ module Exchanges
       exchange = participation.exchange
 
       Card.new(exchange:, participation:,
-               headline: Todo.new(participation, at: @at).call.headline,
+               headline: Exchanges::Todo.new(participation, at: @at).call.headline,
                participants_count: participants_counts.fetch(exchange.id, 0))
     end
 

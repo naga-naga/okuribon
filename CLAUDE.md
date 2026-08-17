@@ -80,11 +80,23 @@ MCP が使えずガイドを開けなかったときは、黙って進めない�
   グローバルな時刻の差し替えは持たない。境界を spec で突けるようにするための規約でもある
 - ビジネスロジックはモデルとサービスに寄せ、コントローラは薄く保つ
 - **他のクラスは完全な名前で参照する。** 同じ名前空間の兄弟でも省略しない。
-  `Notifications::PhaseChange` の中からでも `Notifications::DeliveryJob` と書き、`DeliveryJob` とは書かない。
+  `Notifications::PhaseChange` の中からでも `Notifications::DeliverJob` と書き、`DeliverJob` とは書かない。
   省略すると、その定数がどこに属するのかをファイルの置き場所から辿ることになる。
   `Matching::Assignment`（構造体）と `Assignment`（レコード）のように、
   短い名前が別のクラスと衝突していることもある。
   自分のクラスの中で使う入れ子の定数（`Exchange::PhaseViolation` など）は、定義がその場にあるので省略してよい
+- **ジョブは動詞、サービスは名詞で名前を付ける。** ジョブの入口は `perform` 1つきりで、
+  クラスが呼び出し1つに対応する。サービスは複数のメソッドを持つ入れ物なので名詞のままにする。
+  品詞そのものが、入口が1つか複数かの目印になる。
+  名詞のジョブは何をするのかを名乗らない。`Notifications::PhaseChangeJob` は
+  「フェーズを変えるジョブ」とも読めてしまうが、フェーズは日時から導出されるので何も変えていない
+- **同じことを受け持つ範囲だけ変えて行うジョブは、同じ動詞に `All` を挟んで対にする。**
+  `Notifications::NotifyPhaseChangeJob`（1件・予約）と
+  `Notifications::NotifyAllPhaseChangesJob`（全件・走査）。
+  やり方（`Scan` など）を名前に出すと、別のことをする2つに見える。
+  この2つは同じ判定を通り、受け持つ範囲だけが違う
+- 目的語に名前空間の語を重ねない。`Notifications::DeliverJob` であって
+  `Notifications::DeliverNotificationJob` ではない。何を配信するかは名前空間が言っている
 - コメントとコミットメッセージは日本語で書く
 
 ## 検証

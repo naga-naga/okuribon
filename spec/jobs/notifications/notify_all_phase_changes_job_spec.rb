@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Notifications::PhaseScanJob do
+RSpec.describe Notifications::NotifyAllPhaseChangesJob do
   include ActiveJob::TestHelper
 
   # 登録期間に入ったまま、まだ知らせていない交換会。予約を取りこぼした状態にあたる

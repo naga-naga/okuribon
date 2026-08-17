@@ -280,7 +280,7 @@ class Exchange < ApplicationRecord
   end
 
   def reserve_phase_notifications
-    Notifications::PhaseChangeJob.reserve(self, at: changed_phase_boundaries)
+    Notifications::NotifyPhaseChangeJob.reserve(self, at: changed_phase_boundaries)
   end
 
   # 動いた境目の時刻だけを返す。全部を渡すと、日時を1つ動かすたびに

@@ -133,7 +133,7 @@ class DevelopmentSeeds
   private
 
   # 通知を知らせ済みにしておく。ここで作るのは日時だけを過去に置いた作り物なので、
-  # 記録が空のままだと予約（Notifications::PhaseChangeJob）が一斉に走り、
+  # 記録が空のままだと予約（Notifications::NotifyPhaseChangeJob）が一斉に走り、
   # 偽の Webhook URL への送信が積まれる。
   # マッチングを済ませたあとに呼ぶ。結果公開のフェーズは matched_at で決まる。
   # 手元で通知を試すときは、交換会の日時を動かせば新しい予約が積まれる

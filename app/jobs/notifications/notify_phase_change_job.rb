@@ -10,7 +10,7 @@ module Notifications
   # 古い予約が残っても、Notifications::PhaseChange が実行時にフェーズを導出して
   # 記録と突き合わせるので、空振りするか正しい通知を出すかのどちらかにしかならない。
   # 予約は「この時刻に確認しに来て」という合図で、正しさはこのジョブの側が持つ
-  class PhaseChangeJob < ApplicationJob
+  class NotifyPhaseChangeJob < ApplicationJob
     # どの時刻を予約するかは交換会が決める（Exchange::PHASE_BOUNDARIES）。
     # フェーズを導出する日時がどれかは交換会の持ちものなので、こちらからは尋ねない。
     # 過ぎた時刻を渡されたら待たずに走る。マッチングの実行がこれにあたる

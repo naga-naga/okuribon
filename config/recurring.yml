@@ -13,13 +13,13 @@ shared: &shared
   clear_solid_queue_finished_jobs:
     command: "SolidQueue::Job.clear_finished_in_batches(sleep_between_batches: 0.3)"
     schedule: every hour at minute 12
-  # 予約（Notifications::PhaseChangeJob）を取りこぼした交換会を拾う網。
+  # 予約（Notifications::NotifyPhaseChangeJob）を取りこぼした交換会を拾う網。
   # 変わり目そのものは予約が拾うので、ここは頻度を落として1日1回でよい。
   # 網が要るのは、予約が queue のデータベースにしか無いため。積み損ねても、
   # ジョブが失敗して止まっても、予約は自分では戻ってこない。
   # 朝に置くのは、拾った通知がその場で投稿されるため。深夜に出しても読まれない
-  notify_missed_phase_changes:
-    class: Notifications::PhaseScanJob
+  notify_all_phase_changes:
+    class: Notifications::NotifyAllPhaseChangesJob
     schedule: every day at 9am
 
 # 開発でも同じ定期実行を読ませる。定期実行が設定から拾われているかは

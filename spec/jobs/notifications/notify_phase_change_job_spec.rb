@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Notifications::PhaseChangeJob do
+RSpec.describe Notifications::NotifyPhaseChangeJob do
   include ActiveJob::TestHelper
 
   # 登録期間に入ったまま、まだ知らせていない交換会
@@ -14,13 +14,13 @@ RSpec.describe Notifications::PhaseChangeJob do
 
   it '変わり目に来ていれば投稿を積む' do
     expect { described_class.perform_now(exchange) }
-      .to have_enqueued_job(Notifications::DeliveryJob).with(exchange, String)
+      .to have_enqueued_job(Notifications::DeliverJob).with(exchange, String)
   end
 
   it '変わり目に来ていなければ何もしない' do
     exchange.update!(notified_phase: 'registration')
 
-    expect { described_class.perform_now(exchange) }.not_to have_enqueued_job(Notifications::DeliveryJob)
+    expect { described_class.perform_now(exchange) }.not_to have_enqueued_job(Notifications::DeliverJob)
   end
 
   # 予約は数週間先まで残るので、その間に交換会が消えることがある
@@ -39,7 +39,7 @@ RSpec.describe Notifications::PhaseChangeJob do
                      wish_ends_at: 3.days.from_now)
     clear_enqueued_jobs
 
-    expect { described_class.perform_now(exchange) }.not_to have_enqueued_job(Notifications::DeliveryJob)
+    expect { described_class.perform_now(exchange) }.not_to have_enqueued_job(Notifications::DeliverJob)
     expect(exchange.reload.notified_phase).to eq('preparing')
   end
 end

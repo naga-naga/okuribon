@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Notifications::DeliveryJob do
+RSpec.describe Notifications::DeliverJob do
   include ActiveJob::TestHelper
 
   subject(:deliver) { perform_enqueued_jobs { described_class.perform_later(exchange, '登録期間がはじまりました') } }

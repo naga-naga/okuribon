@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Notifications::PhaseScanJob do
+RSpec.describe Notifications::NotifyAllPhaseChangesJob do
   include ActiveJob::TestHelper
 
   # 登録期間に入ったまま、まだ知らせていない交換会。予約を取りこぼした状態にあたる
@@ -14,7 +14,7 @@ RSpec.describe Notifications::PhaseScanJob do
 
   it '変わり目にある交換会の投稿を積む' do
     expect { described_class.perform_now }
-      .to have_enqueued_job(Notifications::DeliveryJob).with(exchange, String)
+      .to have_enqueued_job(Notifications::DeliverJob).with(exchange, String)
   end
 
   # 走査の途中で現在時刻を読み直すと、境目にいる交換会を前半と後半で

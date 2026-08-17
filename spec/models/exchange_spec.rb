@@ -1034,7 +1034,7 @@ RSpec.describe Exchange do
     let!(:wish_ends_at) { Time.zone.parse('2026-10-01 21:00') }
 
     def reserved_times
-      enqueued_jobs.filter_map { it[:at] if it[:job] == Notifications::PhaseChangeJob }
+      enqueued_jobs.filter_map { it[:at] if it[:job] == Notifications::NotifyPhaseChangeJob }
     end
 
     it '作成すると、フェーズが切り替わる3つの時刻を予約する' do
@@ -1064,7 +1064,7 @@ RSpec.describe Exchange do
       it 'マッチングを実行すると、待たずに確認を積む' do
         exchange.update!(matched_at: Time.zone.parse('2026-09-22 12:00'))
 
-        expect(enqueued_jobs.count { it[:job] == Notifications::PhaseChangeJob }).to eq(1)
+        expect(enqueued_jobs.count { it[:job] == Notifications::NotifyPhaseChangeJob }).to eq(1)
       end
 
       it '日時に関わらない変更では予約しない' do

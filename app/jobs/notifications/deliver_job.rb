@@ -11,7 +11,7 @@ module Notifications
   # 引数に本文をそのまま渡す。ジョブの引数は queue のデータベースに平文で残るので、
   # ギフトコードと招待トークンは載せない（docs/spec.md 11.）。本文にそれらを
   # 混ぜないのは、文面を組む側（#43 #44）の責任にあたる
-  class DeliveryJob < ApplicationJob
+  class DeliverJob < ApplicationJob
     # 相手の不調が数分で直ることを見込む。通知が数分遅れて困るものではない一方、
     # 何時間も積み直しても届かないものは届かない
     MAX_ATTEMPTS = 5

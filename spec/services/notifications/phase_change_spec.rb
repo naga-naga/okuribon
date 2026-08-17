@@ -20,13 +20,13 @@ RSpec.describe Notifications::PhaseChange do
     described_class.new(exchange, at: now).deliver
   end
 
-  # 積まれた本文を読む。DeliveryJob の引数は交換会と本文の2つ
+  # 積まれた本文を読む。DeliverJob の引数は交換会と本文の2つ
   def delivered_text
-    enqueued_jobs.filter_map { it[:args].last if it[:job] == Notifications::DeliveryJob }.last
+    enqueued_jobs.filter_map { it[:args].last if it[:job] == Notifications::DeliverJob }.last
   end
 
   it 'フェーズが変わったら、その交換会宛に投稿を積む' do
-    expect { deliver }.to have_enqueued_job(Notifications::DeliveryJob).with(exchange, String)
+    expect { deliver }.to have_enqueued_job(Notifications::DeliverJob).with(exchange, String)
   end
 
   it '知らせたフェーズを記録する' do
@@ -38,7 +38,7 @@ RSpec.describe Notifications::PhaseChange do
   it '同じフェーズのまま走らせても、二度は積まない' do
     deliver
 
-    expect { deliver }.not_to have_enqueued_job(Notifications::DeliveryJob)
+    expect { deliver }.not_to have_enqueued_job(Notifications::DeliverJob)
   end
 
   describe '本文' do
@@ -63,7 +63,7 @@ RSpec.describe Notifications::PhaseChange do
     let!(:crossed) { Time.zone.parse('2026-08-25 12:00') }
 
     it 'いまのフェーズだけを積む' do
-      expect { deliver(crossed) }.to have_enqueued_job(Notifications::DeliveryJob)
+      expect { deliver(crossed) }.to have_enqueued_job(Notifications::DeliverJob)
         .with(exchange, a_string_including('希望提出期間が始まりました')).once
     end
 
@@ -96,7 +96,7 @@ RSpec.describe Notifications::PhaseChange do
     end
 
     it '何も積まない' do
-      expect { deliver }.not_to have_enqueued_job(Notifications::DeliveryJob)
+      expect { deliver }.not_to have_enqueued_job(Notifications::DeliverJob)
     end
 
     it '記録だけ進める' do
@@ -171,9 +171,9 @@ RSpec.describe Notifications::PhaseChange do
 
     it '交換会を順に見て、変わり目にあるものだけを積む' do
       expect { described_class.deliver_all(at:) }
-        .to have_enqueued_job(Notifications::DeliveryJob).with(exchange, String).once
+        .to have_enqueued_job(Notifications::DeliverJob).with(exchange, String).once
 
-      expect(enqueued_jobs.count { it[:job] == Notifications::DeliveryJob }).to eq(1)
+      expect(enqueued_jobs.count { it[:job] == Notifications::DeliverJob }).to eq(1)
       expect(unchanged.reload.notified_phase).to eq('registration')
     end
   end

@@ -37,7 +37,7 @@ module Notifications
       text = message(phase) if NOTIFIABLE_PHASES.include?(phase)
       return unless claim(phase)
 
-      Notifications::DeliveryJob.perform_later(@exchange, text) if text
+      Notifications::DeliverJob.perform_later(@exchange, text) if text
     end
 
     private

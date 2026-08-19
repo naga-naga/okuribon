@@ -133,12 +133,25 @@ class DevelopmentSeeds
   private
 
   # 通知を知らせ済みにしておく。ここで作るのは日時だけを過去に置いた作り物なので、
-  # 記録が空のままだと予約（Notifications::NotifyPhaseChangeJob）が一斉に走り、
-  # 偽の Webhook URL への送信が積まれる。
+  # 記録が空のままだと予約（Notifications::NotifyPhaseChangeJob と
+  # Notifications::RemindDeadlineJob）が一斉に走り、偽の Webhook URL への送信が積まれる。
+  # 締切まで残り数時間の交換会をわざと作ってあるぶん、リマインドのほうも埋める。
   # マッチングを済ませたあとに呼ぶ。結果公開のフェーズは matched_at で決まる。
   # 手元で通知を試すときは、交換会の日時を動かせば新しい予約が積まれる
   def mark_notified
-    @exchanges.each { it.update!(notified_phase: it.phase(at: @at)) }
+    @exchanges.each do |exchange|
+      exchange.update!(notified_phase: exchange.phase(at: @at),
+                       reminded_deadline_at: reminder_deadline(exchange))
+    end
+  end
+
+  # 準備中の交換会が待っているのは締切ではなく登録期間の開始で、リマインドの対象では
+  # ない。埋めると、登録期間に入ったあとの本物の締切まで黙らせることになる
+  def reminder_deadline(exchange)
+    phase = exchange.phase(at: @at)
+    return nil unless Notifications::DeadlineReminder::REMINDABLE_PHASES.include?(phase)
+
+    exchange.next_deadline(at: @at)
   end
 
   # 準備中。作った直後で、まだ誰も招待URLを踏んでいない。

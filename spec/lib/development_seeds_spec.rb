@@ -77,6 +77,8 @@ RSpec.describe DevelopmentSeeds do
   # 「ある」ことだけを確かめ、どの交換会が担うかは固定しない。
   # 担い手を名指しすると、シナリオを組み替えるたびに spec を書き換えることになる
   describe '状態バリエーション' do
+    include ActiveJob::TestHelper
+
     before { seed(at:) }
 
     it '交換会に本が1冊も登録されていない' do
@@ -149,6 +151,13 @@ RSpec.describe DevelopmentSeeds do
       unnotified = Exchange.all.reject { |exchange| exchange.notified_phase == exchange.phase(at:).to_s }
 
       expect(unnotified).to be_empty
+    end
+
+    # 締切まで残り数時間の交換会をわざと作ってあるので、記録を埋めずに置くと
+    # リマインドが一斉に走る
+    it 'どの交換会も締切前のリマインドを出し済みにしてある' do
+      expect { Notifications::DeadlineReminder.deliver_all(at:) }
+        .not_to have_enqueued_job(Notifications::DeliverJob)
     end
 
     it '自分の本が返却された' do

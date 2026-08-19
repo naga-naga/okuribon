@@ -1074,4 +1074,57 @@ RSpec.describe Exchange do
       end
     end
   end
+
+  # 締切もまた交換会の日時カラムそのものなので、窓が開く時刻を予約して確認しに行く
+  describe 'リマインドの予約' do
+    include ActiveJob::TestHelper
+
+    let!(:starts_at) { Time.zone.parse('2026-09-01 10:00') }
+    let!(:ends_at) { Time.zone.parse('2026-09-20 21:00') }
+    let!(:wish_ends_at) { Time.zone.parse('2026-10-01 21:00') }
+
+    def reserved_times
+      enqueued_jobs.filter_map { it[:at] if it[:job] == Notifications::RemindDeadlineJob }
+    end
+
+    it '作成すると、2つの締切の24時間前を予約する' do
+      create(:exchange, registration_starts_at: starts_at, registration_ends_at: ends_at,
+                        wish_ends_at:)
+
+      expect(reserved_times)
+        .to contain_exactly((ends_at - 24.hours).to_f, (wish_ends_at - 24.hours).to_f)
+    end
+
+    # 登録期間の開始が待っているのは締切ではない。促す行動がまだ無いので知らせない
+    it '登録期間の開始は予約しない' do
+      create(:exchange, registration_starts_at: starts_at, registration_ends_at: ends_at,
+                        wish_ends_at:)
+
+      expect(reserved_times).not_to include((starts_at - 24.hours).to_f)
+    end
+
+    context '作成済みの交換会があるとき' do
+      let!(:exchange) do
+        create(:exchange, registration_starts_at: starts_at, registration_ends_at: ends_at,
+                          wish_ends_at:)
+      end
+
+      before { clear_enqueued_jobs }
+
+      it '締切を動かすと、動かした締切の24時間前を予約し直す' do
+        moved = Time.zone.parse('2026-09-25 21:00')
+
+        exchange.update!(registration_ends_at: moved)
+
+        expect(reserved_times).to contain_exactly((moved - 24.hours).to_f)
+      end
+
+      # マッチングの実行はフェーズの変わり目だが、締切ではない
+      it 'マッチングを実行しても予約しない' do
+        exchange.update!(matched_at: Time.zone.parse('2026-09-22 12:00'))
+
+        expect(reserved_times).to be_empty
+      end
+    end
+  end
 end

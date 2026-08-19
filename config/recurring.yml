@@ -21,6 +21,13 @@ shared: &shared
   notify_all_phase_changes:
     class: Notifications::NotifyAllPhaseChangesJob
     schedule: every day at 9am
+  # 予約（Notifications::RemindDeadlineJob）を取りこぼした交換会を拾う網。
+  # 間隔をリマインドの窓（Notifications::DeadlineReminder::WINDOW）と同じ24時間に
+  # 揃えてある。空けると、取りこぼした締切が窓ごと素通りする。
+  # 変わり目の網と同じ時刻でよい。どちらも交換会の日時しか読まない
+  remind_all_deadlines:
+    class: Notifications::RemindAllDeadlinesJob
+    schedule: every day at 9am
 
 # 開発でも同じ定期実行を読ませる。定期実行が設定から拾われているかは
 # solid_queue_recurring_tasks の行でしか分からず、production にしか

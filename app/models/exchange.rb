@@ -17,6 +17,12 @@ class Exchange < ApplicationRecord
     :registration_starts_at, :registration_ends_at, :wish_ends_at, :matched_at,
   ].freeze
 
+  # 締切前のリマインドを予約する日時。#next_deadline が返す日時のうち、締切にあたる
+  # ものだけを並べる。登録期間の開始が入っていないのは、待っているのが締切ではなく
+  # 開始で、まだ促す行動が無いため（Notifications::DeadlineReminder::REMINDABLE_PHASES）。
+  # 何時間前に知らせるかはリマインドの都合なので、ここには持たない
+  REMINDER_DEADLINES = [:registration_ends_at, :wish_ends_at].freeze
+
   # 操作ごとに書き込みを許すフェーズ。spec.md 4. フェーズの表と補足に対応する。
   # 結果公開はどの操作も許さないため、値のどこにも現れない
   WRITABLE_PHASES = {
@@ -100,6 +106,11 @@ class Exchange < ApplicationRecord
   # 口ごとに積むと、あとから足された経路だけ通知が来ない状態に気付けない。
   # commit のあとに積むのは、巻き戻った日時の予約を残さないため
   after_commit :reserve_phase_notifications, if: :saved_change_to_phase_boundaries?
+
+  # 締切の前に知らせるため、締切を持つ日時も予約する。フェーズの変わり目と口を分けるのは、
+  # 予約する時刻が締切そのものではなく、そこから窓の分だけ手前になるため。
+  # 同じ口にまとめると、どちらの都合で引き算しているのかが読めなくなる
+  after_commit :reserve_deadline_reminders, if: :saved_change_to_reminder_deadlines?
 
   # 希望提出期間は登録期間の終了と同時に始まる。
   # カラムに分けると等値をバリデーションでしか守れず二重管理になるため、導出する
@@ -283,10 +294,26 @@ class Exchange < ApplicationRecord
     Notifications::NotifyPhaseChangeJob.reserve(self, at: changed_phase_boundaries)
   end
 
-  # 動いた境目の時刻だけを返す。全部を渡すと、日時を1つ動かすたびに
-  # 動かしていない境目の予約まで増える
   def changed_phase_boundaries
-    PHASE_BOUNDARIES.filter_map { self[it] if saved_change_to_attribute?(it) }
+    changed_datetimes(PHASE_BOUNDARIES)
+  end
+
+  def saved_change_to_reminder_deadlines?
+    changed_reminder_deadlines.any?
+  end
+
+  def reserve_deadline_reminders
+    Notifications::RemindDeadlineJob.reserve(self, deadlines: changed_reminder_deadlines)
+  end
+
+  def changed_reminder_deadlines
+    changed_datetimes(REMINDER_DEADLINES)
+  end
+
+  # 動いた日時だけを返す。全部を渡すと、日時を1つ動かすたびに
+  # 動かしていないものの予約まで増える
+  def changed_datetimes(columns)
+    columns.filter_map { self[it] if saved_change_to_attribute?(it) }
   end
 
   # 招待トークンと乱数シードは交換会の作成時に発行する。

@@ -4,6 +4,7 @@
 # 並べ替えは順序だけをまとめて送る（docs/spec.md 6.2 / #27）
 class WishesController < ApplicationController
   include BookListing
+  include ParticipatingExchange
 
   before_action :require_login
   before_action :set_participation
@@ -29,13 +30,6 @@ class WishesController < ApplicationController
   end
 
   private
-
-  # 交換会は参加から引く。参加していなければ見つからない。
-  # 本の一覧と同じ入口にする。読み取りと書き込みで分けると、片方だけ緩む
-  def set_participation
-    @participation = current_user.participations.find_by!(exchange_id: params.expect(:exchange_id))
-    @exchange = @participation.exchange
-  end
 
   # 本も交換会から引く。別の交換会の本を渡されても見つからない。
   # 希望リストが交換会をまたぐと、取得枠の勘定が成り立たない

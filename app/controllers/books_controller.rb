@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 class BooksController < ApplicationController
+  include ParticipatingExchange
   include PhaseGuard
 
   before_action :require_login
@@ -48,13 +49,6 @@ class BooksController < ApplicationController
   end
 
   private
-
-  # 交換会は参加から引く。参加していなければ見つからない。
-  # 読み取りと書き込みで入口を分けると、片方だけ緩む
-  def set_participation
-    @participation = current_user.participations.find_by!(exchange_id: params.expect(:exchange_id))
-    @exchange = @participation.exchange
-  end
 
   # フェーズの判定対象。PhaseGuard から呼ばれる
   def current_exchange

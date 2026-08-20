@@ -2,6 +2,7 @@
 
 class ExchangesController < ApplicationController
   include BookListing
+  include ParticipatingExchange
 
   before_action :require_login
 
@@ -19,8 +20,8 @@ class ExchangesController < ApplicationController
   # 権限の判定と取り出しを1回で済ませる。
   # 読み取りは5フェーズすべてで開いており、止めるのは書き込みだけ（4. フェーズ）
   def show
-    @participation = current_user.participations.find_by!(exchange_id: params.expect(:id))
-    @exchange = @participation.exchange
+    # ネストされた口と違い、ここだけ交換会 id が :id で来る
+    set_participation(params.expect(:id))
     # 状態ヘッダーの「あなたがすること」。フェーズだけでは決まらず自分の状態で
     # 変わるので、組み立てはサービスに置く（交換会一覧も同じ文言を並べる）
     @todo = Exchanges::Todo.new(@participation, at: requested_at).call

@@ -4,6 +4,7 @@
 # ここでは順序だけをまとめて受け取る（docs/spec.md 6.2 / #27）
 class WishListsController < ApplicationController
   include BookListing
+  include ParticipatingExchange
 
   before_action :require_login
   before_action :set_participation
@@ -16,14 +17,5 @@ class WishListsController < ApplicationController
     @participation.reorder_wishes!(params.expect(book_ids: []), at: requested_at)
 
     render_listing
-  end
-
-  private
-
-  # 交換会は参加から引く。参加していなければ見つからない。
-  # 本の一覧と同じ入口にする。読み取りと書き込みで分けると、片方だけ緩む
-  def set_participation
-    @participation = current_user.participations.find_by!(exchange_id: params.expect(:exchange_id))
-    @exchange = @participation.exchange
   end
 end

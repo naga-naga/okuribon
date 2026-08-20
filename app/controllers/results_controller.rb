@@ -7,14 +7,12 @@
 # 取り出し口が無い。取得経路そのものは Book#gift_code_for に集約してあり、
 # この画面は「並べる対象を絞る」ことだけを受け持つ
 class ResultsController < ApplicationController
+  include ParticipatingExchange
+
   before_action :require_login
+  before_action :set_participation
 
-  # 交換会は参加から引く。参加していなければ見つからない。
-  # 本の一覧や交換会トップと同じ入口にして、画面ごとに条件を手書きしない
   def show
-    @participation = current_user.participations.find_by!(exchange_id: params.expect(:exchange_id))
-    @exchange = @participation.exchange
-
     return render_unpublished unless @exchange.published?(at: requested_at)
 
     # 冊数と中身の両方を見るので、ここで読み切る。
@@ -40,7 +38,7 @@ class ResultsController < ApplicationController
   # 素の 404 だと、参加者が自分の交換会で行き止まりに当たり、URL を間違えたのか
   # 時期が早いのかを区別できない。実在を伏せる必要があるのは主催者専用の画面だけで
   # （docs/spec.md 8.）、ここへ来られるのは交換会もフェーズも既に見えている参加者。
-  # 参加していない人には find_by! が先に落ち、素の 404 が返る
+  # 参加していない人には ParticipatingExchange が先に落ち、素の 404 が返る
   def render_unpublished
     render :unpublished, status: :not_found
   end

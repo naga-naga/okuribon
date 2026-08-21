@@ -104,7 +104,7 @@ class Exchange < ApplicationRecord
   after_commit :reserve_phase_notifications, if: :saved_change_to_phase_boundaries?
 
   # 締切の前に知らせるため、締切を持つ日時も予約する。フェーズの変わり目の予約と分けるのは、
-  # 予約する時刻が締切そのものではなく、そこから窓の分だけ手前になるため。
+  # 予約する時刻が締切そのものではなく、そこからウィンドウの分だけ手前になるため。
   # 1つのコールバックにまとめると、どちらの都合で引き算しているのかが読めなくなる
   after_commit :reserve_deadline_reminders, if: :saved_change_to_reminder_deadlines?
 

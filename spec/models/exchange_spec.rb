@@ -1072,7 +1072,7 @@ RSpec.describe Exchange do
     end
   end
 
-  # 締切もまた交換会の日時カラムそのものなので、窓が開く時刻を予約して確認しに行く
+  # 締切もまた交換会の日時カラムそのものなので、ウィンドウが開く時刻を予約して確認しに行く
   describe 'リマインドの予約' do
     include ActiveJob::TestHelper
 

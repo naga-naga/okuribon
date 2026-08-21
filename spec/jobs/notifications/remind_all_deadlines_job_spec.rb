@@ -18,7 +18,7 @@ RSpec.describe Notifications::RemindAllDeadlinesJob do
       .to have_enqueued_job(Notifications::DeliverJob).with(exchange, String)
   end
 
-  # 走査の途中で現在時刻を読み直すと、窓の縁にいる交換会を前半と後半で
+  # 走査の途中で現在時刻を読み直すと、ウィンドウの縁にいる交換会を前半と後半で
   # 違う扱いにする
   it '現在時刻を1回だけ読んで渡す' do
     allow(Notifications::DeadlineReminder).to receive(:deliver_all)
@@ -29,8 +29,8 @@ RSpec.describe Notifications::RemindAllDeadlinesJob do
       .to have_received(:deliver_all).with(at: be_within(5.seconds).of(Time.current))
   end
 
-  # 窓が24時間ちょうどなので、1日1回の走査が必ず1回だけ窓の中に入る。
-  # 間隔を空けると、予約を取りこぼした締切が一度も窓に入らないまま過ぎる
+  # ウィンドウが24時間ちょうどなので、1日1回の走査が必ず1回だけウィンドウの中に入る。
+  # 間隔を空けると、予約を取りこぼした締切が一度もウィンドウに入らないまま過ぎる
   it '1日1回の定期実行として登録されている' do
     definitions = YAML.safe_load(ERB.new(Rails.root.join('config/recurring.yml').read).result, aliases: true)
 

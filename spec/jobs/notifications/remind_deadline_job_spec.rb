@@ -5,7 +5,7 @@ require 'rails_helper'
 RSpec.describe Notifications::RemindDeadlineJob do
   include ActiveJob::TestHelper
 
-  # 登録の締切が12時間後。窓の中にいる
+  # 登録の締切が12時間後。ウィンドウの中にいる
   let!(:exchange) do
     create(:exchange, registration_starts_at: 1.day.ago, registration_ends_at: 12.hours.from_now,
                       wish_ends_at: 3.weeks.from_now)

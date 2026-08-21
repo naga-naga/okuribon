@@ -12,7 +12,7 @@ module Notifications
   # 走査から落ちたことに気付けない
   class RemindAllDeadlinesJob < ApplicationJob
     def perform
-      # 走査の途中で現在時刻を読み直すと、窓の縁にいる交換会を
+      # 走査の途中で現在時刻を読み直すと、ウィンドウの縁にいる交換会を
       # 前半と後半で違う扱いにする
       Notifications::DeadlineReminder.deliver_all(at: Time.current)
     end

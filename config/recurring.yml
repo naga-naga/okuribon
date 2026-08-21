@@ -22,8 +22,8 @@ shared: &shared
     class: Notifications::NotifyAllPhaseChangesJob
     schedule: every day at 9am
   # 予約（Notifications::RemindDeadlineJob）を取りこぼした交換会を拾う網。
-  # 間隔をリマインドの窓（Notifications::DeadlineReminder::WINDOW）と同じ24時間に
-  # 揃えてある。空けると、取りこぼした締切が窓ごと素通りする。
+  # 間隔をリマインドのウィンドウ（Notifications::DeadlineReminder::WINDOW）と同じ24時間に
+  # 揃えてある。空けると、取りこぼした締切が一度もウィンドウに入らないまま過ぎる。
   # 変わり目の網と同じ時刻でよい。どちらも交換会の日時しか読まない
   remind_all_deadlines:
     class: Notifications::RemindAllDeadlinesJob

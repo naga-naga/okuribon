@@ -9,8 +9,8 @@ module Notifications
   # 選べないので、ギフトコードと個人の希望リストは載せられない
   class DeadlineReminder
     # 締切の何時間前から知らせるか。定期走査（Notifications::RemindAllDeadlinesJob）の間隔と
-    # 同じ24時間にする。これより短くすると、予約を取りこぼした日に走査が窓の中へ落ちない。
-    # 24時間ちょうどなら、1日1回の走査が必ず1回だけ窓の中に入る
+    # 同じ24時間にする。これより短くすると、予約を取りこぼした日に走査がウィンドウの中へ落ちない。
+    # 24時間ちょうどなら、1日1回の走査が必ず1回だけウィンドウの中に入る
     WINDOW = 24.hours
 
     # 準備中が待っているのは締切ではなく登録期間の開始で、
@@ -21,7 +21,7 @@ module Notifications
 
     SCOPE = 'notification.deadline_reminder'
 
-    # 走査の途中で現在時刻を読み直すと、窓の縁にいる交換会を
+    # 走査の途中で現在時刻を読み直すと、ウィンドウの縁にいる交換会を
     # 前半と後半で違う扱いにする
     def self.deliver_all(at:)
       Exchange.find_each { new(it, at:).deliver }
@@ -46,7 +46,7 @@ module Notifications
 
     private
 
-    # 窓の中にいるときだけ締切を返す。窓の終端は締切そのものだが、締切を過ぎると
+    # ウィンドウの中にいるときだけ締切を返す。ウィンドウの終端は締切そのものだが、締切を過ぎると
     # フェーズが次へ移るので、ここで上限を見る必要はない
     def approaching_deadline
       return nil unless REMINDABLE_PHASES.include?(@exchange.phase(at: @at))

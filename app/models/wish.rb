@@ -4,7 +4,6 @@ class Wish < ApplicationRecord
   belongs_to :participation
   belongs_to :book
 
-  # NOT NULL のカラムは presence でも弾く。DB の例外ではなく検証の失敗として返すため。
   # 順位は画面から来る値ではないが、組み立てを間違えたときに 500 で気付くことになる
   validates :position, presence: true
 
@@ -16,8 +15,7 @@ class Wish < ApplicationRecord
 
   private
 
-  # 自分が登録した本は受け取れない（docs/spec.md 3. 交換の仕組み）。
-  # 希望に入れられると、選んだのに絶対に当たらない枠を1つ抱えることになる
+  # 自分の本を希望に入れられると、選んだのに絶対に当たらない枠を1つ抱えることになる。
   # 保存前の参加と本は id を持たない。nil どうしを突き合わせると、別々に作った
   # ものが同じ参加のものに見える。id が揃うのは保存後で、そのときに改めて通る
   def book_not_own

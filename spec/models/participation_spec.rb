@@ -269,7 +269,7 @@ RSpec.describe Participation do
       end
 
       # 集合が食い違うのは、別のタブで追加・削除したときだけ。
-      # 黙って片方を捨てるより、読み直させるほうが安全
+      # 片方を捨てて進めるより、読み直させるほうが安全
       it '希望していない本が混じっていれば拒否する' do
         other = create(:book, participation: book.participation)
 

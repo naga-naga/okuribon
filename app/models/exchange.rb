@@ -125,7 +125,7 @@ class Exchange < ApplicationRecord
   end
 
   # ギフトコードの可視性も結果画面の可否もここに乗る。
-  # フェーズ名との比較を呼ぶ側それぞれに書かせない。綴り間違いは黙って false になり、
+  # フェーズ名との比較を呼ぶ側それぞれに書かせない。綴り間違いはエラーにならず false になり、
   # 見えてはいけないものが見える側に倒れる
   def published?(at:)
     phase(at:) == :published
@@ -203,7 +203,7 @@ class Exchange < ApplicationRecord
   # 段の名前と日時カラムの対応をここだけに置く。
   # 結果公開が返すのは希望提出の締切で、公開そのものは主催者がマッチングを
   # 実行したときに起きる。日時では決まらないので、これは下限にあたる。
-  # fetch で落として、綴り間違いを黙って nil に化けさせない
+  # fetch で落とす。そうしないと綴り間違いが nil になって気付けない
   def schedule_starts_at(step)
     {
       registration: registration_starts_at,
@@ -214,7 +214,7 @@ class Exchange < ApplicationRecord
 
   # 段の名前と日時カラムの対応を schedule_starts_at と同じくここに集める。
   # 終端を含まない範囲にするのは、各期間が終了時刻を含まないため。
-  # fetch で落として、綴り間違いを黙って nil に化けさせない
+  # fetch で落とす。そうしないと綴り間違いが nil になって気付けない
   def period(step)
     {
       registration: registration_starts_at...registration_ends_at,
@@ -268,7 +268,7 @@ class Exchange < ApplicationRecord
 
   # 書き込みを許すかどうかの判定はここだけに置く。
   # 各コントローラがフェーズを直接見て条件を手書きすると、コントローラごとに食い違うため。
-  # 表に無い操作名は fetch が落とす。綴り間違いを黙って可否に化けさせない
+  # 表に無い操作名は fetch が落とす。そうしないと綴り間違いまで可否として答えてしまう
   def writable?(operation, at:)
     WRITABLE_PHASES.fetch(operation).include?(phase(at:))
   end

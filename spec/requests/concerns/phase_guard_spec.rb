@@ -108,7 +108,7 @@ RSpec.describe PhaseGuard do
     expect(performed).to eq([:book_index])
   end
 
-  # 対象の交換会を返せないまま黙って通してしまうと、制御が効いていないことに気付けない
+  # 対象の交換会を返せないまま通してしまうと、制御が効いていないことに気付けない
   it '交換会の取り出し方を書き忘れたコントローラは落ちる' do
     stub_const('ForgotGuardTestController', Class.new(ApplicationController) do
       include PhaseGuard

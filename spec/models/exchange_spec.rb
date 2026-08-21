@@ -605,7 +605,7 @@ RSpec.describe Exchange do
       expect { exchange.writable?(:wish) }.to raise_error(ArgumentError)
     end
 
-    # 表に無い操作名を false で受けると綴り間違いが「書けない」に化けて気付けず、
+    # 表に無い操作名を false で受けると綴り間違いが「書けない」という判定になって気付けず、
     # true で受ければ通ってしまう。どちらも危ないので落とす
     it '表に無い操作名を渡すと例外になる' do
       at = '2026-08-04T00:00:00+09:00'.in_time_zone
@@ -1012,7 +1012,7 @@ RSpec.describe Exchange do
     end
 
     # 発行した直後のシードと、DB から読み直したシードで結果が揃うこと。
-    # bigint への往復で値が化けると、抽選をやり直しても同じ結果にならない
+    # bigint への往復で値が変わってしまうと、抽選をやり直しても同じ結果にならない
     it '保存したシードで Matching::Engine の結果が再現できる' do
       exchange = create(:exchange)
       generated = matching_result_for(exchange.random_seed)

@@ -2,7 +2,7 @@
 
 class Participation < ApplicationRecord
   # 並べ替えの並びが現在の希望リストと食い違うのは、別のタブで追加・削除したとき。
-  # 届いた並びを正として差分を反映すると、そちらの変更が黙って消える
+  # 届いた並びを正として差分を反映すると、そちらの変更が気付かれないまま消える
   class WishListMismatch < StandardError
     attr_reader :exchange
 

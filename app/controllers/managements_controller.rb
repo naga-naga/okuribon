@@ -10,8 +10,8 @@ class ManagementsController < ApplicationController
   # 特定のフェーズで閉じると主催者が自分の交換会に入れなくなる
   def show
     @exchange = current_user.owned_exchanges.find(params.expect(:exchange_id))
-    # 冊数は SQL で数える。Book を読み込むと、数を出すだけの画面へ
-    # 暗号化されたギフトコードまで運ばれてくる
+    # 冊数は SQL で数える。Book を読み込むと、数を出すだけの画面で
+    # 暗号化されたギフトコードまで取得してしまう
     @participations = @exchange.participations
                                .with_counts
                                .includes(:user)

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # ギフトコードの平文はここにしか出ない画面が1つある。返却された自分の本の
-# コードは、本の詳細画面を持たないためここ以外に取り出し口が無い。
+# コードは、本の詳細画面を持たないためここでしか取り出せない。
 # 取得経路そのものは Book#gift_code_for に集約してあり、
 # この画面は「並べる対象を絞る」ことだけを受け持つ
 class ResultsController < ApplicationController

@@ -15,7 +15,7 @@ class ExchangesController < ApplicationController
   # 自分の取得枠を出すのに参加そのものが要るため、交換会ではなく参加を引いて、
   # 権限の判定と取り出しを1回で済ませる
   def show
-    # ネストされた口と違い、ここだけ交換会 id が :id で来る
+    # ネストされたルートと違い、ここだけ交換会 id が :id で来る
     set_participation(params.expect(:id))
     # 状態ヘッダーの「あなたがすること」。フェーズだけでは決まらず自分の状態で
     # 変わるので、組み立てはサービスに置く（交換会一覧も同じ文言を並べる）

@@ -13,7 +13,7 @@ module BookListing
   def load_book_listing
     # 冊数の表示と空の判定にも同じ本を使うので、その場で読み込む。
     # 関連のままだと、並べる前に COUNT と EXISTS が別々に飛ぶ。
-    # 割当は結果公開後のカードにだけ出るが、フェーズで分けずに常に連れてくる。
+    # 割当は結果公開後のカードにだけ出るが、フェーズで分けずに常に読み込む。
     # 割当ができるのはマッチングの実行時だけなので、公開前はどの本も空で返り、
     # 読み込みを分けても省けるのは1往復にとどまる
     @books = @exchange.books.includes(:registrant, assignment: { participation: :user })
@@ -28,7 +28,7 @@ module BookListing
     @wishes = @participation.wishes.includes(book: :registrant).load
 
     # 絞り込みは URL に残す。開き直しても同じ並びで戻れる。
-    # 押せる口は2つしかないので、知らない値は全件に倒す
+    # 押せるボタンは2つしかないので、知らない値は全件に倒す
     @mine_only = params[:filter] == 'mine'
   end
 
@@ -39,8 +39,8 @@ module BookListing
     load_book_listing
 
     respond_to do |format|
-      # 描く場所は口ごとに変えない。コントローラ名から引かせると、
-      # 口が増えたときに同じ内容のテンプレートがもう1枚生える
+      # 描く場所は呼び出し元ごとに変えない。コントローラ名から引かせると、
+      # 呼び出し元が増えたときに同じ内容のテンプレートがもう1枚生える
       format.turbo_stream { render 'wishes/listing' }
       # JavaScript が無くても通る道を残す。絞り込みは URL に残っているので持ち回す
       format.html { redirect_to exchange_path(@exchange, filter: params[:filter].presence) }

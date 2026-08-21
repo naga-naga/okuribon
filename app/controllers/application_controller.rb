@@ -8,7 +8,7 @@ class ApplicationController < ActionController::Base
 
   stale_when_importmap_changes
 
-  # 書き込みの拒否はここだけで応答に組み立てる。書き込み口ごとに書かない。
+  # 書き込みの拒否はここだけで応答に組み立てる。アクションごとに書かない。
   # 理由でステータスが変わるため、例外は分けたまま受ける
   rescue_from Exchange::PhaseViolation, with: :deny_by_phase
   rescue_from Exchange::OwnerLocked, with: :deny_by_role
@@ -45,8 +45,8 @@ class ApplicationController < ActionController::Base
     deny(error, status: :conflict)
   end
 
-  # 断った理由と、断られた人の戻り先を1か所で組み立てる。戻り先は例外が連れてくる。
-  # コントローラの @exchange から拾うと、変数を置き忘れた口だけ行き止まりになる
+  # 断った理由と、断られた人の戻り先を1か所で組み立てる。戻り先は例外から受け取る。
+  # コントローラの @exchange から拾うと、変数を置き忘れたアクションだけ戻り先を出せなくなる
   def deny(error, status:)
     render 'errors/denied', status:,
                             locals: { message: error.message, exchange: error.exchange }

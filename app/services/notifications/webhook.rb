@@ -3,18 +3,16 @@
 require 'net/http'
 
 module Notifications
-  # 交換会に設定された Webhook へ本文を投稿する。
-  #
-  # 交換会から読むのは URL だけで、本文は呼ぶ側（#43 #44）が組んだものをそのまま投げる。
+  # 交換会から読むのは URL だけで、本文は呼ぶ側が組んだものをそのまま投げる。
   # ここで交換会の中身を足せるようにすると、文面を組む側が除いたはずのものが
   # 送信側で戻ってくる。ギフトコードを含めない責任は文面の側にある。
   # 本文とギフトコードを突き合わせる検査は置かない。平文の取得経路を
-  # Book#gift_code_for の1つに保つため（docs/spec.md 8.）、
+  # Book#gift_code_for の1つに保つため、
   # 照合のために2つ目の復号経路を作ることになるほうが危うい
   class Webhook
     # 送り先ごとの作法を、送り方から切り離して置く。送り方（https の限定、失敗の
     # 分け方、例外に URL を書かないこと）はどの送り先でも同じでなければ困るため。
-    # リンクの記法が Discord と Slack で割れたとき（#43）に足す先もここになる
+    # リンクの記法が Discord と Slack で割れたときに足す先もここになる
     Format = Data.define(:name, :body_key) do
       def payload(text)
         { body_key => text }

@@ -1,14 +1,12 @@
 # frozen_string_literal: true
 
 module Notifications
-  # フェーズの変わり目をチャンネルへ知らせる。
-  #
-  # 定期実行が交換会を順に見て、最後に知らせたフェーズ（notified_phase）と
+  # 最後に知らせたフェーズ（notified_phase）と
   # いまのフェーズが食い違うものだけを投稿する。
   #
   # 本文に載せるのは交換会名・フェーズ・締切・リンクだけにする。チャンネルへの
-  # 投稿は誰が読むかを選べないので、ギフトコードと個人の希望リストは載せられない
-  # （docs/spec.md 8.）。送信サービスは渡された本文をそのまま投げるため、
+  # 投稿は誰が読むかを選べないので、ギフトコードと個人の希望リストは載せられない。
+  # 送信サービスは渡された本文をそのまま投げるため、
   # 混ぜないのはここの責任にあたる
   class PhaseChange
     # 準備中は入っていない。交換会が作られた直後の状態で、始まりを知らせる
@@ -17,8 +15,8 @@ module Notifications
 
     SCOPE = 'notification.phase_change'
 
-    # 基準時刻は入口で1回だけ読んだものを回す（docs/spec.md 11.）。
-    # 走査の途中で読み直すと、境目にいる交換会を前半と後半で違うフェーズとして見る
+    # 走査の途中で現在時刻を読み直すと、境目にいる交換会を
+    # 前半と後半で違うフェーズとして見る
     def self.deliver_all(at:)
       Exchange.find_each { new(it, at:).deliver }
     end
@@ -73,7 +71,7 @@ module Notifications
     end
 
     # 次の締切が無いフェーズがある。マッチング実行待ちが待っているのは主催者の
-    # 操作で日時では動かず、結果公開はもう終わっている（docs/spec.md 4.）。
+    # 操作で日時では動かず、結果公開はもう終わっている。
     # 行ごと落とし、締切の名前だけが残った行を出さない
     def deadline_line
       deadline = @exchange.next_deadline(at: @at)

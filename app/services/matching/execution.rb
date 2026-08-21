@@ -1,14 +1,11 @@
 # frozen_string_literal: true
 
 module Matching
-  # マッチングの実行。Engine と Active Record の橋渡しをする。
-  #
   # Engine はレコードを知らないので、参加と本を識別子へ詰め替えて渡し、
   # 返ってきた割当を保存する。参加者の識別子には participation.id を使う。
   # 割当も本も参加にぶら下がっているため、利用者まで遡らずに書き戻せる。
   #
-  # 実行できるのは一度だけ（CLAUDE.md「マッチング」）。行ロックの内側で
-  # フェーズを見ることで、同時に2回呼ばれても片方だけが通る
+  # 行ロックの内側でフェーズを見ることで、同時に2回呼ばれても片方だけが通る
   class Execution
     def initialize(exchange:, at:)
       @exchange = exchange
@@ -52,8 +49,8 @@ module Matching
       Matching::Engine.new(
         participants: participations.map(&:id),
         # Engine が見るのは識別子だけ。Book のレコードを読み込むと、暗号化された
-        # ギフトコードまで一緒に運ばれてくる。取得経路は1つに限る（CLAUDE.md）ので、
-        # 必要な2列だけを取り出して Matching::Book へ詰め替える。
+        # ギフトコードまで一緒に運ばれてくるため、必要な2列だけを取り出して
+        # Matching::Book へ詰め替える。
         # この module の中では Book と書くと Matching::Book が先に見つかるため、
         # レコードのほうと読み違えないよう名前空間ごと書く
         books: @exchange.books.order(:id).pluck(:id, :participation_id)
@@ -79,13 +76,12 @@ module Matching
       end
     end
 
-    # 抽選順は Engine が毎回返しているが、これまで捨てていた。結果公開後に見せるので
-    # （docs/spec.md 8.）、実行された事実として保存する。
+    # 抽選順は結果公開後に見せるので、実行された事実として保存する。
     # 読むときにシードから引き直す手もあるが、乱数の消費順という Engine の内部に
     # 画面が依存し、Engine を変えた瞬間に保存済みの割当と表示がずれる。
     # 参加の識別子には participation.id を渡してある（engine_result）
     def save_draft_order(result)
-      # 数人から十数人の交換会なので（docs/spec.md 10.）、1件ずつ書いてよい
+      # 数人から十数人の交換会なので、1件ずつ書いてよい
       result.draft_order.each_with_index do |participation_id, index|
         Participation.find(participation_id).update!(draft_position: index + 1)
       end

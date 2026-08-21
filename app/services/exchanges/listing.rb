@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 module Exchanges
-  # 交換会一覧に並べるカード（docs/spec.md 6.6）。
-  #
   # カード1枚には、フェーズ・次の締切・すべきことに加えて、主催者名と参加人数が載る。
   # 交換会だけを引いて必要になったものをビューから足していくと、
   # 並ぶ件数だけ問い合わせが増えるので、並べるものをここで組み立てて渡す。
@@ -14,8 +12,7 @@ module Exchanges
     Card = Data.define(:exchange, :participation, :headline, :participants_count)
 
     # @param user [User] 見ている本人
-    # @param at [Time] 基準時刻。既定値は置かない。呼ぶたびに現在時刻が進むと、
-    #   締切をまたいだ瞬間に並び順とカードの中身が別の時刻を指しうる
+    # @param at [Time] 基準時刻
     def initialize(user, at:)
       @user = user
       @at = at

@@ -1,11 +1,9 @@
 # frozen_string_literal: true
 
 module Exchanges
-  # 実行の確認画面に並べる要約。実行すると何人に何冊が渡り、
-  # 何が思いどおりにならないのかを、押す前に数で示す。
-  #
+  # 実行すると何人に何冊が渡り、何が思いどおりにならないのかを、押す前に数で示す。
   # 取り返しのつかない操作なので、一覧を読み比べて自分で数えさせない。
-  # 出すのは人数と冊数だけで、誰が何を希望したかには触れない（docs/spec.md 8.）。
+  # 出すのは人数と冊数だけで、誰が何を希望したかには触れない。
   class MatchingSummary
     Result = Data.define(:target_count, :books_count, :unsubmitted_count,
                          :without_books_count, :returning_count)

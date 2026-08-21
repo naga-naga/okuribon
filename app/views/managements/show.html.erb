@@ -23,7 +23,7 @@
                            participants_count: @participations.length, at: requested_at %>
   </div>
 
-  <%# 受け取り手のない本が出る見込みなら知らせる（docs/spec.md 6.8）。
+  <%# 受け取り手のない本が出る見込みなら知らせる。
       参加者一覧より先に置く。先に読んでもらってから、下の冊数の並びを裏付けとして見せる %>
   <% if @imbalance %>
     <% name = @imbalance.participation.user.display_name %>
@@ -49,7 +49,7 @@
       <ul class="mt-4 flex flex-col gap-1.5 border-t border-line pt-3.5 text-[12.5px] leading-[1.8] text-ink">
         <li><%= t('management.imbalance.returned', name:) %></li>
         <li><%= t('management.imbalance.at_least') %></li>
-        <%# 日時の入力欄は交換会の編集画面に1つだけ置く（docs/spec.md 6.9） %>
+        <%# 日時の入力欄は交換会の編集画面に1つだけ置く %>
         <li>
           <%= t('management.imbalance.remedy') %>
           <%= link_to t('management.imbalance.remedy_link'), edit_exchange_path(@exchange) %>
@@ -69,11 +69,11 @@
       </span>
     </div>
 
-    <%# 主催者に特権はない（docs/spec.md 8.）。書いておかないと、
+    <%# 主催者に特権はない。書いておかないと、
         管理画面ならコードも見られるはずだと探させることになる %>
     <p class="mt-1.5 text-[12.5px] text-ink-subtle">ギフトコードは主催者にも見えません。</p>
 
-    <%# 除外できるのは登録の締切まで（docs/spec.md 4.）。締切を過ぎたら列ごと畳む。
+    <%# 除外できるのは登録の締切まで。締切を過ぎたら列ごと畳む。
         押せる行が1つも無い列を残すと、見出しだけの空欄が並ぶ %>
     <% exclusion_open = @exchange.writable?(:participation, at: requested_at) %>
 
@@ -113,7 +113,7 @@
                 <%= participation.books_count %>冊
               </td>
 
-              <%# 何を希望したかは出さない（docs/spec.md 8.）。出した冊数だけを出す。
+              <%# 何を希望したかは出さない。出した冊数だけを出す。
                   未提出を朱にするのは、主催者が声を掛ける先がそこだけのため %>
               <td class="tabular px-4 py-3 text-right text-[13px]
                          <%= participation.wishes_count.zero? ? 'text-accent' : 'text-success' %>">
@@ -126,7 +126,7 @@
 
               <% if exclusion_open %>
                 <td class="px-4 py-3 text-right">
-                  <%# 主催者は必ず参加者を兼ねるので自分の行には口を出さない（docs/spec.md 6.9）。
+                  <%# 主催者は必ず参加者を兼ねるので自分の行には口を出さない。
                       判定はサーバー側の Exchange#remove_participant! と同じ規則から引く。
                       ここで条件を手書きすると、押しても断られるボタンが残る %>
                   <% if @exchange.removable_participant?(participation.user, at: requested_at) %>
@@ -197,7 +197,7 @@
     </div>
   </div>
 
-  <%# 日時の入力欄は交換会の編集画面に1つだけ置く（docs/spec.md 6.9）。
+  <%# 日時の入力欄は交換会の編集画面に1つだけ置く。
       ここは現在の日程を見せて、変更はそちらへ送る %>
   <div class="mt-10">
     <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
@@ -220,7 +220,7 @@
           <span class="text-[13px] text-ink"><%= t(step, scope: 'exchange.phases') %></span>
 
           <span class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <%# 終了時刻は期間に含まれない（docs/spec.md 4.）。範囲の右端は締切そのもの %>
+            <%# 終了時刻は期間に含まれない。範囲の右端は締切そのもの %>
             <span class="tabular text-[12.5px] text-ink-subtle">
               <%= l period.begin, format: :schedule %> — <%= l period.end, format: :schedule %>
             </span>

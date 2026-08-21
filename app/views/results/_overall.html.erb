@@ -1,4 +1,4 @@
-<%# 全体の成立結果。誰が誰の本を受け取ったかは参加者全員に見える（docs/spec.md 8.）。
+<%# 全体の成立結果。誰が誰の本を受け取ったかは参加者全員に見える。
     ギフトコードは並べない。一覧系のビューには絶対に含めない（CLAUDE.md） %>
 <% returned_count = result_books.count { it.assignment&.returned? } %>
 
@@ -60,7 +60,7 @@
       </summary>
 
       <%# 並びだけを出すと、早い人が得をしたように読める。
-          巡ごとに順序が逆になることを添える（docs/spec.md 3.） %>
+          巡ごとに順序が逆になることを添える %>
       <p class="mt-3 max-w-[560px] text-[12.5px] leading-[1.9] text-ink-muted">
         <%= t('result.draft_order.note') %>
       </p>

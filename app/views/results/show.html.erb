@@ -56,7 +56,7 @@
         <%= render 'results/given', given: @given %>
       <% end %>
 
-      <%# 1冊も登録されないまま実行された交換会（docs/spec.md 9.）では、
+      <%# 1冊も登録されないまま実行された交換会では、
           見出しと列名だけの表が残る。並べるものが無ければ節ごと畳む %>
       <% if @result_books.any? %>
         <%= render 'results/overall', result_books: @result_books, draft_order: @draft_order %>

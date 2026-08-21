@@ -2,7 +2,7 @@
 
 # 開発環境で5フェーズと状態バリエーションを一度に確かめるためのデータを作る。
 #
-# 現在時刻を差し替える仕組みは持たないため（docs/spec.md 11.）、見たい状況は
+# 現在時刻を差し替える仕組みは持たないため、見たい状況は
 # 基準時刻からの相対で日時を決めて作る。交換会1つにシナリオ1つを持たせ、
 # 何を見るための交換会かは名前が言う。名前に入り切らない細部は概要の末尾に書く。
 #
@@ -25,7 +25,7 @@ class DevelopmentSeeds
   # 主役の名前は人名の形を借りつつ、ほかの5人には混ざらない姓にする。
   #
   # 「あなた」にはできない。交換会一覧は主催者が自分のとき、名前の代わりに
-  # 「あなた」と書く（docs/spec.md 6.6）。名前まで「あなた」だと、画面に出た
+  # 「あなた」と書く。名前まで「あなた」だと、画面に出た
   # 「あなた」が置き換えの結果なのか名前そのものなのかを見分けられない。
   # ギフトコードの注記も「見えるのはあなたと あなた さんだけ」になる。
   # かといって普通の人名にすると、今度はほかの参加者と見分けが付かなくなる
@@ -38,7 +38,7 @@ class DevelopmentSeeds
     OUTSIDER_UID => '小田はるか',
   }.freeze
 
-  # 通知の送信先（docs/spec.md 11.）。交換会は Webhook URL を1つしか持たないので、
+  # 通知の送信先。交換会は Webhook URL を1つしか持たないので、
   # Discord と Slack の両方の形式を手元で試すには、別々の交換会に入れる。
   # ホストは本物にして送信側の見分けを試せるようにし、ID とトークンは偽物にする。
   # 叩いても 404 が返るだけで、どこのチャンネルにも届かない
@@ -110,7 +110,7 @@ class DevelopmentSeeds
     ActiveRecord::Base.transaction do
       @cast = CAST.to_h { |uid, display_name| [uid, find_or_create_user(uid, display_name)] }
 
-      # 小田はるかはどの交換会にも入れない。交換会一覧の空状態（docs/spec.md 6.6）と、
+      # 小田はるかはどの交換会にも入れない。交換会一覧の空状態と、
       # 招待URL着地画面の「これから参加する」（6.7）は、参加していない人としてしか
       # 見られない。/dev/login でこの人になり、登録期間の交換会の招待URLを開く
       solo_preparing
@@ -155,7 +155,7 @@ class DevelopmentSeeds
   end
 
   # 準備中。作った直後で、まだ誰も招待URLを踏んでいない。
-  # docs/spec.md 9.「参加者が自分ひとりしかいない」
+  # 「参加者が自分ひとりしかいない」を確かめる
   def solo_preparing
     build_exchange(
       'solo-preparing',
@@ -168,7 +168,7 @@ class DevelopmentSeeds
     )
   end
 
-  # docs/spec.md 9.「交換会に本が1冊も登録されていない」。
+  # 「交換会に本が1冊も登録されていない」を確かめる。
   # ビジュアルガイド「C 本が0冊」に合わせ、登録期間が始まった当日に置く
   def registration_without_books
     exchange = build_exchange(
@@ -206,7 +206,7 @@ class DevelopmentSeeds
     add_books(minori, 2)
   end
 
-  # 登録冊数の偏りの警告（docs/spec.md 6.8）。1人の登録冊数がほかの全員の合計を
+  # 登録冊数の偏りの警告。1人の登録冊数がほかの全員の合計を
   # 超えると、超えた分は誰にも渡す先がなく登録者へ返る。5冊対2冊で3冊が返る。
   #
   # 警告が出るのは主催者管理画面で、本を登録できるあいだだけなので、
@@ -230,7 +230,7 @@ class DevelopmentSeeds
     add_books(takeru, 1)
   end
 
-  # docs/spec.md 9.「期間の締切まで残り数時間」「自分がまだ1冊も登録していない」。
+  # 「期間の締切まで残り数時間」「自分がまだ1冊も登録していない」を確かめる。
   # 取得枠は登録冊数と同数なので、このまま締切を迎えると1冊も受け取れない
   def registration_closing_soon
     exchange = build_exchange(
@@ -278,7 +278,7 @@ class DevelopmentSeeds
     add_wishes(takeru, mine)
   end
 
-  # docs/spec.md 9.「希望リストが空のまま希望提出期間の締切が迫っている」。
+  # 「希望リストが空のまま希望提出期間の締切が迫っている」を確かめる。
   # ビジュアルガイドが最重要と書いている状態なので、そこに合わせて
   # 本12冊・取得枠2冊・希望0冊で作る。カードが12枚並ぶ一覧はここでしか見られない
   def wish_closing_soon
@@ -310,7 +310,7 @@ class DevelopmentSeeds
   end
 
   # 希望提出が終わり、主催者がマッチングを実行するのを待っている。
-  # 実行ボタン（#31）を押せるのは主催者なので、主役を主催者にしてある
+  # 実行ボタンを押せるのは主催者なので、主役を主催者にしてある
   def awaiting_matching
     exchange = build_exchange(
       'awaiting',
@@ -337,7 +337,7 @@ class DevelopmentSeeds
     add_wishes(yuu, mine + his)
   end
 
-  # 結果公開。docs/spec.md 9.「自分の本が返却された」。
+  # 結果公開。「自分の本が返却された」を確かめる。
   #
   # 返却は「誰にも渡せなかった本が登録者へ戻る」ことなので、狙って作るには
   # 空いた取得枠が登録者本人のものしか残らない形にする必要がある。
@@ -368,7 +368,7 @@ class DevelopmentSeeds
     run_matching(exchange, at: @at - 19.days)
   end
 
-  # 受け取りが0冊で、取得枠が0だった場合（docs/spec.md 6.5）。
+  # 受け取りが0冊で、取得枠が0だった場合。
   # 登録期間に1冊も登録しなければ取得枠は0になり、受け取る本が無い。
   # 言い分けの文面は主役にしか出ないので、0冊なのは主役でなければならない
   def published_without_slots
@@ -397,7 +397,7 @@ class DevelopmentSeeds
     run_matching(exchange, at: @at - 17.days)
   end
 
-  # 受け取りが0冊で、枠はあったのに回ってこなかった場合（docs/spec.md 6.5）。
+  # 受け取りが0冊で、枠はあったのに回ってこなかった場合。
   #
   # 総冊数と総取得枠は必ず等しいので、主役の枠が空いたまま終わるには、余った本が
   # 主役のものでなければならない。ほかの人の本が余れば、余り物の割当が空いた枠へ
@@ -432,7 +432,7 @@ class DevelopmentSeeds
     run_matching(exchange, at: @at - 13.days)
   end
 
-  # 誰も1冊も登録しないまま実行された交換会（docs/spec.md 9.）。
+  # 誰も1冊も登録しないまま実行された交換会。
   # 結果画面の全体の成立結果が、節ごと畳まれることを確かめるための状態（6.5）。
   #
   # マッチング実行サービスは冊数を条件にしていない。拒むのは「そのフェーズでは
@@ -456,8 +456,8 @@ class DevelopmentSeeds
 
   # 本番と同じ経路で割当を作る。返却を手で書くと本物と違う形のデータが残る。
   # マッチングは一度だけ実行できるもので、二度目の db:seed は実行のやり直しでは
-  # ないため、割当は作り直さない。日時だけは新しい基準時刻から引き直す
-  # （docs/spec.md 9.1）。実行済みのまま置くと、ほかの日時が動いたぶんだけ
+  # ないため、割当は作り直さない。日時だけは新しい基準時刻から引き直す。
+  # 実行済みのまま置くと、ほかの日時が動いたぶんだけ
   # 結果公開の日付が取り残される
   def run_matching(exchange, at:)
     return exchange.update!(matched_at: at) if exchange.matched_at.present?
@@ -490,7 +490,7 @@ class DevelopmentSeeds
     exchange.assign_attributes(owner:, **attributes)
     exchange.save!
 
-    # 主催者は必ず参加者を兼ねる（docs/spec.md 2. 用語 / 6.9）。
+    # 主催者は必ず参加者を兼ねる。
     # DB の制約では守れないので、交換会を作る口をここ1つに絞って必ず通す
     join(exchange, [owner])
 

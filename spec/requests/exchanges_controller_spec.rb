@@ -50,8 +50,8 @@ RSpec.describe ExchangesController do
         .to eq('交換会をつくる')
     end
 
-    # 同じ行き先を1画面に2つ置くと、どちらが正しい口なのかを押す前に考えることになる
-    it 'つくる口が1画面に1つしか無い' do
+    # 同じ行き先を1画面に2つ置くと、どちらが正しいのかを押す前に考えることになる
+    it 'つくるボタンが1画面に1つしか無い' do
       registration_exchange(name: '夏の交換会')
 
       travel_to(now) { get exchanges_path }
@@ -78,7 +78,7 @@ RSpec.describe ExchangesController do
     end
 
     # 主催者は必ず参加者を兼ねるので、主催した交換会もここに並ぶ。
-    # 並ばないと、作った本人が自分の交換会へ入る口を持てない
+    # 並ばないと、作った本人が自分の交換会へ入る導線を持てない
     it '主催した交換会も並ぶ' do
       registration_exchange(owner: user, name: '主催した交換会')
 
@@ -95,7 +95,7 @@ RSpec.describe ExchangesController do
       expect(response.body).to include('登録期間')
     end
 
-    # 交換会へ入る口は、参加したあとはこの一覧しかない
+    # 交換会へ入る導線は、参加したあとはこの一覧しかない
     it 'カードから交換会トップへ入れる' do
       exchange = registration_exchange
 
@@ -258,8 +258,8 @@ RSpec.describe ExchangesController do
         expect(response.parsed_body.at_css("main a[href='#{new_exchange_path}']")).to be_present
       end
 
-      # 並ぶものが有るときと同じく、口は1つ
-      it 'つくる口が1画面に1つしか無い' do
+      # 並ぶものが有るときと同じく、ボタンは1つ
+      it 'つくるボタンが1画面に1つしか無い' do
         expect(response.parsed_body.css("a[href='#{new_exchange_path}']").size).to eq(1)
       end
 
@@ -292,7 +292,7 @@ RSpec.describe ExchangesController do
       expect(response).to redirect_to(login_path)
     end
 
-    # ログイン済みの着地はここ。招待URLを除けば、交換会へ入る口はこの一覧しかない
+    # ログイン済みの着地はここ。招待URLを除けば、交換会へ入る導線はこの一覧しかない
     it 'root から開ける' do
       registration_exchange(name: '夏の交換会')
 
@@ -302,7 +302,7 @@ RSpec.describe ExchangesController do
       expect(response.body).to include('夏の交換会')
     end
 
-    # 見えるのは登録した本人と、成立後の受取人だけ。一覧はどちらの経路でもない。
+    # 登録した本人と、成立後の受取人だけに見える。一覧はどちらの経路でもない。
     # 自分が登録した本と受け取った本を並べて、gift_code_for が値を返す状態で確かめる。
     # 結果公開にするのは matched_at で、日時に関わらずフェーズが決まる
     it 'ギフトコードが含まれない' do
@@ -424,8 +424,8 @@ RSpec.describe ExchangesController do
       count.times { |index| wish_for("希望#{index + 1}") }
     end
 
-    # 希望を出し入れする口。追加も削除も同じパスを持ち、button_to なので form になる。
-    # 口が外れたことをラベルの文字で確かめると、言い方を変えただけで素通りする
+    # 希望を出し入れするボタン。追加も削除も同じパスを持ち、button_to なので form になる。
+    # ボタンが外れたことをラベルの文字で確かめると、言い方を変えただけで通ってしまう
     def wish_form(book)
       card_for(book).at_css(%(form[action="#{exchange_book_wish_path(exchange, book)}"]))
     end
@@ -613,7 +613,7 @@ RSpec.describe ExchangesController do
       # 導線は「あなたがすること」の直下に置き、独立した段を作らない。
       # 押せる期間は writable? から引く。フェーズ名で条件を書き直すと、
       # 押しても断られるボタンがどこかのフェーズに残る
-      it '登録期間には本を登録する口が出る' do
+      it '登録期間には本を登録する導線が出る' do
         open_page
 
         expect(response.body).to include(new_exchange_book_path(exchange))
@@ -622,16 +622,16 @@ RSpec.describe ExchangesController do
       [['準備中', '2026-07-25T00:00:00+09:00'],
        ['希望提出期間', '2026-08-10T00:00:00+09:00'],
        ['マッチング実行待ち', '2026-08-20T00:00:00+09:00']].each do |phase_name, at|
-        it "#{phase_name}には本を登録する口が出ない" do
+        it "#{phase_name}には本を登録する導線が出ない" do
           open_page(at:)
 
           expect(response.body).not_to include(new_exchange_book_path(exchange))
         end
       end
 
-      # 実行待ちに待つ以外の道があるのは主催者だけ。ほかの参加者が待っているのは
+      # 主催者だけが、実行待ちに待つ以外の道を持つ。ほかの参加者が待っているのは
       # その人の操作で、日時では動かない
-      it 'マッチング実行待ちの参加者には実行の口が出ない' do
+      it 'マッチング実行待ちの参加者には実行の導線が出ない' do
         open_page(at: awaiting_at)
 
         expect(response.body).to include('結果を待ちます')
@@ -639,7 +639,7 @@ RSpec.describe ExchangesController do
       end
     end
 
-    # 実行待ちで待つ以外の道があるのは主催者だけ。この画面の交換会は既定では
+    # 主催者だけが、実行待ちに待つ以外の道を持つ。この画面の交換会は既定では
     # 別の人が主催しているので、日程はそのまま使い、主催者だけを自分に付け替える。
     # 参加はもう成立しているので、主催が移っても影響を受けない
     describe '主催者のマッチング実行' do
@@ -660,7 +660,7 @@ RSpec.describe ExchangesController do
       end
 
       # マッチングは一度だけ実行できる。残すと、押しても断られる導線になる
-      it '実行済みなら実行の口が出ない' do
+      it '実行済みなら実行の導線が出ない' do
         publish!
 
         open_page(at: awaiting_at)
@@ -668,7 +668,7 @@ RSpec.describe ExchangesController do
         expect(response.body).not_to include(new_exchange_management_matching_path(exchange))
       end
 
-      it '締切前には実行の口が出ない' do
+      it '締切前には実行の導線が出ない' do
         open_page(at: wishing_at)
 
         expect(response.body).not_to include(new_exchange_management_matching_path(exchange))
@@ -843,7 +843,7 @@ RSpec.describe ExchangesController do
         expect(bar.text).to include('枠 2冊')
       end
 
-      # 数を出すのは希望提出期間だけ。ほかの期間は取得枠に対して足りているかを
+      # 数を出すのは希望提出期間に限る。ほかの期間は取得枠に対して足りているかを
       # 確かめる用が無く、帯の1行を埋めるだけになる
       it '希望提出期間のほかには冊数を入れない' do
         register_own(2)
@@ -860,7 +860,7 @@ RSpec.describe ExchangesController do
         response.parsed_body.at_css('section[aria-label="概要と日程"]')
       end
 
-      # 押す直前に1クリック挟ませない。畳む口そのものを持たない
+      # 押す直前に1クリック挟ませない。畳むボタンそのものを持たない
       it '畳まずに出す' do
         open_page
 
@@ -883,7 +883,7 @@ RSpec.describe ExchangesController do
         expect(overview.at_css('dl[aria-label="状況"]')).to be_nil
       end
 
-      # 並べるのは動かせる期間だけ。結果公開は主催者の実行で起きて日時では決まらない
+      # 動かせる期間だけを並べる。結果公開は主催者の実行で起きて日時では決まらない
       it '各期間の範囲が入る' do
         open_page
 
@@ -929,7 +929,7 @@ RSpec.describe ExchangesController do
     end
 
     # 交換会を開くと本が並んでいる。
-    # 読み取りは5フェーズすべてで開いており、フェーズで変わるのは書き込みの口だけ
+    # 読み取りは5フェーズすべてで開いており、フェーズで変わるのは書き込みの操作だけ
     describe '本の一覧' do
       # 選ぶ材料は全員の本。自分の登録した本だけでは読み比べにならない
       it '全員の本が並ぶ' do
@@ -1138,9 +1138,9 @@ RSpec.describe ExchangesController do
         expect(card_body(book)['class'].split).not_to include(a_string_matching(/flex-row/))
       end
 
-      # 開く口が消えて別の場所に閉じる口が現れると、押した指の先で口が入れ替わる。
-      # 同じ1つの口の文字だけを差し替える
-      it '開く口と閉じる口が同じ場所にある' do
+      # 開くボタンが消えて別の場所に閉じるボタンが現れると、押した指の先でボタンが入れ替わる。
+      # 同じ1つのボタンの文字だけを差し替える
+      it '開くボタンと閉じるボタンが同じ場所にある' do
         book = create(:book, participation:)
 
         open_page
@@ -1150,10 +1150,10 @@ RSpec.describe ExchangesController do
         expect(toggle.text).to include('続きを読む').and include('閉じる')
       end
 
-      # 折って隠れている本文が無ければ、押しても何も起きない口になる。
+      # 折って隠れている本文が無ければ、押しても何も起きないボタンになる。
       # 何行に折れるかはブラウザでしか測れないので、伏せて出しておき、
       # 測ってから出す。JavaScript が無ければ出ないままにする
-      it '開く口は伏せて出し、折られているかを測ってから出す' do
+      it '開くボタンは伏せて出し、折られているかを測ってから出す' do
         book = create(:book, participation:)
 
         open_page
@@ -1163,7 +1163,7 @@ RSpec.describe ExchangesController do
       end
 
       # 開く前と後で、増えるのは折りたたまれていた本文だけにする。
-      # 見出しや口がそのとき初めて現れると、同じカードが別の顔で出てくる
+      # 見出しやボタンがそのとき初めて現れると、同じカードが別の顔で出てくる
       it 'おすすめポイントとあらすじの見出しが開く前から出ている' do
         book = book_by('佐藤 花子', summary: 'あらすじの本文', recommendation: 'おすすめの本文')
 
@@ -1212,7 +1212,7 @@ RSpec.describe ExchangesController do
       end
 
       # 買う先を見るのに、まず本文を開かせる理由が無い。
-      # 開いて初めて出てくると、閉じたカードを眺めている側からは口が無いように見える
+      # 開いて初めて出てくると、閉じたカードを眺めている側からはボタンが無いように見える
       it 'ストアへのリンクは開く前から出ている' do
         book = book_by('佐藤 花子', url: 'https://example.com/books/1')
 
@@ -1222,7 +1222,7 @@ RSpec.describe ExchangesController do
         expect(closed_card(book).text).to include('ストアで見る')
       end
 
-      # 下段に置くと、折られていない本のカードでは開く口が消えるぶん左へ寄る。
+      # 下段に置くと、折られていない本のカードでは開くボタンが消えるぶん左へ寄る。
       # 本文より上なら、下段に何が出ていようと同じ場所にある
       it 'ストアへのリンクが本文より上に出る' do
         book = book_by('佐藤 花子', url: 'https://example.com/books/1', recommendation: 'おすすめの本文')
@@ -1407,7 +1407,7 @@ RSpec.describe ExchangesController do
         wish_list.at_css('#wish_reorder')
       end
 
-      # 行から希望を外す口。行の中にある form はこれだけ
+      # 行から希望を外すボタン。行の中にある form はこれだけ
       def removal_form(row)
         row.at_css('form')
       end
@@ -1438,9 +1438,9 @@ RSpec.describe ExchangesController do
         expect(reorder_form['action']).to eq(exchange_wish_list_path(exchange))
       end
 
-      # 行に口が4つ並ぶと、広い画面の340pxのリストでは題に92pxしか残らず、
+      # 行にボタンが4つ並ぶと、広い画面の340pxのリストでは題に92pxしか残らず、
       # 6文字で切れる。並べ替えはハンドル1つに寄せる
-      it '行の口は並べ替えと外すの2つだけ' do
+      it '行の操作は並べ替えと外すの2つだけ' do
         wish_for('1冊目')
 
         open_page_while_wishing
@@ -1450,10 +1450,10 @@ RSpec.describe ExchangesController do
         expect(wish_list.css('button[aria-label="順位を下げる"]')).to be_empty
       end
 
-      # つまむ口は順位そのもの。⠿ と × が隣り合っていた間は、44pxの的が4pxの
+      # つまむハンドルは順位そのもの。⠿ と × が隣り合っていた間は、44pxの的が4pxの
       # 隙間で並び、並べ替えようとして希望から外す取り違えが起こりえた。
       # 順位へ移すと、押すものが行の両端に離れる
-      it 'つまむ口が順位そのものである' do
+      it 'つまむハンドルが順位そのものである' do
         wish_for('1冊目')
 
         open_page_while_wishing
@@ -1461,7 +1461,7 @@ RSpec.describe ExchangesController do
         expect(handle(rows.first).text).to include('1')
       end
 
-      it '専用のつまむ口を別に置かない' do
+      it '専用のハンドルを別に置かない' do
         wish_for('1冊目')
 
         open_page_while_wishing
@@ -1491,7 +1491,7 @@ RSpec.describe ExchangesController do
         expect(handle(rows.first)['aria-hidden']).to be_nil
       end
 
-      # 十数行が同じ名前で並ぶと、読み上げたときにどの行の口なのかが分からない。
+      # 十数行が同じ名前で並ぶと、読み上げたときにどの行のボタンなのかが分からない。
       # 名前は見えている数字と続けて組む。aria-label で上書きすると、動かすたびに
       # 振り直す先が数字と名前の2か所になり、片方だけ古くなる
       it 'ハンドルの名前がどの本の何位かを言う' do
@@ -1524,10 +1524,10 @@ RSpec.describe ExchangesController do
         expect(help.text).not_to include('⠿')
       end
 
-      # 並べ替えは JavaScript でしか動かない。動かない環境に押せる口を残すと、
+      # 並べ替えは JavaScript でしか動かない。動かない環境に押せるハンドルを残すと、
       # 押しても何も起きないボタンになる。説明も同じで、できない操作を書くことになる。
       # カードからの追加・削除はそのまま通る
-      it '並べ替えの口と説明は JavaScript が動くまで押せない' do
+      it '並べ替えのハンドルと説明は JavaScript が動くまで押せない' do
         wish_for('1冊目')
         wish_for('2冊目')
 
@@ -1538,7 +1538,7 @@ RSpec.describe ExchangesController do
         expect(wish_list.at_css('#wish_reorder_help[hidden]')).to be_present
       end
 
-      # 順位は口である前に読むもの。⠿ のように伏せると、JavaScript が動かない間は
+      # 順位はボタンである前に読むもの。⠿ のように伏せると、JavaScript が動かない間は
       # 何位なのかがどこにも出なくなる
       it '順位は JavaScript が動かなくても読める' do
         wish_for('1冊目')
@@ -1641,7 +1641,7 @@ RSpec.describe ExchangesController do
         expect(reorder_form.at_css('input[name="filter"]')['value']).to eq('mine')
       end
 
-      # 外す口をカードの側にしか置かないと、リストを見て「これを消したい」と
+      # 外すボタンをカードの側にしか置かないと、リストを見て「これを消したい」と
       # 思った人が、同じ本のカードを一覧から探し直すことになる
       it '各行から希望を外せる' do
         first = wish_for('1冊目')
@@ -1653,7 +1653,7 @@ RSpec.describe ExchangesController do
           .to eq([exchange_book_wish_path(exchange, first), exchange_book_wish_path(exchange, second)])
       end
 
-      it '外す口の送り方は希望の削除' do
+      it '外すボタンの送り方は希望の削除' do
         wish_for('1冊目')
 
         open_page_while_wishing
@@ -1663,8 +1663,8 @@ RSpec.describe ExchangesController do
       end
 
       # form は入れ子にできない。並べ替えの form が行を包んだままだと、
-      # 行の中の外す口はブラウザに落とされ、押しても何も起きない
-      it '外す口の form が並べ替えの form に入れ子にならない' do
+      # 行の中の外すボタンはブラウザに落とされ、押しても何も起きない
+      it '外すボタンの form が並べ替えの form に入れ子にならない' do
         wish_for('1冊目')
 
         open_page_while_wishing
@@ -1684,7 +1684,7 @@ RSpec.describe ExchangesController do
       end
 
       # 並べ替えと違い、外すほうにはカードの側と同じ JavaScript の無い経路がある
-      it '外す口は JavaScript が動くまで伏せない' do
+      it '外すボタンは JavaScript が動くまで伏せない' do
         wish_for('1冊目')
 
         open_page_while_wishing
@@ -1700,9 +1700,9 @@ RSpec.describe ExchangesController do
         expect(removal_form(rows.first).at_css('input[name="filter"]')['value']).to eq('mine')
       end
 
-      # 畳んだ側のチップは横に流れる要約。44px の口を並べると、
+      # 畳んだ側のチップは横に流れる要約。44px のボタンを並べると、
       # 一覧を読む間ずっと見えているはずの並びが1画面に2冊ぶんしか入らない
-      it '畳んだシートのチップには外す口を置かない' do
+      it '畳んだシートのチップには外すボタンを置かない' do
         wish_for('1冊目')
 
         open_page_while_wishing
@@ -1847,7 +1847,7 @@ RSpec.describe ExchangesController do
         expect(response.body).not_to include('あなたの希望リスト')
       end
 
-      it '並べ替える口が外れる' do
+      it '並べ替えるハンドルが外れる' do
         wish_for_others(2)
 
         open_awaiting
@@ -1856,7 +1856,7 @@ RSpec.describe ExchangesController do
         expect(wish_list.at_css('[data-wish-reorder-target~="handle"]')).to be_nil
       end
 
-      # つまむ口が順位そのものなので、押せない順位と押せる順位が同じ数字で並ぶ。
+      # つまむハンドルが順位そのものなので、押せない順位と押せる順位が同じ数字で並ぶ。
       # 締め切られた側は button ごと外し、輪郭も持たせない
       it '順位が押せる見た目にならない' do
         wish_for_others(2)
@@ -1867,7 +1867,7 @@ RSpec.describe ExchangesController do
         expect(rows.first.text).to include('1')
       end
 
-      # 動かせない並びに読み上げる区画だけが残ると、伝える先の無い口になる
+      # 動かせない並びで読み上げる区画だけを残しても、伝えるものが無い
       it '順位を読み上げる区画も外れる' do
         wish_for_others(2)
 
@@ -1876,7 +1876,7 @@ RSpec.describe ExchangesController do
         expect(response.parsed_body.at_css('#wish_reorder_status')).to be_nil
       end
 
-      it '外す口も外れる' do
+      it '外すボタンも外れる' do
         wish_for_others(2)
 
         open_awaiting
@@ -1894,7 +1894,7 @@ RSpec.describe ExchangesController do
         expect(dragging_styles(rows.first)).to be_empty
       end
 
-      it 'カードから希望を出し入れする口が外れる' do
+      it 'カードから希望を出し入れするボタンが外れる' do
         wanted = wish_for('選んだ本')
         ignored = book_by('佐藤 花子', title: '選ばなかった本')
 
@@ -2084,8 +2084,8 @@ RSpec.describe ExchangesController do
         expect(card_for(book).text).not_to include('希望した人がいませんでした')
       end
 
-      # 希望を出す期間は終わっている。押しても通らない口を残さない
-      it '希望に追加する口が消える' do
+      # 希望を出す期間は終わっている。押しても通らないボタンを残さない
+      it '希望に追加するボタンが消える' do
         book = book_by('佐藤 花子', title: '十三番目の便り')
         matched(book, '鈴木 一郎')
         publish!
@@ -2108,7 +2108,7 @@ RSpec.describe ExchangesController do
       end
     end
 
-    # 見えるのは登録した本人と、成立後の受取人だけ。
+    # 登録した本人と、成立後の受取人だけに見える。
     # この画面はどちらの経路でもない
     it 'ギフトコードが含まれない' do
       mine = create(:book, participation:, gift_code: 'MYOWNGIFTCODE')
@@ -2280,7 +2280,7 @@ RSpec.describe ExchangesController do
     # 現在時刻はオフセット付きの直値で置く。travel_to は文字列を Time.zone.parse
     # に通すので、オフセットを書いておけばゾーン設定に依存しない。
     # 境界そのものは spec/models/exchange_spec.rb が持つ
-    # 作れるのは主催者がその場で参加できる2つのフェーズだけ。
+    # 主催者がその場で参加できる2つのフェーズでしか作れない。
     # 残りの3つで作れないことは #create の「入力の不備」が押さえている
     [
       ['登録期間の開始前なら準備中', '2026-08-09T23:59:00+09:00', :preparing],

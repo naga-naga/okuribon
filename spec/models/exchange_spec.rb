@@ -247,7 +247,7 @@ RSpec.describe Exchange do
       # フォームから来る日時にはタイムゾーンが付かない。UTC として読むと9時間ずれる
       it 'タイムゾーンの付かない文字列は JST として解釈される' do
         # 開始日時も絶対値で置く。factory の既定は 1.week.ago で、
-        # 実行した日によっては締切より後ろに来る。そうなると準備中に倒れ、
+        # 実行した日によっては締切より後ろに来る。そうなると準備中と判定され、
         # 見たいはずの解釈のずれと関係のない理由で落ちる
         exchange = build(:exchange, registration_starts_at: '2026-08-01 00:00:00',
                                     registration_ends_at: '2026-08-08 00:00:00')
@@ -444,7 +444,7 @@ RSpec.describe Exchange do
         expect(exchange.period(:registration)).to cover(exchange.registration_starts_at)
       end
 
-      # 主催者が動かせるのは登録期間と希望提出期間だけ。
+      # 主催者は登録期間と希望提出期間しか動かせない。
       # 結果公開は主催者の実行で起きて日時では決まらないため、期間を持たない
       it '期間に無い名前では落ちる' do
         expect { exchange.period(:published) }.to raise_error(KeyError)
@@ -520,7 +520,7 @@ RSpec.describe Exchange do
     end
   end
 
-  # 「登録期間中のみ本を登録できる」といった判定を、書き込み口ごとの手書きにしない。
+  # 「登録期間中のみ本を登録できる」といった判定を、書き込みの入口ごとの手書きにしない。
   # 許可されるフェーズは spec.md 4. フェーズの表と補足に対応する
   describe '#writable?' do
     let!(:exchange) do
@@ -605,8 +605,8 @@ RSpec.describe Exchange do
       expect { exchange.writable?(:wish) }.to raise_error(ArgumentError)
     end
 
-    # 表に無い操作名を false で受けると綴り間違いが「書けない」に化けて気付けず、
-    # true で受ければ素通りする。どちらも危ないので落とす
+    # 表に無い操作名を false で受けると綴り間違いが「書けない」という判定になって気付けず、
+    # true で受ければ通ってしまう。どちらも危ないので落とす
     it '表に無い操作名を渡すと例外になる' do
       at = '2026-08-04T00:00:00+09:00'.in_time_zone
 
@@ -1012,7 +1012,7 @@ RSpec.describe Exchange do
     end
 
     # 発行した直後のシードと、DB から読み直したシードで結果が揃うこと。
-    # bigint への往復で値が化けると、抽選をやり直しても同じ結果にならない
+    # bigint への往復で値が変わってしまうと、抽選をやり直しても同じ結果にならない
     it '保存したシードで Matching::Engine の結果が再現できる' do
       exchange = create(:exchange)
       generated = matching_result_for(exchange.random_seed)
@@ -1022,7 +1022,7 @@ RSpec.describe Exchange do
   end
 
   # フェーズが切り替わる時刻は交換会の日時カラムそのものなので、その時刻に
-  # 確認しに行くジョブを積む。定期的に全件を見に行くのは取りこぼしの網に回す
+  # 確認しに行くジョブを積む。定期的に全件を見に行くのは取りこぼしを拾う定期走査に回す
   describe '通知の予約' do
     include ActiveJob::TestHelper
 
@@ -1072,7 +1072,7 @@ RSpec.describe Exchange do
     end
   end
 
-  # 締切もまた交換会の日時カラムそのものなので、窓が開く時刻を予約して確認しに行く
+  # 締切もまた交換会の日時カラムそのものなので、ウィンドウが開く時刻を予約して確認しに行く
   describe 'リマインドの予約' do
     include ActiveJob::TestHelper
 

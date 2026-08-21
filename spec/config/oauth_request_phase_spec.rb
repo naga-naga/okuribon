@@ -6,7 +6,7 @@ require 'rails_helper'
 # POST に限り、かつ CSRF トークンを要求する。
 #
 # 固定しているのは OmniAuth のミドルウェアの設定で、アプリのコードは通らない。
-# spec/config なので type は推論されない。HTTP の口を叩くため明示する
+# spec/config なので type は推論されない。HTTP のエンドポイントを叩くため明示する
 RSpec.describe 'OAuth の認証開始', type: :request do
   let!(:auth) do
     OmniAuth::AuthHash.new(

@@ -5,7 +5,7 @@ require 'rails_helper'
 RSpec.describe Notifications::DeadlineReminder do
   include ActiveJob::TestHelper
 
-  # 登録の締切（2026-08-20 21:00）の9時間前。窓の中にいる
+  # 登録の締切（2026-08-20 21:00）の9時間前。ウィンドウの中にいる
   let!(:at) { Time.zone.parse('2026-08-20 12:00') }
 
   let!(:exchange) do
@@ -43,9 +43,9 @@ RSpec.describe Notifications::DeadlineReminder do
     expect { deliver }.not_to have_enqueued_job(Notifications::DeliverJob)
   end
 
-  # 窓は24時間ちょうど。走査が1日1回なので、これより短くすると
-  # 予約を取りこぼした日に走査が窓の中へ落ちない
-  it 'ちょうど24時間前は窓の中に入る' do
+  # ウィンドウは24時間ちょうど。走査が1日1回なので、これより短くすると
+  # 予約を取りこぼした日に走査がウィンドウの中へ落ちない
+  it 'ちょうど24時間前はウィンドウの中に入る' do
     expect { deliver(Time.zone.parse('2026-08-19 21:00')) }
       .to have_enqueued_job(Notifications::DeliverJob)
   end
@@ -175,7 +175,7 @@ RSpec.describe Notifications::DeadlineReminder do
   end
 
   describe '.deliver_all' do
-    # 締切がまだ遠い交換会。走査が全件を見ても、積むのは窓の中にあるものだけ
+    # 締切がまだ遠い交換会。走査が全件を見ても、積むのはウィンドウの中にあるものだけ
     let!(:far) do
       create(:exchange, registration_starts_at: Time.zone.parse('2026-08-10 10:00'),
                         registration_ends_at: Time.zone.parse('2026-09-10 21:00'),

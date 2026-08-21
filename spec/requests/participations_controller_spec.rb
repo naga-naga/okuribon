@@ -245,7 +245,7 @@ RSpec.describe ParticipationsController do
       end
     end
 
-    # ボタンを出していなくても、この口を直接叩けば届く。拒否はサーバー側で行う
+    # ボタンを出していなくても、このエンドポイントを直接叩けば届く。拒否はサーバー側で行う
     describe '主催者のとき' do
       before do
         exchange.join!(exchange.owner, at: registration)
@@ -267,7 +267,7 @@ RSpec.describe ParticipationsController do
       end
     end
 
-    # 参加していない人に取り消すものは無い。参加の口と違い、
+    # 参加していない人に取り消すものは無い。参加のルートと違い、
     # ログインを挟んで続きをやる意味も無いので、意図は保存しない
     it '未ログインならログイン画面へ送る' do
       travel_to(registration) { withdraw }

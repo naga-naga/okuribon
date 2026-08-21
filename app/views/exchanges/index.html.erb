@@ -30,9 +30,9 @@
                          'font-medium text-paper no-underline hover:bg-accent-hover' %>
     </div>
   <% else %>
-    <%# つくる口は見出しの右に置く。カードの並びに混ぜると、交換会でないものが
+    <%# つくるボタンは見出しの右に置く。カードの並びに混ぜると、交換会でないものが
         1枚だけ紛れる。塗りにしないのは、締切が24時間を切ったカードの朱の面と
-        競るため。ざっと見て目に飛び込む朱の面は1枚だけにしておく（6.6） %>
+        競るため。ざっと見て目に飛び込む朱の面は1枚だけにしておく %>
     <div class="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
       <div>
         <h1 class="text-[26px] font-bold leading-[1.45] text-ink">あなたの交換会</h1>
@@ -43,7 +43,7 @@
         <p class="mt-1.5 text-[13px] text-ink-muted">締切の近いものから並びます。</p>
       </div>
 
-      <%# 狭い画面では的を44pxにする。指で押す口の大きさはガイドが全画面で
+      <%# 狭い画面では的を44pxにする。指で押す的の大きさはガイドが全画面で
           決めているので、この画面だけ小さいままにしない %>
       <%= link_to '交換会をつくる', new_exchange_path,
                   class: 'flex-none rounded-[5px] border border-accent bg-paper px-5 py-3 ' \

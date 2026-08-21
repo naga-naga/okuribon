@@ -29,10 +29,10 @@ export default class extends Controller {
     this.toggleTargets.forEach((button) => button.setAttribute("aria-expanded", open))
   }
 
-  // 折って隠れている本文が無ければ、押しても何も起きない口になる。出さない。
+  // 折って隠れている本文が無ければ、押しても何も起きないボタンになる。出さない。
   //
   // 開いている間は折っていないので、測ると必ず「隠れていない」になる。
-  // そのまま伏せると、開いたカードから閉じる口が消えて戻れなくなる
+  // そのまま伏せると、開いたカードから閉じるボタンが消えて戻れなくなる
   #revealToggle() {
     if (this.element.hasAttribute("data-open")) return
 

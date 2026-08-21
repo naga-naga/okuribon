@@ -10,8 +10,8 @@ class ManagementsController < ApplicationController
   # 特定のフェーズで閉じると主催者が自分の交換会に入れなくなる
   def show
     @exchange = current_user.owned_exchanges.find(params.expect(:exchange_id))
-    # 冊数は SQL で数える。Book を読み込むと、数を出すだけの画面へ
-    # 暗号化されたギフトコードまで運ばれてくる
+    # 冊数は SQL で数える。Book を読み込むと、数を出すだけの画面で
+    # 暗号化されたギフトコードまで取得してしまう
     @participations = @exchange.participations
                                .with_counts
                                .includes(:user)
@@ -22,7 +22,7 @@ class ManagementsController < ApplicationController
 
   private
 
-  # 偏りの警告を出すのは、本を登録できるあいだだけ。
+  # 偏りの警告は、本を登録できるあいだに限って出す。
   # 締切を過ぎてからでは、追加登録を促す先がもう無い。求めているのは
   # 「まだ冊数を動かせるフェーズか」そのものなので、日時の比較を書き足さず
   # フェーズの表から引く。読み込み済みの参加を渡して、冊数を数え直させない

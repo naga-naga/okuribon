@@ -58,8 +58,8 @@ RSpec.describe ErrorsController, :rendered_error_pages do
     end
 
     # 共通ヘッダーはログイン中しかログアウトを出さない。未ログインで行き止まりに
-    # なると口が1つも無くなるので、本文がログインへの口を持つ
-    it '未ログインならログインへの口がある' do
+    # なると導線が1つも無くなるので、本文がログインへのリンクを持つ
+    it '未ログインならログインへのリンクがある' do
       get '/404'
 
       expect(response).to have_http_status(:not_found)
@@ -87,7 +87,7 @@ RSpec.describe ErrorsController, :rendered_error_pages do
   # ビューを通すとエラー画面そのものが描けなくなる
   describe '500' do
     # 既定の :rescuable では、拾う先の決まっていない例外は再送出されて
-    # 画面にならない。5xx の経路を見るこの節だけ :all に倒す
+    # 画面にならない。5xx の経路を見るこの節だけ :all にする
     around do |example|
       env_config = Rails.application.env_config
       key = 'action_dispatch.show_exceptions'

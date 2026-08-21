@@ -96,7 +96,7 @@ RSpec.describe ApplicationController do
         expect(header.text).to include('贈本 太郎')
       end
 
-      # ログアウトの口が全画面にあることが、共通ヘッダーを入れる第一の理由。
+      # ログアウトの導線が全画面にあることが、共通ヘッダーを入れる第一の理由。
       # 副作用のある操作なので GET では出さない
       it 'ログアウトできる' do
         get exchanges_path
@@ -109,8 +109,8 @@ RSpec.describe ApplicationController do
 
     context '未ログイン' do
       # 招待URLは参加していない人が着地する画面で、共通ヘッダーそのものは出す。
-      # 出せないのはアカウントの口だけ
-      it '招待URL着地では共通ヘッダーを出し、アカウントの口を出さない' do
+      # 出せないのはアカウントの操作だけ
+      it '招待URL着地では共通ヘッダーを出し、アカウントの操作を出さない' do
         exchange = create(:exchange)
 
         get invitation_path(exchange.invite_token)
@@ -175,7 +175,7 @@ RSpec.describe ApplicationController do
       end
 
       # 断られた人が、どの交換会の話なのかを画面から読めるようにする。
-      # 書き込みの口は交換会をまたいで同じ形をしているので、
+      # 書き込みの操作は交換会をまたいで同じ形をしているので、
       # メッセージだけだと、どれを操作していたのかが分からない
       it 'どの交換会でのことかを出す' do
         expect(main_text).to include('夏の交換会')
@@ -189,7 +189,7 @@ RSpec.describe ApplicationController do
 
       # 行き止まりにしない。統合で交換会の中の画面は交換会ページに集まったので、
       # 戻る先は1つでよい
-      it '交換会ページへ戻る口がある' do
+      it '交換会ページへ戻るリンクがある' do
         expect(response.parsed_body.css("main a[href='#{exchange_path(exchange)}']")).to be_present
       end
     end
@@ -209,7 +209,7 @@ RSpec.describe ApplicationController do
         expect(response).to have_http_status(:forbidden)
       end
 
-      it '同じ組み立てで、交換会ページへ戻る口がある' do
+      it '同じ組み立てで、交換会ページへ戻るリンクがある' do
         expect(main_text).to include('夏の交換会')
         expect(response.parsed_body.css("main a[href='#{exchange_path(exchange)}']")).to be_present
       end

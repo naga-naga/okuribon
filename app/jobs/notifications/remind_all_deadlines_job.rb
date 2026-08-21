@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Notifications
-  # 予約を取りこぼした交換会を拾う網。
+  # 予約を取りこぼした交換会を拾う定期走査。
   #
   # 締切そのものは Notifications::RemindDeadlineJob の予約が拾う。ここが要るのは、
   # 予約が queue のデータベースにしか無いためで、積み損ねたときも、ジョブが失敗して
@@ -12,7 +12,7 @@ module Notifications
   # 走査から落ちたことに気付けない
   class RemindAllDeadlinesJob < ApplicationJob
     def perform
-      # 走査の途中で現在時刻を読み直すと、窓の縁にいる交換会を
+      # 走査の途中で現在時刻を読み直すと、ウィンドウの縁にいる交換会を
       # 前半と後半で違う扱いにする
       Notifications::DeadlineReminder.deliver_all(at: Time.current)
     end

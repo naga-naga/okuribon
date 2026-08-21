@@ -48,7 +48,7 @@ module Okuribon
     # エラー画面のうち 4xx はアプリのルーティングへ流し、共通ヘッダーと
     # デザイントークンを通して描く。5xx は Rails 既定のまま public/*.html を返す。
     # 500 が出ている状況では DB もセッションも読めないことがあり、
-    # ビューを通すとエラー画面そのものが描けなくなる（docs/spec.md 6.10）
+    # ビューを通すとエラー画面そのものが描けなくなる
     config.exceptions_app = lambda do |env|
       if RENDERED_ERROR_PATHS.include?(env['PATH_INFO'])
         Rails.application.routes.call(env)

@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-# 書き込み口ごとの手書きにしないための仕組みを、仕組み単体で確かめる。
+# 書き込みのアクションごとの手書きにしないための仕組みを、仕組み単体で確かめる。
 # 実際のコントローラは #12 以降で入るため、ここでは concern を載せた最小のものを立てて回す
 RSpec.describe PhaseGuard do
   let!(:registration_period) { '2026-08-04T00:00:00+09:00'.in_time_zone }
@@ -21,7 +21,7 @@ RSpec.describe PhaseGuard do
   let!(:performed) { [] }
 
   # 操作名だけが違う2つのコントローラを立てる。
-  # 拒否の応答が口を問わず同じ形になることを確かめるため
+  # 拒否の応答がアクションを問わず同じ形になることを確かめるため
   before do
     performed_actions = performed
 
@@ -108,7 +108,7 @@ RSpec.describe PhaseGuard do
     expect(performed).to eq([:book_index])
   end
 
-  # 対象の交換会を返せないまま黙って素通りすると、制御が効いていないことに気付けない
+  # 対象の交換会を返せないまま通してしまうと、制御が効いていないことに気付けない
   it '交換会の取り出し方を書き忘れたコントローラは落ちる' do
     stub_const('ForgotGuardTestController', Class.new(ApplicationController) do
       include PhaseGuard

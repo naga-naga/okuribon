@@ -55,7 +55,7 @@ module ExchangesHelper
             value: 'text-ink-muted', note: 'text-ink-muted' },
   }.freeze
 
-  # fetch で落として、綴り間違いを黙って既定の見た目に化けさせない
+  # fetch で落とす。そうしないと綴り間違いが既定の見た目になって気付けない
   def exchange_todo_style(tone, part)
     TODO_TONE_STYLES.fetch(tone).fetch(part)
   end

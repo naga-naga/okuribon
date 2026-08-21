@@ -9,7 +9,7 @@ let pendingFocus = null
 const SAVE_DELAY = 250
 
 // キーが行を送る先。↑↓ は隣へ、Home / End は端へ。ポインタで触れる人はドラッグで
-// 一息に動かせるので、端まで送る道をキーの側にも置く。口は1つも増えない
+// 一息に動かせるので、端まで送る道をキーの側にも置く。ボタンは1つも増えない
 const STEPS = {
   ArrowUp: () => -1,
   ArrowDown: () => 1,
@@ -20,8 +20,8 @@ const STEPS = {
 // 希望リストを並べ替える。行の並びがそのまま送る並びで、hidden は行の中にあるので
 // 行を動かせば一緒に動く。順位は送らず、サーバー側で1から振り直す。
 //
-// 口はハンドル1つ。つまんで動かすほかに、フォーカスしてキーでも動かせる。
-// ↑↓ のボタンを並べると行の口が4つになり、題に6文字しか残らないので、
+// 操作はハンドル1つ。つまんで動かすほかに、フォーカスしてキーでも動かせる。
+// ↑↓ のボタンを並べると行のボタンが4つになり、題に6文字しか残らないので、
 // キーボードと読み上げに渡る道はハンドル自身が持つ
 export default class extends Controller {
   static targets = ["row", "controls", "position", "title", "handle", "book", "form"]
@@ -31,7 +31,7 @@ export default class extends Controller {
     // 並べ替えは JavaScript でしか動かない。動く環境になって初めて説明を出す
     this.controlsTargets.forEach((controls) => (controls.hidden = false))
 
-    // 口のほうは順位そのものなので、伏せるのではなく押せるようにする。
+    // ハンドルのほうは順位そのものなので、伏せるのではなく押せるようにする。
     // 順位は動かせない間も読むものなので、消してしまうわけにいかない
     this.handleTargets.forEach((handle) => (handle.disabled = false))
 
@@ -42,7 +42,7 @@ export default class extends Controller {
     this.#release()
   }
 
-  // ハンドルを掴んだままキーで動かす。ドラッグと同じ口に載せるので、
+  // ハンドルを掴んだままキーで動かす。ドラッグと同じハンドルに載せるので、
   // 「並べ替えはここ」と言える場所が行に1つしかない
   key(event) {
     const index = this.handleTargets.indexOf(event.currentTarget)
@@ -142,7 +142,7 @@ export default class extends Controller {
 
     this.#renumber()
 
-    // 行を DOM から抜き差しした時点でフォーカスが外れる。掴んでいた口は行と一緒に
+    // 行を DOM から抜き差しした時点でフォーカスが外れる。掴んでいたハンドルは行と一緒に
     // 動いた先へ移っているので、そこで掴み直す。戻さないと、続けてもう1つ動かせない
     handle.focus()
     this.#announce(row)
@@ -175,7 +175,7 @@ export default class extends Controller {
     pendingFocus = { bookId: this.#bookIdOf(row), step }
 
     clearTimeout(this.timer)
-    // 送り先の form は行を包まない。行の中には外す口の form があり、
+    // 送り先の form は行を包まない。行の中には外すボタンの form があり、
     // form は入れ子にできないため、順序を送る hidden は form 属性で結んである
     this.timer = setTimeout(() => this.formTarget.requestSubmit(), SAVE_DELAY)
   }

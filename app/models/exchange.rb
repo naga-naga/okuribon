@@ -47,7 +47,7 @@ class Exchange < ApplicationRecord
 
   # 応答の組み立ては ApplicationController の rescue_from に集約する。
   # 交換会を持たせるのは、拒否の画面が戻り先を出すため。コントローラの
-  # インスタンス変数から拾うと、変数を置き忘れた口だけ行き止まりになる
+  # インスタンス変数から拾うと、変数を置き忘れたアクションだけ戻り先を出せなくなる
   class PhaseViolation < StandardError
     attr_reader :exchange
 
@@ -98,14 +98,14 @@ class Exchange < ApplicationRecord
   after_initialize :assign_generated_attributes, if: :new_record?
 
   # フェーズの変わり目に通知するため、切り替わる時刻を予約する。
-  # 日時を書き込む口は作成と編集の2つあるが、どちらも保存を通るのでここに集める。
-  # 口ごとに積むと、あとから足された経路だけ通知が来ない状態に気付けない。
+  # 日時を書き込む経路は作成と編集の2つあるが、どちらも保存を通るのでここに集める。
+  # 経路ごとに積むと、あとから足された経路だけ通知が来ない状態に気付けない。
   # commit のあとに積むのは、巻き戻った日時の予約を残さないため
   after_commit :reserve_phase_notifications, if: :saved_change_to_phase_boundaries?
 
-  # 締切の前に知らせるため、締切を持つ日時も予約する。フェーズの変わり目と口を分けるのは、
-  # 予約する時刻が締切そのものではなく、そこから窓の分だけ手前になるため。
-  # 同じ口にまとめると、どちらの都合で引き算しているのかが読めなくなる
+  # 締切の前に知らせるため、締切を持つ日時も予約する。フェーズの変わり目の予約と分けるのは、
+  # 予約する時刻が締切そのものではなく、そこからウィンドウの分だけ手前になるため。
+  # 1つのコールバックにまとめると、どちらの都合で引き算しているのかが読めなくなる
   after_commit :reserve_deadline_reminders, if: :saved_change_to_reminder_deadlines?
 
   # カラムに分けると等値をバリデーションでしか守れず二重管理になるため、導出する
@@ -125,7 +125,7 @@ class Exchange < ApplicationRecord
   end
 
   # ギフトコードの可視性も結果画面の可否もここに乗る。
-  # フェーズ名との比較を呼ぶ側それぞれに書かせない。綴り間違いは黙って false になり、
+  # フェーズ名との比較を呼ぶ側それぞれに書かせない。綴り間違いはエラーにならず false になり、
   # 見えてはいけないものが見える側に倒れる
   def published?(at:)
     phase(at:) == :published
@@ -203,7 +203,7 @@ class Exchange < ApplicationRecord
   # 段の名前と日時カラムの対応をここだけに置く。
   # 結果公開が返すのは希望提出の締切で、公開そのものは主催者がマッチングを
   # 実行したときに起きる。日時では決まらないので、これは下限にあたる。
-  # fetch で落として、綴り間違いを黙って nil に化けさせない
+  # fetch で落とす。そうしないと綴り間違いが nil になって気付けない
   def schedule_starts_at(step)
     {
       registration: registration_starts_at,
@@ -214,7 +214,7 @@ class Exchange < ApplicationRecord
 
   # 段の名前と日時カラムの対応を schedule_starts_at と同じくここに集める。
   # 終端を含まない範囲にするのは、各期間が終了時刻を含まないため。
-  # fetch で落として、綴り間違いを黙って nil に化けさせない
+  # fetch で落とす。そうしないと綴り間違いが nil になって気付けない
   def period(step)
     {
       registration: registration_starts_at...registration_ends_at,
@@ -244,7 +244,7 @@ class Exchange < ApplicationRecord
   end
 
   # 入口は本人の辞退と主催者による除外の2つあるが、通す検証は同じなので、
-  # 口ごとに分けずここへ集める。片方にだけ条件を書き足すと、辞退では
+  # 経路ごとに分けずここへ集める。片方にだけ条件を書き足すと、辞退では
   # 断られるものが除外では通る。
   # 参加と同じ操作名で表を引くため、抜けられる期間は参加できる期間と必ず一致する。
   # 別々に書くと、希望提出期間に入ってから抜けられて取得枠の計算が壊れる。
@@ -267,8 +267,8 @@ class Exchange < ApplicationRecord
   end
 
   # 書き込みを許すかどうかの判定はここだけに置く。
-  # 各コントローラがフェーズを直接見て条件を手書きすると、口ごとに食い違うため。
-  # 表に無い操作名は fetch が落とす。綴り間違いを黙って可否に化けさせない
+  # 各コントローラがフェーズを直接見て条件を手書きすると、コントローラごとに食い違うため。
+  # 表に無い操作名は fetch が落とす。そうしないと綴り間違いまで可否として答えてしまう
   def writable?(operation, at:)
     WRITABLE_PHASES.fetch(operation).include?(phase(at:))
   end

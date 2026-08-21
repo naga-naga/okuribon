@@ -27,7 +27,7 @@ RSpec.describe Notifications::NotifyAllPhaseChangesJob do
     expect(Notifications::PhaseChange).to have_received(:deliver_all).with(at: be_within(5.seconds).of(Time.current))
   end
 
-  # 変わり目そのものは予約が拾うので、ここは網でよい。頻度を上げると、
+  # 変わり目そのものは予約が拾うので、ここは取りこぼしを拾うだけでよい。頻度を上げると、
   # 空振りの走査を1日に何百回も積むことになる
   it '1日1回の定期実行として登録されている' do
     definitions = YAML.safe_load(ERB.new(Rails.root.join('config/recurring.yml').read).result, aliases: true)

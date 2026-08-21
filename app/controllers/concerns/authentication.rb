@@ -42,7 +42,7 @@ module Authentication
     redirect_to login_path
   end
 
-  # 覚えるのはサーバーが見た URL だけ。パラメータや Referer からは受け取らない。
+  # サーバーが見た URL だけを覚える。パラメータや Referer からは受け取らない。
   # 戻り先を外から渡せると、ログインを踏ませるだけで外部サイトへ飛ばせる。
   # 書き込みは覚えない。ログインしただけで送信をやり直させてしまう。
   # HEAD は GET と同じ経路に流れるのに request.get? が false になるため明示する

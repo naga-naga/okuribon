@@ -10,8 +10,8 @@ class WishesController < ApplicationController
   before_action :set_book
 
   # PhaseGuard は重ねない。フェーズの検証も行ロックも順位の再採番も
-  # Participation の中にある。希望リストを変える口は追加・削除・並べ替えの
-  # 3つあり、条件をコントローラにも書くと、片方だけ直したときに口ごとに食い違う
+  # Participation の中にある。希望リストを変える入口は追加・削除・並べ替えの
+  # 3つあり、条件をコントローラにも書くと、片方だけ直したときに経路ごとに食い違う
   def create
     @participation.add_wish!(@book, at: requested_at)
 

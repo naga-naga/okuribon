@@ -12,7 +12,7 @@ RSpec.describe Exchanges::MatchingSummary do
   end
 
   # 冊数と希望冊数は SQL で数える。冊数だけが要る場に Book を読み込むと、
-  # 暗号化されたギフトコードまで運ばれてくる
+  # 暗号化されたギフトコードまで取得してしまう
   def summary
     described_class.new(exchange.participations.with_counts).call
   end
@@ -25,7 +25,7 @@ RSpec.describe Exchanges::MatchingSummary do
     books.each_with_index { |book, index| create(:wish, participation:, book:, position: index + 1) }
   end
 
-  # 割当に加わるのは本を登録した人だけ。1冊も登録していない人は取得枠が0で、
+  # 本を登録した人だけが割当に加わる。1冊も登録していない人は取得枠が0で、
   # 何も受け取らない。主催者に人数を数え直させない
   it '本を登録した人数と、登録された総冊数を数える' do
     register(owner_participation, 2)

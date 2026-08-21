@@ -28,7 +28,7 @@ module Exchanges
         # 締め出されたのではなく仕組みの結果。実行してから
         # 「なぜこの人には何も届かないのか」を問われないよう、先に数で出す。
         # count ではなく length で数える。with_counts は GROUP BY を持つので、
-        # count は件数ではなくグループごとの件数を数える SQL に化ける
+        # count は全体の件数ではなくグループごとの件数を数える SQL になる
         without_books_count: @participations.length - targets.length,
         # 冊数だけから決まる下限。判定は登録期間中の警告と同じものを使う。
         # 別に書くと、確認画面と管理画面の警告で冊数が食い違う

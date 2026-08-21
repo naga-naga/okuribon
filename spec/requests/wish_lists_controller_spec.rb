@@ -79,7 +79,7 @@ RSpec.describe WishListsController do
   end
 
   # 集合が食い違うのは別のタブで追加・削除したときで、届いた並びを正として
-  # 差分を反映すると、そちらの変更が黙って消える
+  # 差分を反映すると、そちらの変更が気付かれないまま消える
   describe '希望リストと食い違う並び' do
     it '希望していない本が混じっていればリクエスト全体を拒否する' do
       reorder(books.map(&:id) + [book_by_other.id])
@@ -153,7 +153,7 @@ RSpec.describe WishListsController do
       expect(wished_books).to eq(books)
     end
 
-    # 交換会は自分の参加から引く。他人の参加を id で名指しできる口は無い
+    # 交換会は自分の参加から引く。他人の参加を id で名指しできるルートは無い
     it '他人の希望リストは書き換えられない' do
       log_in_as(create(:user))
 

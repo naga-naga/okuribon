@@ -134,7 +134,7 @@ RSpec.describe InvitationsController do
         expect(response.body).not_to include('参加する')
       end
 
-      # この画面は未参加の人のためのもの。辞退の口があるので追い返しはしないが、
+      # この画面は未参加の人のためのもの。辞退の導線があるので追い返しはしないが、
       # 行き先を示さないと、参加したあと何をすればよいのか分からない
       it '交換会トップへの導線が出る' do
         expect(response.body).to include(exchange_path(exchange))

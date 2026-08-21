@@ -126,7 +126,7 @@
 
               <% if exclusion_open %>
                 <td class="px-4 py-3 text-right">
-                  <%# 主催者は必ず参加者を兼ねるので自分の行には口を出さない。
+                  <%# 主催者は必ず参加者を兼ねるので自分の行にはボタンを出さない。
                       判定はサーバー側の Exchange#remove_participant! と同じ規則から引く。
                       ここで条件を手書きすると、押しても断られるボタンが残る %>
                   <% if @exchange.removable_participant?(participation.user, at: requested_at) %>
@@ -146,13 +146,13 @@
       </table>
     </div>
 
-    <%# 0冊は締め出しではなく仕組みの結果（6.9）。書かないと、
+    <%# 0冊は締め出しではなく仕組みの結果。書かないと、
         主催者が誤って登録を消したのかと疑う %>
     <p class="mt-3 text-[12px] leading-[1.8] text-ink-subtle">
       1冊も登録していない人は取得枠が0で、本を受け取りません。
     </p>
 
-    <%# 除外の口はいつまで出るのか。締切後に列が消えたことを不具合と読ませない %>
+    <%# 除外のボタンはいつまで出るのか。締切後に列が消えたことを不具合と読ませない %>
     <p class="mt-1.5 text-[12px] leading-[1.8] text-ink-subtle">
       <%= t(exclusion_open ? 'management.participants.exclusion_open' : 'management.participants.exclusion_closed',
             at: l(@exchange.registration_ends_at, format: :schedule)) %>

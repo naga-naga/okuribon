@@ -50,7 +50,7 @@ RSpec.describe ResultsController do
     context '結果が公開されているとき' do
       before { log_in_as(viewer) }
 
-      # 交換会トップへ戻る口は共通ヘッダーのパンくずが持つ。画面の中には置かない
+      # 交換会トップへ戻るリンクは共通ヘッダーのパンくずが持つ。画面の中には置かない
       it 'パンくずから交換会トップへ戻れる' do
         publish
 
@@ -228,7 +228,7 @@ RSpec.describe ResultsController do
         expect(response.body).not_to include('全体の結果')
       end
 
-      # 導線も出ないフェーズなので、ここへ来るのは URL を直に打った場合だけ。
+      # 導線も出ないフェーズなので、URL を直に打った場合にしかここへ来ない。
       # それでも全体の結果が漏れては、公開前に勝ち負けが分かってしまう
       it '結果公開前には、全体の結果そのものが出ない' do
         riku = join('りく')
@@ -356,7 +356,7 @@ RSpec.describe ResultsController do
       end
 
       # 本の詳細画面を持たないため、誰にも渡らなかった
-      # コードの取り出し口はこの画面以外に無い
+      # コードを取り出せるのはこの画面だけ
       it '返却された本のギフトコードを、受け取った本と同じ形で開ける' do
         return_book(title: '砂の図書館', gift_code: 'RETURNED-CODE-3333')
         publish
@@ -364,7 +364,7 @@ RSpec.describe ResultsController do
         open_result
 
         expect(response.body).to include('RETURNED-CODE-3333', 'type="password"',
-                                         '見えるのはあなただけです')
+                                         'あなただけに表示されます')
       end
 
       it '2冊以上戻ってきたときは、冊数と題名が並ぶ' do

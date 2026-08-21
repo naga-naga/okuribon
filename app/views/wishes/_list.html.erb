@@ -1,8 +1,8 @@
 <%# 希望リストの中身。1冊出し入れするたびにここごと差し替える。
-    出し入れの口はカードの側にあるので、ここは今の並びを見せて順序だけを動かす。
+    出し入れのボタンはカードの側にあるので、ここは今の並びを見せて順序だけを動かす。
     何人がその本を希望しているかは、ここにも一覧にも出さない。
 
-    editable: false はマッチング実行待ち。並びはそのままで、促しと動かす口が外れる %>
+    editable: false はマッチング実行待ち。並びはそのままで、促しと動かす操作が外れる %>
 <div id="wish_list" class="min-h-0 overflow-y-auto px-5 pt-3 pb-5 lg:px-6 lg:pt-4 lg:pb-5">
   <%# 案内の出し分けは畳んだ側と開いた側で共通。数えるのは自分の取得枠と
       自分の希望だけで、何人がその本を希望しているかは持ち込まない。
@@ -25,7 +25,7 @@
           <%= editable ? 'まだ1冊も選んでいません' : '希望を1冊も出しませんでした' %>
         </span>
       <% else %>
-        <%# 1位だけを朱にするのは動かせる間だけ。朱は押すものと締切の担当なので、
+        <%# 1位を朱にするのは動かせる間に限る。朱は押すものと締切の担当なので、
             締め切られた並びに残すと、まだ動かせるように読める %>
         <% wishes.each do |wish| %>
           <span class="tabular flex-none rounded-[3px] px-3 py-2 text-[12px] whitespace-nowrap
@@ -74,10 +74,10 @@
       <div data-controller="wish-reorder" data-wish-reorder-status-value="wish_reorder_status">
         <%# つまむのもキーで動かすのも、画面には何も書かれていない操作にあたる。
             説明はここ1か所に置き、行の順位から aria-describedby で繋ぐ。
-            並べ替えごと JavaScript でしか動かないので、口が押せるようになるまで
+            並べ替えごと JavaScript でしか動かないので、ハンドルが押せるようになるまで
             伏せておく。出したままにすると、できない操作の手順が残る。
 
-            どこをつまむのかを名指すのは、口が順位へ移ったため。⠿ は形だけで
+            どこをつまむのかを名指すのは、つまむ場所が順位へ移ったため。⠿ は形だけで
             つまめることを言えたが、数字にはそれが無い %>
         <p hidden id="wish_reorder_help" data-wish-reorder-target="controls"
            class="mb-2 text-[12px] leading-[1.8] text-ink-subtle">
@@ -89,7 +89,7 @@
         <%# 並べ替えは順序だけをまとめて送る。送る並びは行の並びそのもので、
             行を動かせば中の hidden も一緒に動く。順位は送らず、サーバー側で1から振り直す。
 
-            form が行を包まないのは、行の中に外す口の form があるため。
+            form が行を包まないのは、行の中に外すボタンの form があるため。
             form は入れ子にできず、内側はブラウザに落とされる。送られる順は
             form の中の並びではなく DOM の並び順なので、外へ出しても並びは変わらない %>
         <%= form_with url: exchange_wish_list_path(exchange), method: :patch,

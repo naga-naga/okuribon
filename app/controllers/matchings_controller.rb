@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-# マッチングの実行。取り返しがつかず、一度しか実行できない。
 # 実行そのものは Matching::Execution が持つ。行ロックもフェーズの検証も
 # 二重実行の拒否もあちらの内側にあるので、ここでは主催者かどうかだけを見る
 class MatchingsController < ApplicationController
@@ -9,7 +8,6 @@ class MatchingsController < ApplicationController
   # 主催者以外には 404 を返して交換会の実在そのものを伏せる
   before_action :set_exchange
 
-  # 実行前の確認画面。押す前に、何人に何冊が渡るのかを数で示す
   def new
     # 締切前や実行済みのときは、確認画面も開かない。通らない道を先に見せると、
     # 押せると思わせたまま最後に断ることになる。判定は交換会ページが実行への

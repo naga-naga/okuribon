@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# 本の一覧に出すものを揃える。一覧を開くときと、希望を追加・削除したあとの
+# 一覧を開くときと、希望を追加・削除したあとの
 # 差し替えで同じ画面を描くため、読み込みを1か所に置く。
 # 別々に書くと、片方にだけ足した絞り込みや並びが差し替えで消える
 module BookListing
@@ -23,9 +23,8 @@ module BookListing
     # どれだけ残っているかが分からない
     @participant_count = @exchange.participations.count
 
-    # 自分の希望リスト。順位順は関連が持っている。
+    # 順位順は関連が持っている。
     # 他人の希望は読まない。何人がその本を希望しているかは誰にも見せない
-    # （docs/spec.md 8. 情報の可視性ルール）
     @wishes = @participation.wishes.includes(book: :registrant).load
 
     # 絞り込みは URL に残す。開き直しても同じ並びで戻れる。
@@ -33,7 +32,6 @@ module BookListing
     @mine_only = params[:filter] == 'mine'
   end
 
-  # 希望リストを変えたあとの差し替え。1冊出し入れする口と並べ替える口の両方から呼ぶ。
   # 1冊外すと後ろの順位がすべて繰り上がり、並べ替えれば全部の順位が変わるので、
   # 押した要素だけを差し替えると古い順位が残る。
   # 差し替えるのは一覧と希望リストの中身で、開閉の状態を持つシートの外枠は含めない

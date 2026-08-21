@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-# フェーズが許さない書き込みを、サーバー側で一律に止める。
-# 各コントローラは guard_phase で操作名を宣言し、current_exchange を返すだけでよい。
 # フェーズの条件そのものは Exchange::WRITABLE_PHASES にあり、ここには持たない
 module PhaseGuard
   extend ActiveSupport::Concern

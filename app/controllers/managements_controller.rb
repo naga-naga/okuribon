@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-# 主催者管理画面。参加者の状況を把握し、交換会の設定と進行を操作する場所。
-# この画面が骨格で、招待URL（#37）・日時の変更（#38）・参加者の除外（#39）・
-# マッチングの実行（#31）がここへ足されていく
 class ManagementsController < ApplicationController
   before_action :require_login
 
@@ -25,7 +22,7 @@ class ManagementsController < ApplicationController
 
   private
 
-  # 偏りの警告を出すのは、本を登録できるあいだだけ（docs/spec.md 6.8）。
+  # 偏りの警告を出すのは、本を登録できるあいだだけ。
   # 締切を過ぎてからでは、追加登録を促す先がもう無い。求めているのは
   # 「まだ冊数を動かせるフェーズか」そのものなので、日時の比較を書き足さず
   # フェーズの表から引く。読み込み済みの参加を渡して、冊数を数え直させない

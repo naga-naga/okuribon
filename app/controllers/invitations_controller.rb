@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
-# 招待URLを開いたときの着地画面。未参加の人と未ログインの人が最初に見る画面なので、
-# ログインを求めない。読み取りは全フェーズで開いている
+# 未参加の人と未ログインの人が最初に見る画面なので、ログインを求めない
 class InvitationsController < ApplicationController
   def show
     # 引けなければ 404。トークンが正しくないことと交換会が無いことを区別しない

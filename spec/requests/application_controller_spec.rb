@@ -29,7 +29,7 @@ RSpec.describe ApplicationController do
   end
 
   # タブに並んだときに、どの道具のどの画面かが読めること。静的な 500 / 406 が
-  # 同じ形の題を持っているので（6.10）、アプリ側だけ画面名しか出さないと、
+  # 同じ形の題を持っているので、アプリ側だけ画面名しか出さないと、
   # エラーへ落ちた瞬間に題の形が変わる
   describe 'ページの題' do
     def title = response.parsed_body.at_css('title').text
@@ -54,7 +54,7 @@ RSpec.describe ApplicationController do
       before { log_in_as(user) }
 
       # 根が名乗るのは行き先の名前で、サービス名ではない。パンくずは祖先を
-      # 連ねるもので、全段が画面の名前で揃う（docs/spec.md 5.）
+      # 連ねるもので、全段が画面の名前で揃う
       it 'パンくずの根から交換会一覧へ戻れる' do
         exchange = create(:exchange)
         exchange.participations.create!(user:)
@@ -140,7 +140,7 @@ RSpec.describe ApplicationController do
     end
   end
 
-  # 書き込みを断ったときの画面（docs/spec.md 6.10）。ステータスの使い分けと
+  # 書き込みを断ったときの画面。ステータスの使い分けと
   # メッセージの中身は phase_guard_spec が押さえる。ここで見るのは画面のほうで、
   # 断られた人がどこへ行けるかを持っているかどうか
   describe '書き込みを拒否したときの画面' do
@@ -188,7 +188,7 @@ RSpec.describe ApplicationController do
       end
 
       # 行き止まりにしない。統合で交換会の中の画面は交換会ページに集まったので、
-      # 戻る先は1つでよい（docs/spec.md 6.1）
+      # 戻る先は1つでよい
       it '交換会ページへ戻る口がある' do
         expect(response.parsed_body.css("main a[href='#{exchange_path(exchange)}']")).to be_present
       end

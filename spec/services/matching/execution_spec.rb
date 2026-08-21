@@ -88,7 +88,7 @@ RSpec.describe Matching::Execution do
   end
 
   describe '成立の中身' do
-    # 登録した冊数だけ受け取り、自分が登録した本は受け取れない（docs/spec.md 3.）
+    # 登録した冊数だけ受け取り、自分が登録した本は受け取れない
     it '全員が登録した冊数だけ受け取る' do
       participations, = build_round_robin
 
@@ -138,7 +138,7 @@ RSpec.describe Matching::Execution do
       expect(returned.pluck(:round)).to all(be_nil)
     end
 
-    # 参加者が自分ひとりしかいない交換会（docs/spec.md 9.）
+    # 参加者が自分ひとりしかいない交換会
     it '参加者がひとりだけなら全冊が返却として成立する' do
       register(owner_participation, 3)
 
@@ -149,7 +149,7 @@ RSpec.describe Matching::Execution do
       expect(Assignment.pluck(:participation_id)).to all(eq(owner_participation.id))
     end
 
-    # 希望を出さなかった人も受け取る権利は失わない（docs/spec.md 3.）
+    # 希望を出さなかった人も受け取る権利は失わない
     it '希望を出さなかった参加者にも取得枠の分だけ割り当てられる' do
       riku = join('りく')
       yuto = join('ゆうと')
@@ -162,7 +162,7 @@ RSpec.describe Matching::Execution do
       expect(Assignment.where(participation: riku, returned: false).count).to eq(2)
     end
 
-    # 1冊も登録しなかった人は取得枠が0で受け取れない（docs/spec.md 3.）
+    # 1冊も登録しなかった人は取得枠が0で受け取れない
     it '1冊も登録しなかった参加者には割り当てられない' do
       build_round_robin
       empty_handed = join('はるか')
@@ -173,7 +173,7 @@ RSpec.describe Matching::Execution do
     end
   end
 
-  # 抽選順は結果公開後に見せてよい（docs/spec.md 8.）。実行のときにしか決まらないので、
+  # 抽選順は結果公開後に見せてよい。実行のときにしか決まらないので、
   # Engine が返した並びを参加へ書き戻す
   describe '抽選順' do
     it '参加者全員に1から始まる連番が入る' do
@@ -210,7 +210,7 @@ RSpec.describe Matching::Execution do
   describe 'マッチング実行待ちより前' do
     before { build_round_robin }
 
-    # 書き込みの可否はサーバー側で検証する（docs/spec.md 4.）
+    # 書き込みの可否はサーバー側で検証する
     it '希望提出期間のうちは実行できない' do
       expect { execute(at: '2026-08-20T10:00:00+09:00'.in_time_zone) }
         .to raise_error(Exchange::PhaseViolation)
@@ -254,7 +254,7 @@ RSpec.describe Matching::Execution do
       expect(Assignment.count).to eq(3)
     end
 
-    # 実行後に主催者が締切を先へ動かしても、結果公開のままで実行し直せない（docs/spec.md 4.）
+    # 実行後に主催者が締切を先へ動かしても、結果公開のままで実行し直せない
     it '締切を動かしても再実行できない' do
       exchange.update!(wish_ends_at: '2026-09-30T10:00:00+09:00'.in_time_zone)
 

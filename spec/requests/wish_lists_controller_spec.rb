@@ -63,7 +63,7 @@ RSpec.describe WishListsController do
       expect(response).to redirect_to(exchange_path(exchange))
     end
 
-    # 絞り込みは URL に残る（docs/spec.md 6.2）
+    # 絞り込みは URL に残る
     it '絞り込みを保ったまま戻る' do
       reorder(books.reverse.map(&:id), params: { filter: 'mine' })
 
@@ -79,7 +79,7 @@ RSpec.describe WishListsController do
   end
 
   # 集合が食い違うのは別のタブで追加・削除したときで、届いた並びを正として
-  # 差分を反映すると、そちらの変更が黙って消える（docs/spec.md 6.2）
+  # 差分を反映すると、そちらの変更が黙って消える
   describe '希望リストと食い違う並び' do
     it '希望していない本が混じっていればリクエスト全体を拒否する' do
       reorder(books.map(&:id) + [book_by_other.id])
@@ -191,7 +191,7 @@ RSpec.describe WishListsController do
     end
 
     # 差し替えも一覧の一経路。見えてよいのは登録した本人と成立後の受取人だけで、
-    # ここはどちらでもない（docs/spec.md 8. 情報の可視性ルール）
+    # ここはどちらでもない
     it 'ギフトコードが含まれない' do
       create(:book, participation:, gift_code: 'MYOWNGIFTCODE')
       books.first.update!(gift_code: 'OTHERGIFTCODE')

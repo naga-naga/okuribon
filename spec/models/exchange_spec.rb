@@ -3,7 +3,6 @@
 require 'rails_helper'
 
 RSpec.describe Exchange do
-  # DB の例外にする前にバリデーションで捕まえる。フォームに戻せるのはこちらだけ
   it '必須のカラムに nil を入れるとバリデーションで落ちる' do
     columns = [
       :name, :registration_starts_at, :registration_ends_at,
@@ -205,8 +204,6 @@ RSpec.describe Exchange do
       expect(exchange.phase(at: '2026-08-04T00:00:00+09:00'.in_time_zone)).to eq(:published)
     end
 
-    # 既定値を置くと呼ぶたびに現在時刻が進み、締切をまたいだ瞬間に
-    # 1つの画面の中でフェーズが食い違う。基準時刻は入口で1回読んで回す
     it '基準時刻を省略すると呼べない' do
       expect { exchange.phase }.to raise_error(ArgumentError)
     end
@@ -319,7 +316,7 @@ RSpec.describe Exchange do
       expect(exchange).to be_published(at: '2026-08-20T00:00:00+09:00'.in_time_zone)
     end
 
-    # フェーズはマッチングを実行したかどうかで決まる（docs/spec.md 4.）。
+    # フェーズはマッチングを実行したかどうかで決まる。
     # 結果公開後に主催者が日程を戻しても、公開済みであることは変わらない
     it '実行後に日程を戻しても真のままになる' do
       exchange.matched_at = '2026-08-16T00:00:00+09:00'.in_time_zone
@@ -440,7 +437,7 @@ RSpec.describe Exchange do
         expect(exchange.period(:wish)).to eq(exchange.wish_starts_at...exchange.wish_ends_at)
       end
 
-      # 各期間は終了時刻を含まない（docs/spec.md 4.）。締切ちょうどは期間の外で、
+      # 各期間は終了時刻を含まない。締切ちょうどは期間の外で、
       # ここが含む範囲になると phase の判定と1点だけ食い違う
       it '終了時刻を含まない' do
         expect(exchange.period(:registration)).not_to cover(exchange.registration_ends_at)

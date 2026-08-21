@@ -67,7 +67,7 @@ RSpec.describe Exchanges::Listing do
     end
 
     # 準備中が待っているのは締切ではなく開始だが、待つ日時があることは変わらない。
-    # 同じ軸に並べる（docs/spec.md 6.6）
+    # 同じ軸に並べる
     it '準備中も登録期間の開始で同じ軸に並ぶ' do
       preparing_exchange(name: '18日後に開始')
       registration_exchange(name: '6日後が締切')

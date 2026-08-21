@@ -86,7 +86,7 @@ RSpec.describe InviteTokensController do
         expect(exchange.participations.count).to eq(2)
       end
 
-      # 締切後に配り直しても、参加を断るのは着地画面の仕事（docs/spec.md 6.7）。
+      # 締切後に配り直しても、参加を断るのは着地画面の仕事。
       # 管理画面はどのフェーズでも開ける約束なので、ここもフェーズで閉じない
       it 'どのフェーズでも再発行できる' do
         Exchange::PHASES.each do |phase|
@@ -104,7 +104,7 @@ RSpec.describe InviteTokensController do
     end
 
     # 403 だと、招待されていない交換会が実在することを URL を試すだけで
-    # 確かめられてしまう（docs/spec.md 8.）
+    # 確かめられてしまう
     it '参加しているだけの人には 404 を返し、トークンも変わらない' do
       participant = create(:user)
       create(:participation, exchange:, user: participant)
@@ -138,7 +138,7 @@ RSpec.describe InviteTokensController do
 
     # ログインを挟むぶん、主催者以外の 404 とは応答が変わる。実在する交換会だけが
     # ログイン画面へ、存在しない id が 404 へ分かれると、未ログインのまま
-    # id を試すだけで実在を確かめられてしまう（docs/spec.md 8.）
+    # id を試すだけで実在を確かめられてしまう
     it '未ログインなら、実在しない交換会でも応答が変わらない' do
       travel_to(registration) do
         reissue

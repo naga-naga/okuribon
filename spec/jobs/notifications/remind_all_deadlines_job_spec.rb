@@ -19,7 +19,7 @@ RSpec.describe Notifications::RemindAllDeadlinesJob do
   end
 
   # 走査の途中で現在時刻を読み直すと、窓の縁にいる交換会を前半と後半で
-  # 違う扱いにする（docs/spec.md 11.）
+  # 違う扱いにする
   it '現在時刻を1回だけ読んで渡す' do
     allow(Notifications::DeadlineReminder).to receive(:deliver_all)
 

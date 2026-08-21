@@ -45,7 +45,7 @@ RSpec.describe SessionsController do
     end
 
     # デザインの「01 ログイン」には3つのプロバイダが並ぶが、実装があるのは
-    # docs/spec.md 11 が定める Google だけ。デザインに引きずられて、
+    # Google だけ。デザインに引きずられて、
     # 押しても認証できないボタンが混ざらないようにする。
     # プロバイダを増やすときは、omniauth.rb に足したうえでここにも並べる
     it '実装のあるプロバイダの分だけ認証開始の口を置く' do
@@ -79,7 +79,7 @@ RSpec.describe SessionsController do
       expect(response).to redirect_to(root_path)
     end
 
-    # 開発用ログイン（docs/spec.md 11.）は URL を直に打たないと辿り着けない。
+    # 開発用ログインは URL を直に打たないと辿り着けない。
     # seed が作った利用者へ入れ替わるたびに打つことになるので、ここに口を置く。
     # ログイン済みで入れ替わるときは、共通ヘッダーのログアウトを通ってこの画面へ来る
     context '開発用ログイン' do

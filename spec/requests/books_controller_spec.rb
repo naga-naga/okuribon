@@ -11,7 +11,7 @@ RSpec.describe BooksController do
 
   before { log_in_as(user) }
 
-  # 本の一覧は交換会ページに畳んだ（docs/spec.md 6.1 / 6.2）。
+  # 本の一覧は交換会ページに畳んだ。
   # 一覧のための URL は持たないので、経路そのものが無い。
   # 同じ画面に入口が2つあると、交換会一覧のカードやパンくずが
   # どちらを指すのかを画面ごとに選ぶことになる
@@ -57,7 +57,7 @@ RSpec.describe BooksController do
                                '夏の交換会' => exchange_path(exchange))
     end
 
-    # 押しても通らないフォームを開かせない（docs/spec.md 6.4）
+    # 押しても通らないフォームを開かせない
     it '登録期間外は開けない' do
       outside_registration
 
@@ -95,7 +95,7 @@ RSpec.describe BooksController do
       expect(response.body).to include('他の参加者には見えません')
     end
 
-    # 主催者に特権はない（docs/spec.md 8.）。ここを書かないと、
+    # 主催者に特権はない。ここを書かないと、
     # 主催者には見えるのだろうと思ったまま入力することになる
     it '主催者にも見えないことが書かれている' do
       open_form
@@ -196,7 +196,7 @@ RSpec.describe BooksController do
       expect(response.body).to include('ギフトコードを入力してください')
     end
 
-    # クライアントの時計ではなくサーバー側で判定する（docs/spec.md 4. フェーズ）
+    # クライアントの時計ではなくサーバー側で判定する
     it '登録期間外は登録できない' do
       outside_registration
 

@@ -12,7 +12,7 @@ RSpec.describe ParticipantsController do
            wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone)
   end
 
-  # 除外できる時刻の既定。参加できる期間と一致する（docs/spec.md 4.）
+  # 除外できる時刻の既定。参加できる期間と一致する
   let!(:registration) { '2026-08-04T00:00:00+09:00'.in_time_zone }
 
   let!(:participant) { create(:user) }
@@ -42,7 +42,7 @@ RSpec.describe ParticipantsController do
         expect(exchange.participant?(participant)).to be(false)
       end
 
-      # 抜けた人の本が残ると、誰も受け取れない本として一覧に並び続ける（docs/spec.md 4.）
+      # 抜けた人の本が残ると、誰も受け取れない本として一覧に並び続ける
       it '外した人が登録した本もあわせて消える' do
         create(:book, participation:)
 
@@ -75,7 +75,7 @@ RSpec.describe ParticipantsController do
         expect(response.body).to include("#{participant.display_name} さんを交換会から外しました")
       end
 
-      # 参加の記録は残さず消す（docs/spec.md 4.）。締切前なら本人が入り直せる
+      # 参加の記録は残さず消す。締切前なら本人が入り直せる
       it '外された人は、登録期間のうちなら参加し直せる' do
         travel_to(registration) do
           exclude
@@ -85,7 +85,7 @@ RSpec.describe ParticipantsController do
         end
       end
 
-      # 希望提出期間に入ってから抜けられると取得枠の計算が壊れる（docs/spec.md 4.）。
+      # 希望提出期間に入ってから抜けられると取得枠の計算が壊れる。
       # クライアントが何を送ってきても、判定はサーバーが受けた時刻で行う
       it '登録の締切を過ぎていれば 409 で拒否し、参加は残る' do
         travel_to(deadline) { exclude }
@@ -100,7 +100,7 @@ RSpec.describe ParticipantsController do
         expect(response.body).to include('希望提出期間', '参加の変更')
       end
 
-      # 主催者は必ず参加者を兼ねる（docs/spec.md 6.9）。待てば通るわけではないので
+      # 主催者は必ず参加者を兼ねる。待てば通るわけではないので
       # 409 ではなく 403 で断る
       it '自分自身は外せず、403 になる' do
         travel_to(registration) { delete exchange_management_participant_path(exchange, owner_participation) }
@@ -128,7 +128,7 @@ RSpec.describe ParticipantsController do
     end
 
     # 403 だと、招待されていない交換会が実在することを URL を試すだけで
-    # 確かめられてしまう（docs/spec.md 8.）
+    # 確かめられてしまう
     it '参加しているだけの人には 404 を返し、参加も残る' do
       log_in_as(participant)
 
@@ -156,7 +156,7 @@ RSpec.describe ParticipantsController do
 
     # ログインを挟むぶん、主催者以外の 404 とは応答が変わる。実在する交換会だけが
     # ログイン画面へ、存在しない id が 404 へ分かれると、未ログインのまま
-    # id を試すだけで実在を確かめられてしまう（docs/spec.md 8.）
+    # id を試すだけで実在を確かめられてしまう
     it '未ログインなら、実在しない交換会でも応答が変わらない' do
       travel_to(registration) do
         exclude

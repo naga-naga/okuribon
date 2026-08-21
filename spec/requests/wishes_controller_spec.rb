@@ -55,7 +55,7 @@ RSpec.describe WishesController do
       expect(wished_books).to eq([first, second])
     end
 
-    # 二度押しや再送信で落とすようなことではない（docs/spec.md 6.2）
+    # 二度押しや再送信で落とすようなことではない
     it '同じ本を二度追加しても増えない' do
       book = book_by_other
 
@@ -71,7 +71,7 @@ RSpec.describe WishesController do
       expect(response).to redirect_to(exchange_path(exchange))
     end
 
-    # 絞り込みは URL に残る（docs/spec.md 6.2）。追加のたびに全件へ戻されると、
+    # 絞り込みは URL に残る。追加のたびに全件へ戻されると、
     # 絞り込んだ状態で選び続けられない
     it '絞り込みを保ったまま戻る' do
       add(book_by_other, params: { filter: 'mine' })
@@ -79,7 +79,7 @@ RSpec.describe WishesController do
       expect(response).to redirect_to(exchange_path(exchange, filter: 'mine'))
     end
 
-    # 自分の本は受け取れない（docs/spec.md 3.）。ボタンは出さないが、
+    # 自分の本は受け取れない。ボタンは出さないが、
     # 直に叩かれたときに 500 で落とさない
     it '自分の本は追加できない' do
       add(create(:book, participation:))
@@ -151,7 +151,7 @@ RSpec.describe WishesController do
       expect(wished_books).to be_empty
     end
 
-    # 穴が空いたままだと、次に足した1冊の順位が飛ぶ（docs/spec.md 6.2）
+    # 穴が空いたままだと、次に足した1冊の順位が飛ぶ
     it '外した分だけ順位が詰まる' do
       books = Array.new(3) { book_by_other }
       books.each { add(it) }
@@ -162,7 +162,7 @@ RSpec.describe WishesController do
       expect(wished_books).to eq(books.drop(1))
     end
 
-    # 別のタブで消したあとの再送信で落とすようなことではない（docs/spec.md 6.2）
+    # 別のタブで消したあとの再送信で落とすようなことではない
     it '希望していない本を外しても落ちない' do
       remove(book_by_other)
 
@@ -231,7 +231,7 @@ RSpec.describe WishesController do
     end
 
     # 差し替えも一覧の一経路。見えてよいのは登録した本人と成立後の受取人だけで、
-    # ここはどちらでもない（docs/spec.md 8. 情報の可視性ルール）
+    # ここはどちらでもない
     it 'ギフトコードが含まれない' do
       create(:book, participation:, gift_code: 'MYOWNGIFTCODE')
 

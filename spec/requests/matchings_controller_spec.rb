@@ -67,7 +67,7 @@ RSpec.describe MatchingsController do
       end
 
       # 取り返しがつかない操作なので、ブラウザのダイアログではなく
-      # 画面を1枚挟む（docs/spec.md 6.8）
+      # 画面を1枚挟む
       it '締切後は、やり直せないことを添えた確認画面が開く' do
         open_confirmation
 
@@ -97,7 +97,7 @@ RSpec.describe MatchingsController do
         expect(response.body).to include(I18n.t('management.matching.confirm.unsubmitted_value', count: 2))
       end
 
-      # 自分が登録した本は受け取れないので（docs/spec.md 3.）、
+      # 自分が登録した本は受け取れないので、
       # 1人の登録冊数がほかの全員の合計を超えた分は登録者へ返る
       it '受け取り手のない本の冊数と行き先が出る' do
         register(owner_participation, 5)
@@ -148,7 +148,7 @@ RSpec.describe MatchingsController do
         expect(response).to have_http_status(:conflict)
       end
 
-      # ギフトコードが見えるのは登録した本人と受け取った人だけ（docs/spec.md 8.）。
+      # ギフトコードが見えるのは登録した本人と受け取った人だけ。
       # 主催者に特権はなく、実行の直前でも変わらない
       it 'ギフトコードは含まれない' do
         create(:book, participation: join, gift_code: 'OTHERS-CODE-9999')
@@ -162,7 +162,7 @@ RSpec.describe MatchingsController do
     end
 
     # 403 だと、招待されていない交換会が実在することを URL を試すだけで
-    # 確かめられてしまう（docs/spec.md 8.）
+    # 確かめられてしまう
     it '参加しているだけの人には 404 を返す' do
       log_in_as(join.user)
 
@@ -272,7 +272,7 @@ RSpec.describe MatchingsController do
     end
 
     # 403 だと、招待されていない交換会が実在することを URL を試すだけで
-    # 確かめられてしまう（docs/spec.md 8.）
+    # 確かめられてしまう
     it '参加しているだけの人には 404 を返し、実行もされない' do
       build_round_robin
       log_in_as(join.user)
@@ -306,7 +306,7 @@ RSpec.describe MatchingsController do
 
     # ログインを挟むぶん、主催者以外の 404 とは応答が変わる。実在する交換会だけが
     # ログイン画面へ、存在しない id が 404 へ分かれると、未ログインのまま
-    # id を試すだけで実在を確かめられてしまう（docs/spec.md 8.）
+    # id を試すだけで実在を確かめられてしまう
     it '未ログインなら、実在しない交換会でも応答が変わらない' do
       travel_to(awaiting_matching) do
         post exchange_management_matching_path(exchange)

@@ -60,7 +60,7 @@ RSpec.describe Exchanges::Todo do
     end
 
     # 希望提出期間に入った時点で登録期間は終わっており、取得枠を増やす道が残っていない。
-    # 促しても果たせないので、受け取れないことだけを伝える（docs/spec.md 6.2）
+    # 促しても果たせないので、受け取れないことだけを伝える
     it '取得枠が0の人には希望リストを促さない' do
       participation.books.destroy_all
 

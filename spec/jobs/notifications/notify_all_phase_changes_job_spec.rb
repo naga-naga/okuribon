@@ -18,7 +18,7 @@ RSpec.describe Notifications::NotifyAllPhaseChangesJob do
   end
 
   # 走査の途中で現在時刻を読み直すと、境目にいる交換会を前半と後半で
-  # 違うフェーズとして見る（docs/spec.md 11.）
+  # 違うフェーズとして見る
   it '現在時刻を1回だけ読んで渡す' do
     allow(Notifications::PhaseChange).to receive(:deliver_all)
 

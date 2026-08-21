@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 module Notifications
-  # 1つの交換会が締切の窓に入ったかを確かめ、入っていれば知らせる。
-  #
   # 締切は交換会の日時カラムそのものなので、窓が開く時刻を予約して確認しに行く。
   # 定期的に全件を見に回るより、窓の縁を直接指せる。
   #
@@ -22,8 +20,8 @@ module Notifications
     discard_on ActiveJob::DeserializationError
 
     def perform(exchange)
-      # 基準時刻はここで1回だけ読む（docs/spec.md 11.）。予約した時刻ではなく
-      # 実際に走った時刻で見る。遅れて走ったなら、遅れた時点の締切が正しい
+      # 予約した時刻ではなく実際に走った時刻で見る。
+      # 遅れて走ったなら、遅れた時点の締切が正しい
       Notifications::DeadlineReminder.new(exchange, at: Time.current).deliver
     end
   end

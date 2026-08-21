@@ -12,8 +12,8 @@ module Notifications
   # 走査から落ちたことに気付けない
   class NotifyAllPhaseChangesJob < ApplicationJob
     def perform
-      # 現在時刻はここで1回だけ読む。走査の途中で読み直すと、境目にいる交換会を
-      # 前半と後半で違うフェーズとして見る（docs/spec.md 11.）
+      # 走査の途中で現在時刻を読み直すと、境目にいる交換会を
+      # 前半と後半で違うフェーズとして見る
       Notifications::PhaseChange.deliver_all(at: Time.current)
     end
   end

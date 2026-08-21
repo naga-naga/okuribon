@@ -12,7 +12,7 @@ module ApplicationHelper
     !content_for?(:hide_header)
   end
 
-  # 共通ヘッダーのパンくずに、祖先を1つ足す。画面ごとに、根に近いほうから順に呼ぶ。
+  # 画面ごとに、根に近いほうから順に呼ぶ。
   # パンくずの根（「交換会一覧」）は共通ヘッダーが自分で描くため、
   # ここへ渡すのは2つ目以降だけ。現在地も渡さない。画面の名前は h1 にある
   def breadcrumb_ancestor(label, path)

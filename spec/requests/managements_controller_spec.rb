@@ -45,7 +45,7 @@ RSpec.describe ManagementsController do
     context '主催者のとき' do
       before { log_in_as(owner) }
 
-      # 交換会トップへ戻る口は共通ヘッダーのパンくずが持つ。画面の中には置かない
+      # 交換会トップへ戻るリンクは共通ヘッダーのパンくずが持つ。画面の中には置かない
       it 'パンくずから交換会トップへ戻れる' do
         travel_to(registration_phase) { get exchange_management_path(exchange) }
 
@@ -251,7 +251,7 @@ RSpec.describe ManagementsController do
       end
 
       # 除外できるのは参加できる期間と同じく登録の締切まで
-      it '登録期間中なら、参加者の行に除外の口が出る' do
+      it '登録期間中なら、参加者の行に除外のボタンが出る' do
         participation = join('ゆうと')
 
         travel_to(registration_phase) { get exchange_management_path(exchange) }
@@ -269,14 +269,14 @@ RSpec.describe ManagementsController do
                                          I18n.t('management.participants.exclude_confirm', name: 'ゆうと'))
       end
 
-      # 主催者は必ず参加者を兼ねる。押しても 403 になる口は出さない
-      it '主催者自身の行には除外の口が出ない' do
+      # 主催者は必ず参加者を兼ねる。押しても 403 になるボタンは出さない
+      it '主催者自身の行には除外のボタンが出ない' do
         travel_to(registration_phase) { get exchange_management_path(exchange) }
 
         expect(response.body).not_to include(exchange_management_participant_path(exchange, owner_participation))
       end
 
-      it '登録の締切を過ぎていれば、除外の口が出ない' do
+      it '登録の締切を過ぎていれば、除外のボタンが出ない' do
         participation = join('ゆうと')
 
         travel_to(phase_times.fetch(:wish)) { get exchange_management_path(exchange) }
@@ -316,8 +316,8 @@ RSpec.describe ManagementsController do
       end
 
       # 締切前に確認画面へ送っても、そちらが 409 を返す。
-      # 押しても断られる口は残さない
-      it '締切前は確認画面への口が出ない' do
+      # 押しても断られる導線は残さない
+      it '締切前は確認画面への導線が出ない' do
         travel_to(phase_times.fetch(:wish)) { get exchange_management_path(exchange) }
 
         expect(response.body).not_to include(new_exchange_management_matching_path(exchange))
@@ -339,7 +339,7 @@ RSpec.describe ManagementsController do
         expect(response.body).to include(I18n.t('management.matching.awaiting.elapsed', elapsed: '14時間'))
       end
 
-      it '締切後は、確認画面への口が出る' do
+      it '締切後は、確認画面への導線が出る' do
         travel_to(phase_times.fetch(:awaiting_matching)) { get exchange_management_path(exchange) }
 
         expect(response.body).to include(new_exchange_management_matching_path(exchange))

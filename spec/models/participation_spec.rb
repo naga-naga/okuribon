@@ -108,7 +108,7 @@ RSpec.describe Participation do
     end
 
     # ギフトコードの取得経路は1つに限る（CLAUDE.md）。冊数を出すだけの画面が
-    # Book を引くと、暗号化された値が画面の裏側まで運ばれてくる。
+    # Book を引くと、暗号化された値まで取得してしまう。
     # 人数ぶんの追い引きが起きないことも、同じ1本の問い合わせで担保される
     it 'Book にも Wish にも問い合わせず1回で引く' do
       create_list(:book, 2, participation:)

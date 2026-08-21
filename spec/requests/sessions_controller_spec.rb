@@ -48,7 +48,7 @@ RSpec.describe SessionsController do
     # Google だけ。デザインに引きずられて、
     # 押しても認証できないボタンが混ざらないようにする。
     # プロバイダを増やすときは、omniauth.rb に足したうえでここにも並べる
-    it '実装のあるプロバイダの分だけ認証開始の口を置く' do
+    it '実装のあるプロバイダの分だけ認証開始のボタンを置く' do
       get '/login'
 
       providers = response.body.scan(%r{action="/auth/([^"]+)"}).flatten
@@ -68,7 +68,7 @@ RSpec.describe SessionsController do
       expect(response.body).to include('参加するには')
     end
 
-    # ログアウトの口は共通ヘッダーが全画面に持つようになった。ログイン済みでこの画面を
+    # ログアウトの導線は共通ヘッダーが全画面に持つようになった。ログイン済みでこの画面を
     # 開けるようにしていたのは、追い返すと抜けられなくなるためだったので、
     # その理由ごと畳んで行き先のある画面へ送る
     it 'ログイン済みなら交換会一覧へ送る' do
@@ -80,7 +80,7 @@ RSpec.describe SessionsController do
     end
 
     # 開発用ログインは URL を直に打たないと辿り着けない。
-    # seed が作った利用者へ入れ替わるたびに打つことになるので、ここに口を置く。
+    # seed が作った利用者へ入れ替わるたびに打つことになるので、ここにリンクを置く。
     # ログイン済みで入れ替わるときは、共通ヘッダーのログアウトを通ってこの画面へ来る
     context '開発用ログイン' do
       it '未ログインなら辿れる' do

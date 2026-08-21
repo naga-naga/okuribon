@@ -86,8 +86,8 @@ RSpec.describe Notifications::Webhook do
       end
     end
 
-    # 交換会から本文以外の値を拾わせない。ここで足せる口を持たせると、
-    # 文面を組む側（#43 #44）が除いたはずのものが送信側で戻ってくる
+    # 交換会から本文以外の値を拾わせない。ここで値を足せるようにすると、
+    # 文面を組む側が除いたはずのものが送信側で戻ってくる
     it '渡された本文だけを送る' do
       stub_request(:post, discord_url).to_return(status: 204)
 

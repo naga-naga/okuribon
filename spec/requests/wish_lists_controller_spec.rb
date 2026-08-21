@@ -153,7 +153,7 @@ RSpec.describe WishListsController do
       expect(wished_books).to eq(books)
     end
 
-    # 交換会は自分の参加から引く。他人の参加を id で名指しできる口は無い
+    # 交換会は自分の参加から引く。他人の参加を id で名指しできるルートは無い
     it '他人の希望リストは書き換えられない' do
       log_in_as(create(:user))
 

@@ -10,8 +10,8 @@ RSpec.describe ParticipatingExchange do
   let!(:exchange) { create(:exchange) }
   let!(:participation) { create(:participation, user:, exchange:) }
 
-  # ネストされた口（:exchange_id）と、単独の口（:id）の2つを立てる。
-  # 引いたものを本文に出し、どちらの口でも同じ参加に辿り着くことを見る
+  # ネストされたルート（:exchange_id）と、単独のルート（:id）の2つを立てる。
+  # 引いたものを本文に出し、どちらのルートでも同じ参加に辿り着くことを見る
   before do
     log_in_as(user)
 
@@ -76,8 +76,8 @@ RSpec.describe ParticipatingExchange do
     expect(response).to have_http_status(:not_found)
   end
 
-  # 交換会そのものを開く口だけルートのキーが :id になる。
-  # 口ごとに条件を手書きしないために、キーだけを呼ぶ側から渡す
+  # 交換会そのものを開くルートだけキーが :id になる。
+  # ルートごとに条件を手書きしないために、キーだけを呼ぶ側から渡す
   it '交換会 id を渡す口も同じ入口を通る' do
     get "/participating_test/exchanges/#{exchange.id}"
 
@@ -85,7 +85,7 @@ RSpec.describe ParticipatingExchange do
     expect(response.body).to eq("#{participation.id},#{exchange.id}")
   end
 
-  it '交換会 id を渡す口でも、参加していなければ見つからない' do
+  it '交換会 id を渡すルートでも、参加していなければ見つからない' do
     other = create(:exchange)
 
     get "/participating_test/exchanges/#{other.id}"

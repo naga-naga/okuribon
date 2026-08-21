@@ -12,7 +12,7 @@ RSpec.describe Exchanges::MatchingSummary do
   end
 
   # 冊数と希望冊数は SQL で数える。冊数だけが要る場に Book を読み込むと、
-  # 暗号化されたギフトコードまで運ばれてくる
+  # 暗号化されたギフトコードまで取得してしまう
   def summary
     described_class.new(exchange.participations.with_counts).call
   end

@@ -50,7 +50,7 @@ RSpec.describe ResultsController do
     context '結果が公開されているとき' do
       before { log_in_as(viewer) }
 
-      # 交換会トップへ戻る口は共通ヘッダーのパンくずが持つ。画面の中には置かない
+      # 交換会トップへ戻るリンクは共通ヘッダーのパンくずが持つ。画面の中には置かない
       it 'パンくずから交換会トップへ戻れる' do
         publish
 
@@ -356,7 +356,7 @@ RSpec.describe ResultsController do
       end
 
       # 本の詳細画面を持たないため、誰にも渡らなかった
-      # コードの取り出し口はこの画面以外に無い
+      # コードを取り出せるのはこの画面だけ
       it '返却された本のギフトコードを、受け取った本と同じ形で開ける' do
         return_book(title: '砂の図書館', gift_code: 'RETURNED-CODE-3333')
         publish

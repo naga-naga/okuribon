@@ -30,7 +30,7 @@ RSpec.describe Notifications::RemindAllDeadlinesJob do
   end
 
   # 窓が24時間ちょうどなので、1日1回の走査が必ず1回だけ窓の中に入る。
-  # 間隔を空けると、予約を取りこぼした締切が窓ごと素通りする
+  # 間隔を空けると、予約を取りこぼした締切が一度も窓に入らないまま過ぎる
   it '1日1回の定期実行として登録されている' do
     definitions = YAML.safe_load(ERB.new(Rails.root.join('config/recurring.yml').read).result, aliases: true)
 

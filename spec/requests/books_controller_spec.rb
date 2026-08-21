@@ -22,7 +22,7 @@ RSpec.describe BooksController do
       expect(response).to have_http_status(:not_found)
     end
 
-    # 同じ URL は本の登録を受ける口として残っている。読む経路だけが無い
+    # 同じ URL は本の登録を受けるルートとして残っている。読む経路だけが無い
     it '本の登録は同じ URL の POST で受ける' do
       post exchange_books_path(exchange), params: { book: { title: '銀河の果ての本屋', gift_code: 'GIFT-1234' } }
 

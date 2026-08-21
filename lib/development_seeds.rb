@@ -491,7 +491,7 @@ class DevelopmentSeeds
     exchange.save!
 
     # 主催者は必ず参加者を兼ねる。
-    # DB の制約では守れないので、交換会を作る口をここ1つに絞って必ず通す
+    # DB の制約では守れないので、交換会を作る経路をここ1つに絞って必ず通す
     join(exchange, [owner])
 
     @exchanges << exchange

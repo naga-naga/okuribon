@@ -228,7 +228,7 @@ RSpec.describe ResultsController do
         expect(response.body).not_to include('全体の結果')
       end
 
-      # 導線も出ないフェーズなので、ここへ来るのは URL を直に打った場合だけ。
+      # 導線も出ないフェーズなので、URL を直に打った場合にしかここへ来ない。
       # それでも全体の結果が漏れては、公開前に勝ち負けが分かってしまう
       it '結果公開前には、全体の結果そのものが出ない' do
         riku = join('りく')
@@ -364,7 +364,7 @@ RSpec.describe ResultsController do
         open_result
 
         expect(response.body).to include('RETURNED-CODE-3333', 'type="password"',
-                                         '見えるのはあなただけです')
+                                         'あなただけに表示されます')
       end
 
       it '2冊以上戻ってきたときは、冊数と題名が並ぶ' do

@@ -302,7 +302,7 @@ RSpec.describe ExchangesController do
       expect(response.body).to include('夏の交換会')
     end
 
-    # 見えるのは登録した本人と、成立後の受取人だけ。一覧はどちらの経路でもない。
+    # 登録した本人と、成立後の受取人だけに見える。一覧はどちらの経路でもない。
     # 自分が登録した本と受け取った本を並べて、gift_code_for が値を返す状態で確かめる。
     # 結果公開にするのは matched_at で、日時に関わらずフェーズが決まる
     it 'ギフトコードが含まれない' do
@@ -629,7 +629,7 @@ RSpec.describe ExchangesController do
         end
       end
 
-      # 実行待ちに待つ以外の道があるのは主催者だけ。ほかの参加者が待っているのは
+      # 主催者だけが、実行待ちに待つ以外の道を持つ。ほかの参加者が待っているのは
       # その人の操作で、日時では動かない
       it 'マッチング実行待ちの参加者には実行の導線が出ない' do
         open_page(at: awaiting_at)
@@ -639,7 +639,7 @@ RSpec.describe ExchangesController do
       end
     end
 
-    # 実行待ちで待つ以外の道があるのは主催者だけ。この画面の交換会は既定では
+    # 主催者だけが、実行待ちに待つ以外の道を持つ。この画面の交換会は既定では
     # 別の人が主催しているので、日程はそのまま使い、主催者だけを自分に付け替える。
     # 参加はもう成立しているので、主催が移っても影響を受けない
     describe '主催者のマッチング実行' do
@@ -843,7 +843,7 @@ RSpec.describe ExchangesController do
         expect(bar.text).to include('枠 2冊')
       end
 
-      # 数を出すのは希望提出期間だけ。ほかの期間は取得枠に対して足りているかを
+      # 数を出すのは希望提出期間に限る。ほかの期間は取得枠に対して足りているかを
       # 確かめる用が無く、帯の1行を埋めるだけになる
       it '希望提出期間のほかには冊数を入れない' do
         register_own(2)
@@ -883,7 +883,7 @@ RSpec.describe ExchangesController do
         expect(overview.at_css('dl[aria-label="状況"]')).to be_nil
       end
 
-      # 並べるのは動かせる期間だけ。結果公開は主催者の実行で起きて日時では決まらない
+      # 動かせる期間だけを並べる。結果公開は主催者の実行で起きて日時では決まらない
       it '各期間の範囲が入る' do
         open_page
 
@@ -2108,7 +2108,7 @@ RSpec.describe ExchangesController do
       end
     end
 
-    # 見えるのは登録した本人と、成立後の受取人だけ。
+    # 登録した本人と、成立後の受取人だけに見える。
     # この画面はどちらの経路でもない
     it 'ギフトコードが含まれない' do
       mine = create(:book, participation:, gift_code: 'MYOWNGIFTCODE')
@@ -2280,7 +2280,7 @@ RSpec.describe ExchangesController do
     # 現在時刻はオフセット付きの直値で置く。travel_to は文字列を Time.zone.parse
     # に通すので、オフセットを書いておけばゾーン設定に依存しない。
     # 境界そのものは spec/models/exchange_spec.rb が持つ
-    # 作れるのは主催者がその場で参加できる2つのフェーズだけ。
+    # 主催者がその場で参加できる2つのフェーズでしか作れない。
     # 残りの3つで作れないことは #create の「入力の不備」が押さえている
     [
       ['登録期間の開始前なら準備中', '2026-08-09T23:59:00+09:00', :preparing],

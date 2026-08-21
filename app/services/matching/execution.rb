@@ -48,7 +48,7 @@ module Matching
 
       Matching::Engine.new(
         participants: participations.map(&:id),
-        # Engine が見るのは識別子だけ。Book のレコードを読み込むと、暗号化された
+        # Engine は識別子しか見ない。Book のレコードを読み込むと、暗号化された
         # ギフトコードまで一緒に取得してしまうため、必要な2列だけを取り出して
         # Matching::Book へ詰め替える。
         # この module の中では Book と書くと Matching::Book が先に見つかるため、

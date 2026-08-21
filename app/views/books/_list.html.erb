@@ -48,7 +48,7 @@
             返却された本も同じだけ沈める。渡らなかったことを線や記号で示さない %>
         <% dimmed = ((wishing || submitted) && mine) || returned %>
         <% position = positions[book.id] %>
-        <%# 実行待ちに下段を出すのは、希望に入れた本だけ。入れなかった本にも
+        <%# 実行待ちの下段は、希望に入れた本だけに出す。入れなかった本にも
             その旨を書くと、十数枚のうち大半が否定の一文を持つことになる。
             順位が出ている本が同じ画面に並んでいるので、出ていないことが
             そのまま入れなかったことにあたる。自分の本もここに入る（順位を持てない） %>
@@ -56,7 +56,7 @@
         <li id="<%= dom_id(book) %>" data-controller="book-card"
             class="group flex flex-col gap-4 rounded-[5px] border p-6
                    <%= book_card_tone(dimmed:, received:, mine:) %>">
-          <%# 開いて変わるのは本文の折り返しが解けることだけ。見出しもボタンも文字の
+          <%# 開くと本文の折り返しが解ける。それ以外は変えず、見出しもボタンも文字の
               大きさも動かさない。開いた瞬間に別の顔になると、読み比べていた
               カードを見つけ直すことになる %>
           <div class="flex flex-1 flex-col gap-3.5">

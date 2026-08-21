@@ -268,7 +268,7 @@ RSpec.describe Participation do
         expect(participation.wishes.reload.map(&:book)).to eq(books.reverse)
       end
 
-      # 集合が食い違うのは、別のタブで追加・削除したときだけ。
+      # 集合が食い違うのは、別のタブで追加・削除したときに限る。
       # 片方を捨てて進めるより、読み直させるほうが安全
       it '希望していない本が混じっていれば拒否する' do
         other = create(:book, participation: book.participation)

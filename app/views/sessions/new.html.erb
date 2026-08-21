@@ -14,7 +14,7 @@
       </p>
     </div>
 
-    <%# ここへ来るのは未ログインの人だけ。ログイン済みは交換会一覧へ送られる %>
+    <%# 未ログインの人だけがここへ来る。ログイン済みは交換会一覧へ送られる %>
     <% if @pending_participation.present? %>
       <p class="rounded-[5px] border border-line bg-paper px-5 py-4 text-[13.5px] leading-[1.9] text-ink">
         <%= t('participation.login_required', name: @pending_participation.name) %>

@@ -29,7 +29,7 @@ RSpec.describe DevelopmentSeeds do
       expect(not_participating).to be_empty
     end
 
-    # 一覧に並ぶのは参加している交換会だけ。参加していない交換会は、
+    # 一覧には参加している交換会だけが並ぶ。参加していない交換会は、
     # 作ってあっても画面から辿り着けない
     it '主役がすべての交換会に参加していて一覧から辿れる' do
       expect(viewer.exchanges).to match_array(Exchange.all)
@@ -119,7 +119,7 @@ RSpec.describe DevelopmentSeeds do
       expect(solo).to be_present
     end
 
-    # 警告は主催者管理画面にしか出ず、出るのは本を登録できるあいだだけ。
+    # 警告は主催者管理画面にしか出ず、本を登録できるあいだに限られる。
     # 主役が主催者でなければ画面自体を開けないので、そこまで含めて見る。
     # 出るかどうかは画面と同じサービスに訊く
     it '登録冊数の偏りの警告を主催者として見られる' do

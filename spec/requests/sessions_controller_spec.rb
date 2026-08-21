@@ -20,7 +20,7 @@ RSpec.describe SessionsController do
       expect(response).to have_http_status(:ok)
     end
 
-    # サービス名が画面に大きく出るのはここだけ。共通ヘッダーのパンくずの根は
+    # サービス名はこの画面にだけ大きく出る。共通ヘッダーのパンくずの根は
     # 行き先の名前（交換会一覧）を名乗るので、ログイン後は名前が画面から消える
     it '見出しにサービス名を出す' do
       get '/login'

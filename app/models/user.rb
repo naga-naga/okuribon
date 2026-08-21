@@ -7,7 +7,7 @@ class User < ApplicationRecord
 
   has_many :participations, dependent: :destroy
 
-  # 一覧に並ぶのは参加した交換会だけ。主催者は必ず参加者を兼ねるので、
+  # 一覧には参加した交換会だけが並ぶ。主催者は必ず参加者を兼ねるので、
   # 主催した交換会もここから引ける。主催であることは条件にしない
   has_many :exchanges, through: :participations
 

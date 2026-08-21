@@ -148,7 +148,7 @@ RSpec.describe MatchingsController do
         expect(response).to have_http_status(:conflict)
       end
 
-      # ギフトコードが見えるのは登録した本人と受け取った人だけ。
+      # ギフトコードは登録した本人と受け取った人だけに見える。
       # 主催者に特権はなく、実行の直前でも変わらない
       it 'ギフトコードは含まれない' do
         create(:book, participation: join, gift_code: 'OTHERS-CODE-9999')

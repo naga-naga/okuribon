@@ -444,7 +444,7 @@ RSpec.describe Exchange do
         expect(exchange.period(:registration)).to cover(exchange.registration_starts_at)
       end
 
-      # 主催者が動かせるのは登録期間と希望提出期間だけ。
+      # 主催者は登録期間と希望提出期間しか動かせない。
       # 結果公開は主催者の実行で起きて日時では決まらないため、期間を持たない
       it '期間に無い名前では落ちる' do
         expect { exchange.period(:published) }.to raise_error(KeyError)

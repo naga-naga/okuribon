@@ -17,9 +17,9 @@ class Participation < ApplicationRecord
   belongs_to :user
 
   # 冊数だけが要る画面で Book を読み込むと、暗号化されたギフトコードまで
-  # 一緒に運ばれてくるため、数だけを SQL で受け取る。
+  # 一緒に取得してしまうため、数だけを SQL で受け取る。
   # DISTINCT を外せない。Book と Wish を同時に外部結合すると行が掛け合わさり、
-  # 2冊×3希望がどちらも6件に化ける
+  # 2冊×3希望がどちらも6件と重複して数えられる
   scope :with_counts, lambda {
     left_joins(:books, :wishes)
       .select('participations.*',
@@ -47,7 +47,7 @@ class Participation < ApplicationRecord
 
   # マッチングは返却の割当を登録者の参加に紐づけるので、
   # 受け取った本と同じ関連から引ける。
-  # 本の詳細画面を持たないため、誰にも渡らなかったギフトコードの取り出し口はここしかない
+  # 本の詳細画面を持たないため、誰にも渡らなかったギフトコードを取得する経路はここしかない
   def returned_assignments
     assignments.where(returned: true).order(:id)
                .includes(book: [:registrant, :assignment, :exchange])
@@ -109,7 +109,7 @@ class Participation < ApplicationRecord
   end
 
   # フェーズの判定はコントローラに置かない。希望リストの変更の入口は
-  # 追加・削除・並べ替えの3つあり、それぞれに条件を手書きすると口ごとに食い違う
+  # 追加・削除・並べ替えの3つあり、それぞれに条件を手書きすると経路ごとに食い違う
   def verify_wish_writable!(at:)
     return if exchange.writable?(:wish, at:)
 

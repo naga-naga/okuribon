@@ -35,7 +35,7 @@ class Book < ApplicationRecord
   end
 
   # 既定の出力からギフトコードを落とす。only: で名指しされても出さない。
-  # 一覧を JSON で返す口が増えたときに、指定を書き忘れて漏れるのを防ぐ
+  # 一覧を JSON で返す経路が増えたときに、指定を書き忘れて漏れるのを防ぐ
   def serializable_hash(options = nil)
     super.except('gift_code')
   end

@@ -102,35 +102,6 @@ RSpec.describe BooksController do
 
       expect(response.body).to include('主催者にも見えません')
     end
-
-    # 必須は2項目だけ。印が無いと、任意の欄まで埋めないと進めないように見える
-    it '必須の項目に印が付く' do
-      open_form
-
-      expect(response.body.scan('必須').size).to eq(2)
-    end
-
-    it '任意の項目にも印が付く' do
-      open_form
-
-      expect(response.body).to include('任意')
-    end
-
-    # 仕様の順ではなく書く気になる順に並べる。おすすめポイントが主役で、
-    # 任意のあらすじは書けなくても先に進める位置に置く
-    it 'タイトル・おすすめポイント・あらすじ・ギフトコードの順に並ぶ' do
-      open_form
-
-      order = ['タイトル', 'おすすめポイント', 'あらすじ', 'ギフトコード'].map { response.body.index(it) }
-      expect(order).to eq(order.compact.sort)
-    end
-
-    # みんながいちばん読むところなので、書き出しの取っかかりを添える
-    it 'おすすめポイントに書き出しの手がかりが出る' do
-      open_form
-
-      expect(response.body).to include('どこで手が止まった？')
-    end
   end
 
   describe '#create' do

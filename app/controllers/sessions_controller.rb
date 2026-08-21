@@ -13,7 +13,7 @@ class SessionsController < ApplicationController
     @pending_participation = pending_participation
   end
 
-  # OAuth のコールバック。認証情報は OmniAuth のミドルウェアが env に載せる
+  # 認証情報は OmniAuth のミドルウェアが env に載せる
   def create
     # log_in がセッションを作り直すので、保存したものはその前に取り出す
     destination = pop_return_to

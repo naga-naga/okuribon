@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# 招待URLからの参加と辞退。交換会の id ではなく招待トークンで引く。
+# 交換会の id ではなく招待トークンで引く。
 # id で受けると、番号を数えるだけで招待されていない交換会に参加できてしまう
 class ParticipationsController < ApplicationController
   include PendingParticipation

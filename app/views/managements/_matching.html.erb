@@ -1,4 +1,4 @@
-<%# マッチングの実行（docs/spec.md 6.8）。画面の最上部に置く。
+<%# マッチングの実行。画面の最上部に置く。
     締切前は静かな待機表示、締切後は朱の面に切り替えてほかの情報を下へ押しやる。
     実行済みかどうかはフェーズから見る。日時カラムを直に読まない %>
 <% if exchange.phase(at:) == :published %>
@@ -69,7 +69,7 @@
           <li><%= t('management.matching.checklist.without_books', count: summary.without_books_count) %></li>
         <% end %>
 
-        <%# 日時の入力欄は交換会の編集画面に1つだけ置く（docs/spec.md 6.9） %>
+        <%# 日時の入力欄は交換会の編集画面に1つだけ置く %>
         <li>
           <%= t('management.matching.checklist.extend') %>
           <%= link_to t('management.matching.checklist.extend_link'), edit_exchange_path(exchange) %>

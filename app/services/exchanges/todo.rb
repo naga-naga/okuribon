@@ -1,14 +1,12 @@
 # frozen_string_literal: true
 
 module Exchanges
-  # 交換会トップの「あなたがすること」（docs/spec.md 6.1）。
-  #
   # 登録期間と希望提出期間で数週間かかるツールなので、久しぶりに開いた人が
   # その日なにをすればよいかを、この1行だけで掴めるようにする。
   # フェーズだけでは決まらない。同じ登録期間でも、1冊も登録していない人と
   # すでに登録した人では、次にすることが変わる。
   #
-  # 文言の組み立てをビューに置かないのは、交換会一覧のカード（#94）が
+  # 文言の組み立てをビューに置かないのは、交換会一覧のカードが
   # 同じ headline を並べるため。2か所で別々に組むと、片方だけが古い言い方で残る。
   class Todo
     # @param headline [String] すべきことの1行。交換会一覧はこれだけを使う
@@ -28,8 +26,7 @@ module Exchanges
     }.freeze
 
     # @param participation [Participation] 見ている本人の参加。取得枠と希望冊数を持つ
-    # @param at [Time] 基準時刻。既定値は置かない。呼ぶたびに現在時刻が進むと、
-    #   1つの画面の中でフェーズと締切が別の時刻を指しうる
+    # @param at [Time] 基準時刻
     def initialize(participation, at:)
       @participation = participation
       @exchange = participation.exchange
@@ -74,7 +71,7 @@ module Exchanges
 
     def wish
       # 希望提出期間に入った時点で登録期間は終わっており、取得枠を増やす道が
-      # 残っていない。果たせない促しはしない（docs/spec.md 6.2）
+      # 残っていない。果たせない促しはしない
       return [:wish_without_slots, {}] if slots.zero?
 
       count = @participation.wishes.count
@@ -86,7 +83,7 @@ module Exchanges
     # 締め切った日時のほうを出して、受付が終わったことを言う。
     # ここだけは主催者かどうかでも変わる。ほかのフェーズと違って、次に何が起きるかが
     # 見ている本人の操作にかかっているのが1人だけいる。その人にまで待てと言うと、
-    # 交換会がそこで止まったままになる（docs/spec.md 6.1）。
+    # 交換会がそこで止まったままになる。
     # 主催者かどうかは実行の可否から引く。フェーズ名で書き直すと、確認画面が
     # 開かなくなったときに、押しても断られる導線がここに残る
     def awaiting_matching
@@ -109,15 +106,14 @@ module Exchanges
       # 割り当てられる本が残らなかったか。前者は本人に心当たりがあり、後者は無い
       return [slots.zero? ? :published_without_slots : :published_none, {}] if count.zero?
 
-      # ギフトコードは結果画面の1経路からしか取らない（CLAUDE.md）。
       # 贈り主の名前だけが要るので、Book を読み込まずに名前を引く。
+      # ギフトコードを、要りもしない画面へ運ばせない。
       # 同じ人から2冊届くことがあるので重複を落とす
       givers = received.joins(book: :registrant).distinct.pluck(:display_name)
 
       [:published, { count:, givers: givers.map { "#{it} さん" }.to_sentence }]
     end
 
-    # 取得枠は登録した冊数と同数（docs/spec.md 3.）
     def slots
       @slots ||= @participation.books.count
     end

@@ -102,7 +102,7 @@ RSpec.describe ExchangesHelper do
     end
   end
 
-  # 交換会一覧のカードの描き分け（docs/spec.md 6.6）。
+  # 交換会一覧のカードの描き分け。
   # 一覧の中で1枚だけが目を引くように、今日中に迫ったものだけを朱の面にする
   describe '#exchange_card_tone' do
     let!(:at) { '2026-08-04T00:00:00+09:00'.in_time_zone }

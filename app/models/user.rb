@@ -11,12 +11,10 @@ class User < ApplicationRecord
   # 主催した交換会もここから引ける。主催であることは条件にしない
   has_many :exchanges, through: :participations
 
-  # NOT NULL のカラムは presence でも弾く。DB の例外ではなく検証の失敗として返すため。
   # プロバイダと uid は OmniAuth から、表示名は初回だけプロバイダの名前を借りて入る。
   # 名前を返さないプロバイダを足したときに、ログインの経路で 500 になるのを防ぐ
   validates :provider, :uid, :display_name, presence: true
 
-  # OAuth のコールバックで受け取った認証情報から利用者を引く。
   # 表示名は本人が変えられるため、初回の初期値としてだけプロバイダの名前を借りる。
   # アバターはプロバイダが返す URL をそのまま持つので、ログインのたびに追従する
   def self.from_omniauth(auth)

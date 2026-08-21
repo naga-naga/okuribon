@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
-# 主催者による参加者の除外。外せるのは登録の締切までで、自分自身は外せない。
-# 条件は本人の辞退と同じなので、判定は Exchange#remove_participant! に任せる
+# 除外の条件は本人の辞退と同じなので、判定は Exchange#remove_participant! に任せる
 class ParticipantsController < ApplicationController
   before_action :require_login
 

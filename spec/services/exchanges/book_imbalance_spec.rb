@@ -19,7 +19,7 @@ RSpec.describe Exchanges::BookImbalance do
     described_class.new(exchange.participations.with_counts.includes(:user)).call
   end
 
-  # 自分が登録した本は受け取れないので（docs/spec.md 3.）、1人の登録冊数が
+  # 自分が登録した本は受け取れないので、1人の登録冊数が
   # ほかの全員の合計を超えた分は、渡す相手がいない
   context '1人の登録冊数がほかの全員の合計を超えるとき' do
     before do
@@ -65,7 +65,7 @@ RSpec.describe Exchanges::BookImbalance do
     expect(imbalance).to be_nil
   end
 
-  # 参加者が自分ひとりの交換会（docs/spec.md 9.）。受け取り手が誰もいないので、
+  # 参加者が自分ひとりの交換会。受け取り手が誰もいないので、
   # 登録した全冊が登録者へ返る
   it '参加者がひとりだけなら、その人の全冊が返る' do
     create_list(:book, 3, participation: owner_participation)

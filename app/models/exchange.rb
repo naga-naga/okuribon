@@ -6,24 +6,22 @@ class Exchange < ApplicationRecord
   # 乱数シードは bigint に収める。Random.new_seed は 128bit あって入らない
   RANDOM_SEED_LIMIT = 2**62
 
-  # フェーズは日時から導出する。状態カラムは持たない
   PHASES = [:preparing, :registration, :wish, :awaiting_matching, :published].freeze
 
-  # フェーズが切り替わりうる時刻を持つカラム。#phase が読む日時のすべてでもある。
-  # 通知はこの時刻を予約して確かめに行くので、#phase が読む日時を増やしたら
-  # ここにも足す。足し忘れると、そのフェーズへの変わり目だけ通知が来ない。
+  # #phase が読む日時のすべて。通知はこの時刻を予約して確かめに行くので、
+  # #phase が読む日時を増やしたらここにも足す。
+  # 足し忘れると、そのフェーズへの変わり目だけ通知が来ない。
   # マッチング実行日時が入っているのは、結果公開だけが日時では決まらないため
   PHASE_BOUNDARIES = [
     :registration_starts_at, :registration_ends_at, :wish_ends_at, :matched_at,
   ].freeze
 
-  # 締切前のリマインドを予約する日時。#next_deadline が返す日時のうち、締切にあたる
-  # ものだけを並べる。登録期間の開始が入っていないのは、待っているのが締切ではなく
+  # #next_deadline が返す日時のうち、締切にあたるものだけを並べる。
+  # 登録期間の開始が入っていないのは、待っているのが締切ではなく
   # 開始で、まだ促す行動が無いため（Notifications::DeadlineReminder::REMINDABLE_PHASES）。
   # 何時間前に知らせるかはリマインドの都合なので、ここには持たない
   REMINDER_DEADLINES = [:registration_ends_at, :wish_ends_at].freeze
 
-  # 操作ごとに書き込みを許すフェーズ。spec.md 4. フェーズの表と補足に対応する。
   # 結果公開はどの操作も許さないため、値のどこにも現れない
   WRITABLE_PHASES = {
     participation: [:preparing, :registration],
@@ -32,22 +30,21 @@ class Exchange < ApplicationRecord
     matching: [:awaiting_matching],
   }.freeze
 
-  # 招待画面が見せる日程の3段と、その順序。段はフェーズと1対1ではない。
-  # マッチング実行待ちに当たる段は無く、希望提出が終わって結果公開を待っている状態にあたる
+  # 段はフェーズと1対1ではない。マッチング実行待ちに当たる段は無く、
+  # 希望提出が終わって結果公開を待っている状態にあたる
   SCHEDULE_STEPS = { registration: 0, wish: 1, published: 2 }.freeze
 
-  # 主催者管理画面が並べる期間。招待画面の日程（SCHEDULE_STEPS）は結果公開を含むが、
-  # あれは主催者の実行で起きて日時では決まらない。ここには動かせる期間だけを並べる
+  # 招待画面の日程（SCHEDULE_STEPS）と違って結果公開を含まないのは、
+  # あれが主催者の実行で起きて日時では決まらないため。動かせる期間だけを並べる
   PERIODS = [:registration, :wish].freeze
 
-  # フェーズを段の位置に読み替える。準備中はまだ1段目も始まっていないので、
-  # 登録期間と同じ位置に置く。進行中かどうかは位置ではなくフェーズ名の一致で見るため、
+  # 準備中はまだ1段目も始まっていないので、登録期間と同じ位置に置く。
+  # 進行中かどうかは位置ではなくフェーズ名の一致で見るため、
   # 同じ位置に2つ並べても取り違えない
   SCHEDULE_PHASE_POSITIONS = {
     preparing: 0, registration: 0, wish: 1, awaiting_matching: 2, published: 2,
   }.freeze
 
-  # フェーズが許さない書き込みを拒否するときに投げる。
   # 応答の組み立ては ApplicationController の rescue_from に集約する。
   # 交換会を持たせるのは、拒否の画面が戻り先を出すため。コントローラの
   # インスタンス変数から拾うと、変数を置き忘れた口だけ行き止まりになる
@@ -63,8 +60,8 @@ class Exchange < ApplicationRecord
     end
   end
 
-  # 主催者の参加は動かせない。辞退でも主催者による参加者の除外（#39）でも
-  # 理由は同じ「主催者は必ず参加者を兼ねる」なので、操作ごとに例外を分けない。
+  # 辞退でも主催者による参加者の除外でも理由は同じ
+  # 「主催者は必ず参加者を兼ねる」なので、操作ごとに例外を分けない。
   # 応答の組み立ては ApplicationController の rescue_from に集約する
   class OwnerLocked < StandardError
     attr_reader :exchange
@@ -91,7 +88,6 @@ class Exchange < ApplicationRecord
   # 招待トークンは主催者が再発行するので readonly にしない
   attr_readonly :random_seed
 
-  # NOT NULL のカラムは presence でも弾く。DB の例外ではなくフォームのエラーとして返すため
   validates :name, :invite_token, :random_seed,
             :registration_starts_at, :registration_ends_at, :wish_ends_at,
             presence: true
@@ -112,16 +108,11 @@ class Exchange < ApplicationRecord
   # 同じ口にまとめると、どちらの都合で引き算しているのかが読めなくなる
   after_commit :reserve_deadline_reminders, if: :saved_change_to_reminder_deadlines?
 
-  # 希望提出期間は登録期間の終了と同時に始まる。
   # カラムに分けると等値をバリデーションでしか守れず二重管理になるため、導出する
   def wish_starts_at
     registration_ends_at
   end
 
-  # 基準時刻は必須にする。既定値を置くと呼ぶたびに現在時刻が進み、締切をまたいだ
-  # 瞬間に1つの画面の中でフェーズが食い違う。現在時刻は入口で1回だけ読んで回す。
-  # 各期間は開始時刻を含み、終了時刻を含まない。
-  # 登録期間の終了と希望提出期間の開始は同時刻なので、両者の境目は1点になる
   def phase(at:)
     # 実行後に主催者が期間の日時を戻しても、公開済みであることは変わらない
     return :published if matched_at.present?
@@ -133,7 +124,7 @@ class Exchange < ApplicationRecord
     :awaiting_matching
   end
 
-  # 結果が公開されているか。ギフトコードの可視性も結果画面の可否もここに乗る。
+  # ギフトコードの可視性も結果画面の可否もここに乗る。
   # フェーズ名との比較を呼ぶ側それぞれに書かせない。綴り間違いは黙って false になり、
   # 見えてはいけないものが見える側に倒れる
   def published?(at:)
@@ -148,8 +139,7 @@ class Exchange < ApplicationRecord
     participations.exists?(user:)
   end
 
-  # 結果画面の下部に並べる、全体の成立結果。誰が誰の本を受け取ったかは参加者全員に
-  # 見える（docs/spec.md 8.）。見せてよいフェーズかどうかは呼ぶ側が決める。
+  # 見せてよいフェーズかどうかは呼ぶ側が決める。
   # 成立を先に、返却を最後に置く。混ぜると、成立した冊数を読む側が数え直すことになる。
   # sort_by は同じ値どうしの順序を保証しないため、分けてから連結する
   def result_books
@@ -160,7 +150,7 @@ class Exchange < ApplicationRecord
     matched + returned
   end
 
-  # スネークドラフトの抽選順。マッチングを実行して初めて決まるので、
+  # 抽選順はマッチングを実行して初めて決まるので、
   # 実行前は空になる（Matching::Execution#save_draft_order）
   def draft_order
     participations.where.not(draft_position: nil).order(:draft_position).includes(:user)
@@ -173,14 +163,14 @@ class Exchange < ApplicationRecord
     owner_id == user.id
   end
 
-  # 参加を取り消せるかどうか。ボタンの出し分けと remove_participant! の拒否を
-  # 同じ規則から引く。片方だけを直すと、押しても断られるボタンが残る
+  # ボタンの出し分けと remove_participant! の拒否を同じ規則から引く。
+  # 片方だけを直すと、押しても断られるボタンが残る
   def removable_participant?(user, at:)
     participant?(user) && !owner?(user) && writable?(:participation, at:)
   end
 
-  # マッチングを実行できるか。確認画面を開けるかどうかと、交換会ページに実行への
-  # 導線を出すかどうかを同じ規則から引く。片方だけを直すと、押しても断られる導線が残る。
+  # 確認画面を開けるかどうかと、交換会ページに実行への導線を出すかどうかを
+  # 同じ規則から引く。片方だけを直すと、押しても断られる導線が残る。
   # 実行そのものの検証は Matching::Execution が行ロックの内側で持つので、これは
   # 見せてよいかの判定にあたる。
   # 実行済みで false になるのは phase が :published を返すため。
@@ -193,7 +183,6 @@ class Exchange < ApplicationRecord
     I18n.t(phase(at:), scope: 'exchange.phases')
   end
 
-  # 次に来る節目。「いつまでに何をするか」を出すために使う。
   # マッチング実行待ちが待っているのは主催者の操作で日時では動かず、
   # 結果公開はもう終わっている。どちらも待つべき日時が無いので nil を返し、
   # 呼ぶ側に締切を出させない
@@ -205,13 +194,13 @@ class Exchange < ApplicationRecord
     end
   end
 
-  # 節目の呼び名はフェーズごとに変わる。準備中に待っているのは締切ではなく開始で、
-  # 一律に「締切」と出すと、まだ始まってもいない登録がもう終わるように読める
+  # 準備中に待っているのは締切ではなく開始で、一律に「締切」と出すと、
+  # まだ始まってもいない登録がもう終わるように読める
   def next_deadline_name(at:)
     I18n.t(phase(at:), scope: 'exchange.next_deadlines', default: nil)
   end
 
-  # 日程の段が始まる日時。段の名前と日時カラムの対応をここだけに置く。
+  # 段の名前と日時カラムの対応をここだけに置く。
   # 結果公開が返すのは希望提出の締切で、公開そのものは主催者がマッチングを
   # 実行したときに起きる。日時では決まらないので、これは下限にあたる。
   # fetch で落として、綴り間違いを黙って nil に化けさせない
@@ -223,8 +212,8 @@ class Exchange < ApplicationRecord
     }.fetch(step)
   end
 
-  # 期間の範囲。段の名前と日時カラムの対応を schedule_starts_at と同じくここに集める。
-  # 終端を含まない範囲にするのは、各期間が終了時刻を含まないため（docs/spec.md 4.）。
+  # 段の名前と日時カラムの対応を schedule_starts_at と同じくここに集める。
+  # 終端を含まない範囲にするのは、各期間が終了時刻を含まないため。
   # fetch で落として、綴り間違いを黙って nil に化けさせない
   def period(step)
     {
@@ -233,8 +222,8 @@ class Exchange < ApplicationRecord
     }.fetch(step)
   end
 
-  # 段がどこまで進んだか。フェーズをそのまま並べられないのは、
-  # マッチング実行待ちに当たる段が無いため。位置で数え、進行中だけは名前の一致で見る
+  # フェーズをそのまま並べられないのは、マッチング実行待ちに当たる段が無いため。
+  # 位置で数え、進行中だけは名前の一致で見る
   def schedule_state(step, at:)
     position = SCHEDULE_STEPS.fetch(step)
     current = phase(at:)
@@ -254,8 +243,8 @@ class Exchange < ApplicationRecord
     participations.create_or_find_by!(user:)
   end
 
-  # 参加の取り消し。入口は本人の辞退と主催者による除外の2つあるが、通す検証は同じ
-  # なので、口ごとに分けずここへ集める。片方にだけ条件を書き足すと、辞退では
+  # 入口は本人の辞退と主催者による除外の2つあるが、通す検証は同じなので、
+  # 口ごとに分けずここへ集める。片方にだけ条件を書き足すと、辞退では
   # 断られるものが除外では通る。
   # 参加と同じ操作名で表を引くため、抜けられる期間は参加できる期間と必ず一致する。
   # 別々に書くと、希望提出期間に入ってから抜けられて取得枠の計算が壊れる。
@@ -270,7 +259,7 @@ class Exchange < ApplicationRecord
     participations.find_by(user:)&.destroy!
   end
 
-  # 招待URLを配り直す。参加は user と交換会で結ばれていて招待トークンを持たないので、
+  # 参加は user と交換会で結ばれていて招待トークンを持たないので、
   # 差し替えても既存の参加者は影響を受けない。古いURLは引けなくなり 404 になる。
   # フェーズでは閉じない。締切後に配り直しても、参加を断るのは着地画面の仕事
   def reissue_invite_token!
@@ -316,8 +305,7 @@ class Exchange < ApplicationRecord
     columns.filter_map { self[it] if saved_change_to_attribute?(it) }
   end
 
-  # 招待トークンと乱数シードは交換会の作成時に発行する。
-  # とくにシードは、マッチングの実行時に生成すると結果を作り直せてしまう
+  # シードをマッチングの実行時に生成すると、結果を作り直せてしまう
   def assign_generated_attributes
     self.invite_token ||= self.class.generate_invite_token
     self.random_seed ||= SecureRandom.random_number(RANDOM_SEED_LIMIT)

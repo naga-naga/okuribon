@@ -5,7 +5,7 @@ require 'rails_helper'
 RSpec.describe Notifications::PhaseChange do
   include ActiveJob::TestHelper
 
-  # 定期実行が読む時刻。入口で1回だけ読んだものを回す（docs/spec.md 11.）
+  # 定期実行が読む時刻
   let!(:at) { Time.zone.parse('2026-08-16 12:00') }
 
   let!(:exchange) do
@@ -115,7 +115,7 @@ RSpec.describe Notifications::PhaseChange do
       expect(delivered_text).to include('希望の提出を締め切りました')
     end
 
-    # 待っているのは主催者の操作で、日時では動かない（docs/spec.md 4.）
+    # 待っているのは主催者の操作で、日時では動かない
     it '締切を出さない' do
       expect(delivered_text).not_to include('締切:')
     end
@@ -138,7 +138,7 @@ RSpec.describe Notifications::PhaseChange do
     end
   end
 
-  # 通知はチャンネルへの投稿で、誰が読むかを選べない（docs/spec.md 8.）
+  # 通知はチャンネルへの投稿で、誰が読むかを選べない
   describe '載せないもの' do
     let!(:exchange) do
       create(:exchange, name: '夏の交換会', matched_at: Time.zone.parse('2026-08-16 11:00'),

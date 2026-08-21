@@ -13,13 +13,13 @@
   </p>
   <h1 class="mt-2 text-[26px] font-bold leading-[1.45] text-ink"><%= @exchange.name %></h1>
 
-  <%# 参加者の顔ぶれは参加者にしか見せない（docs/spec.md 8.）。
+  <%# 参加者の顔ぶれは参加者にしか見せない。
       招待URLを知っているだけの人には規模だけを伝える %>
   <p class="tabular mt-2 text-[13.5px] text-ink-muted">
     <%= t('invitation.participants', count: @exchange.participations.count) %>
   </p>
 
-  <%# 対応ストアや価格帯の目安が書かれる欄（docs/spec.md 6.9）。地の文に流すと、
+  <%# 対応ストアや価格帯の目安が書かれる欄。地の文に流すと、
       主催者が決めた条件なのか、ツールの決まりなのかを読み分けられない %>
   <% if @exchange.description.present? %>
     <div class="mt-6 rounded-[5px] border border-line bg-paper px-5 py-5">

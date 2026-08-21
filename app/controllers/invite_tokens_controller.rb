@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-# 招待トークンの再発行。招待URLを配り直したいときの操作なので、主催者だけが触れる
 class InviteTokensController < ApplicationController
   before_action :require_login
 

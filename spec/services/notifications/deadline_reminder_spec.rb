@@ -100,7 +100,7 @@ RSpec.describe Notifications::DeadlineReminder do
     end
   end
 
-  # 待っているのが主催者の操作で、日時では動かない（docs/spec.md 4.）
+  # 待っているのが主催者の操作で、日時では動かない
   context 'マッチング実行待ちのとき' do
     let!(:at) { Time.zone.parse('2026-09-02 12:00') }
 

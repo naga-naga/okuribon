@@ -56,7 +56,6 @@ RSpec.describe Wish do
     expect { create(:wish, participation: other, book: wish.book) }.not_to raise_error
   end
 
-  # 自分が登録した本は受け取れない（docs/spec.md 3. 交換の仕組み）。
   # 希望に入れられると、選んだのに絶対に当たらない枠を1つ抱えることになる
   it '自分が登録した本は希望できない' do
     participation = create(:participation)

@@ -1,6 +1,6 @@
 <%# 希望リストの中身。1冊出し入れするたびにここごと差し替える。
     出し入れの口はカードの側にあるので、ここは今の並びを見せて順序だけを動かす。
-    何人がその本を希望しているかは、ここにも一覧にも出さない（docs/spec.md 8.）。
+    何人がその本を希望しているかは、ここにも一覧にも出さない。
 
     editable: false はマッチング実行待ち。並びはそのままで、促しと動かす口が外れる %>
 <div id="wish_list" class="min-h-0 overflow-y-auto px-5 pt-3 pb-5 lg:px-6 lg:pt-4 lg:pb-5">
@@ -78,7 +78,7 @@
             伏せておく。出したままにすると、できない操作の手順が残る。
 
             どこをつまむのかを名指すのは、口が順位へ移ったため。⠿ は形だけで
-            つまめることを言えたが、数字にはそれが無い（docs/spec.md 6.2） %>
+            つまめることを言えたが、数字にはそれが無い %>
         <p hidden id="wish_reorder_help" data-wish-reorder-target="controls"
            class="mb-2 text-[12px] leading-[1.8] text-ink-subtle">
           順位をつまんで動かすか、選んで ↑↓ で動かします。Home / End で端まで送れます。

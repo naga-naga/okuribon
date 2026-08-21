@@ -60,8 +60,6 @@ RSpec.describe ResultsController do
                                  exchange.name => exchange_path(exchange))
       end
 
-      # 取得枠は登録した冊数と同数（docs/spec.md 3.）。
-      # 受け取った本がその冊数だけ並ぶ
       it '受け取った本が取得枠の冊数だけ並ぶ' do
         receive_book(from: join('ゆうと'), title: '波打ち際の観測所')
         receive_book(from: join('はるか'), title: '十三番目の便り')
@@ -73,7 +71,7 @@ RSpec.describe ResultsController do
         expect(response.body).to include('波打ち際の観測所', '十三番目の便り')
       end
 
-      # 誰から贈られたかが分かるようにする。お礼を伝えるため（docs/spec.md 6.5）
+      # 誰から贈られたかが分かるようにする。お礼を伝えるため
       it '誰が登録した本かが分かる' do
         receive_book(from: join('ゆうと'), title: '波打ち際の観測所',
                      recommendation: '後半で数字の意味が反転します')
@@ -84,7 +82,7 @@ RSpec.describe ResultsController do
         expect(response.body).to include('ゆうと さんから', '後半で数字の意味が反転します')
       end
 
-      # 一度見えたら取り消せない。既定は伏せ字にする（docs/spec.md 10.）
+      # 一度見えたら取り消せない。既定は伏せ字にする
       it 'ギフトコードは伏せ字で入る' do
         receive_book(from: join('ゆうと'), gift_code: 'MINE-CODE-0001')
         publish
@@ -114,7 +112,7 @@ RSpec.describe ResultsController do
         expect(response.body).to include('コピー', 'data-action="clipboard#copy"')
       end
 
-      # ギフトコードが見えるのは登録した本人と、受け取った人だけ（docs/spec.md 8.）
+      # ギフトコードが見えるのは登録した本人と、受け取った人だけ
       it '他人が受け取った本のギフトコードは含まれない' do
         others = join('ゆうと')
         receive_book(from: join('はるか'), to: others, gift_code: 'OTHERS-CODE-9999')
@@ -125,10 +123,10 @@ RSpec.describe ResultsController do
         expect(response.body).not_to include('OTHERS-CODE-9999')
       end
 
-      # 主催者に特権はない（docs/spec.md 8.）。参加者を兼ねるので自分の結果は見られるが、
+      # 主催者に特権はない。参加者を兼ねるので自分の結果は見られるが、
       # 見えるものは他の参加者と同じ
       it '主催者が開いても、自分のぶんしか見えない' do
-        # 主催者は必ず参加者を兼ねる（docs/spec.md 6.9）。その参加は factory が作る
+        # 主催者は必ず参加者を兼ねる。その参加は factory が作る
         organizer_participation = exchange.participations.find_by!(user: organizer)
         receive_book(from: join('はるか'), to: organizer_participation, gift_code: 'OWN-CODE-1111')
         receive_book(from: join('ゆうと'), to: participation, gift_code: 'OTHERS-CODE-9999')
@@ -142,7 +140,7 @@ RSpec.describe ResultsController do
       end
 
       # 渡った先の人が使うコードなので、この画面には取り出す用がない。
-      # 本人には見える値だが（docs/spec.md 8.）、並べる理由が無い
+      # 本人には見える値だが、並べる理由が無い
       it '自分が渡した本のギフトコードは含まれない' do
         mine = create(:book, participation:, gift_code: 'GIVEN-CODE-2222')
         create(:assignment, book: mine, participation: join('ゆうと'), returned: false)
@@ -164,7 +162,7 @@ RSpec.describe ResultsController do
       end
     end
 
-    # 誰が誰の本を受け取ったかは参加者全員に見える（docs/spec.md 8.）。
+    # 誰が誰の本を受け取ったかは参加者全員に見える。
     # 自分の受け取りだけでは、交換会全体で何が起きたのかが分からない
     context '全体の成立結果' do
       before { log_in_as(viewer) }
@@ -219,7 +217,7 @@ RSpec.describe ResultsController do
         expect(response.body).not_to include('RETURNED-OTHERS-5555')
       end
 
-      # 1冊も登録されないまま実行された交換会（docs/spec.md 9.）。
+      # 1冊も登録されないまま実行された交換会。
       # 見出しと列名だけの空の表は、読む側に何も伝えない
       it '本が1冊も登録されていなければ、この節ごと出ない' do
         join('りく')
@@ -258,7 +256,7 @@ RSpec.describe ResultsController do
       end
 
       # 何番目の希望で渡ったかは出さない。受け取った人の希望リストの中身にあたるうえ
-      # （docs/spec.md 8.）、順位が低いと渡った事実より順位のほうが目に残る
+      # 、順位が低いと渡った事実より順位のほうが目に残る
       it '受け取った人の希望の順位は出さない' do
         mine = create(:book, participation:, title: '灯台守の一年')
         yuto = join('ゆうと')
@@ -281,7 +279,7 @@ RSpec.describe ResultsController do
       end
     end
 
-    # 抽選順は結果公開後に見せてよい（docs/spec.md 8.）。
+    # 抽選順は結果公開後に見せてよい。
     # 順序は巡ごとに逆になるので、並びを見せても有利不利の話にはならない
     context 'ドラフトの抽選順' do
       before { log_in_as(viewer) }
@@ -357,7 +355,7 @@ RSpec.describe ResultsController do
                                          '次の交換会に、そのまま出せます')
       end
 
-      # 本の詳細画面を持たないため（docs/spec.md 6.3）、誰にも渡らなかった
+      # 本の詳細画面を持たないため、誰にも渡らなかった
       # コードの取り出し口はこの画面以外に無い
       it '返却された本のギフトコードを、受け取った本と同じ形で開ける' do
         return_book(title: '砂の図書館', gift_code: 'RETURNED-CODE-3333')
@@ -381,7 +379,6 @@ RSpec.describe ResultsController do
       end
     end
 
-    # 取得枠は登録した冊数と同数（docs/spec.md 3.）。
     # 白紙で返すと、壊れているのか受け取れなかったのか区別がつかない
     context '受け取った本が1冊も無いとき' do
       before { log_in_as(viewer) }
@@ -459,7 +456,7 @@ RSpec.describe ResultsController do
     end
 
     # 実在する交換会だけがログイン画面へ、存在しない id が 404 へ分かれると、
-    # ログインしないまま id を試すだけで実在を確かめられてしまう（docs/spec.md 8.）
+    # ログインしないまま id を試すだけで実在を確かめられてしまう
     it '未ログインなら、実在しない交換会でも応答が変わらない' do
       publish
 

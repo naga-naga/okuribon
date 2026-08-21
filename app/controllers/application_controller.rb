@@ -6,7 +6,6 @@ class ApplicationController < ActionController::Base
   # Only allow modern browsers supporting webp images, web push, badges, import maps, CSS nesting, and CSS :has.
   allow_browser versions: :modern
 
-  # Changes to the importmap will invalidate the etag for HTML responses
   stale_when_importmap_changes
 
   # 書き込みの拒否はここだけで応答に組み立てる。書き込み口ごとに書かない。
@@ -23,9 +22,6 @@ class ApplicationController < ActionController::Base
 
   private
 
-  # フェーズ判定の基準時刻。リクエストを受けた時刻を1回だけ読み、以降は回す。
-  # 読むたびに現在時刻を取ると、締切をまたいだ瞬間に、同じ画面の中で
-  # ヘッダーと本文のフェーズが食い違う
   def requested_at
     @requested_at ||= Time.current
   end

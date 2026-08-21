@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
-# 希望リストへの1冊の出し入れ。追加と削除はその場で保存し、
-# 並べ替えは順序だけをまとめて送る（docs/spec.md 6.2 / #27）
+# 追加と削除はその場で保存し、並べ替えは順序だけをまとめて送る
 class WishesController < ApplicationController
   include BookListing
   include ParticipatingExchange
@@ -11,7 +10,7 @@ class WishesController < ApplicationController
   before_action :set_book
 
   # PhaseGuard は重ねない。フェーズの検証も行ロックも順位の再採番も
-  # Participation の中にある（#24）。希望リストを変える口は追加・削除・並べ替えの
+  # Participation の中にある。希望リストを変える口は追加・削除・並べ替えの
   # 3つあり、条件をコントローラにも書くと、片方だけ直したときに口ごとに食い違う
   def create
     @participation.add_wish!(@book, at: requested_at)

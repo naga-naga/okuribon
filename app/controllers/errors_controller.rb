@@ -1,10 +1,9 @@
 # frozen_string_literal: true
 
-# 例外から描かれるエラー画面（docs/spec.md 6.10）。exceptions_app が
-# PATH_INFO をステータスに書き換えてここへ流す。
+# exceptions_app が PATH_INFO をステータスに書き換えてここへ流す。
 #
 # ログインは求めない。求めると、未ログインの人が受け取る 404 が
-# ログイン画面へのリダイレクトに変わり、どこで分岐したかで実在が漏れる（8.）。
+# ログイン画面へのリダイレクトに変わり、どこで分岐したかで実在が漏れる。
 # 交換会も引かない。エラー画面が対象を引き当てられると、
 # 引けたかどうかが本文に出てしまう
 class ErrorsController < ApplicationController

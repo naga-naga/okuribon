@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-# ログイン状態の出し入れをここへ集約する。
 # セッションに置くのは利用者の id だけにする。表示名やアバターまで持たせると、
 # 本人が変えたあともログインし直すまで古い値が出続ける
 module Authentication
@@ -36,7 +35,6 @@ module Authentication
     @current_user = nil
   end
 
-  # 保護された画面のコントローラで before_action に指定する
   def require_login
     return if logged_in?
 

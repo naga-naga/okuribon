@@ -1,10 +1,8 @@
 # frozen_string_literal: true
 
-# 結果画面。交換会のクライマックスで、受け取った本とギフトコードを開く場所。
-#
 # ギフトコードの平文はここにしか出ない画面が1つある。返却された自分の本の
-# コードは、本の詳細画面を持たないため（docs/spec.md 6.3）ここ以外に
-# 取り出し口が無い。取得経路そのものは Book#gift_code_for に集約してあり、
+# コードは、本の詳細画面を持たないためここ以外に取り出し口が無い。
+# 取得経路そのものは Book#gift_code_for に集約してあり、
 # この画面は「並べる対象を絞る」ことだけを受け持つ
 class ResultsController < ApplicationController
   include ParticipatingExchange
@@ -19,11 +17,10 @@ class ResultsController < ApplicationController
     # 関係のまま渡すと、冊数を数えるたびに画面から SQL が飛ぶ
     @received = @participation.received_assignments.to_a
     @returned = @participation.returned_assignments.to_a
-    # 取得枠は登録した冊数と同数（docs/spec.md 3.）。受け取りが0冊のとき、
+    # 取得枠は登録した冊数と同数。受け取りが0冊のとき、
     # 枠が無かったのか回ってこなかったのかを画面が言い分けるために要る
     @slots = @participation.books.count
 
-    # 全体の成立結果。誰が誰の本を受け取ったかは参加者全員に見える（docs/spec.md 8.）。
     # 公開前に取れないことは、この手前の 404 が受け持つ
     @result_books = @exchange.result_books
     # 自分が出した本の行き先は、全体の一覧から絞る。別に引くと、
@@ -36,8 +33,8 @@ class ResultsController < ApplicationController
 
   # 結果はまだ存在しないので 404 を返す。ただし本文は描く。
   # 素の 404 だと、参加者が自分の交換会で行き止まりに当たり、URL を間違えたのか
-  # 時期が早いのかを区別できない。実在を伏せる必要があるのは主催者専用の画面だけで
-  # （docs/spec.md 8.）、ここへ来られるのは交換会もフェーズも既に見えている参加者。
+  # 時期が早いのかを区別できない。実在を伏せる必要があるのは主催者専用の画面だけで、
+  # ここへ来られるのは交換会もフェーズも既に見えている参加者。
   # 参加していない人には ParticipatingExchange が先に落ち、素の 404 が返る
   def render_unpublished
     render :unpublished, status: :not_found

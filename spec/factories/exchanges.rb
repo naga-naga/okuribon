@@ -11,7 +11,7 @@ FactoryBot.define do
     wish_ends_at { 3.weeks.from_now }
     # 招待トークンと乱数シードはモデルが作成時に発行するため、ここでは指定しない
 
-    # 主催者は必ず参加者を兼ねる（docs/spec.md 2. 用語 / 6.9）。参加を持たない主催者は
+    # 主催者は必ず参加者を兼ねる。参加を持たない主催者は
     # Exchanges::Creation では作れないので、spec でもその状態を作らない。
     # 結果公開の交換会にも要るため、フェーズを見る join! ではなく直に作る
     after(:create) do |exchange|

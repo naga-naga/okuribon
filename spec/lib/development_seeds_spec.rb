@@ -21,7 +21,7 @@ RSpec.describe DevelopmentSeeds do
         .to match_array(Exchange::PHASES)
     end
 
-    # 主催者は必ず参加者を兼ねる（docs/spec.md 2. 用語 / 6.9）。
+    # 主催者は必ず参加者を兼ねる。
     # DB の制約では守れないので、データを作る側で守る
     it 'どの交換会にも主催者の参加がある' do
       not_participating = Exchange.all.reject { |exchange| exchange.participant?(exchange.owner) }
@@ -73,7 +73,7 @@ RSpec.describe DevelopmentSeeds do
     end
   end
 
-  # できたデータが docs/spec.md 9. を満たしているかを見る。
+  # 確かめたい状態が一通りできているかを見る。
   # 「ある」ことだけを確かめ、どの交換会が担うかは固定しない。
   # 担い手を名指しすると、シナリオを組み替えるたびに spec を書き換えることになる
   describe '状態バリエーション' do
@@ -104,8 +104,8 @@ RSpec.describe DevelopmentSeeds do
       expect(idle).to be_present
     end
 
-    # 交換会一覧の空状態（docs/spec.md 6.6）と、招待URL着地画面の「これから参加する」
-    # （6.7）は、どこにも参加していない人としてしか見られない。主役はすべての
+    # 交換会一覧の空状態と、招待URL着地画面の「これから参加する」は、
+    # どこにも参加していない人としてしか見られない。主役はすべての
     # 交換会に入っているので、主役として見ているかぎり一生出てこない
     it 'どこにも参加していない利用者がいる' do
       outsiders = User.all.reject { |user| user.exchanges.any? }
@@ -119,7 +119,7 @@ RSpec.describe DevelopmentSeeds do
       expect(solo).to be_present
     end
 
-    # 警告は主催者管理画面にしか出ず、出るのは本を登録できるあいだだけ（6.8）。
+    # 警告は主催者管理画面にしか出ず、出るのは本を登録できるあいだだけ。
     # 主役が主催者でなければ画面自体を開けないので、そこまで含めて見る。
     # 出るかどうかは画面と同じサービスに訊く
     it '登録冊数の偏りの警告を主催者として見られる' do
@@ -168,7 +168,7 @@ RSpec.describe DevelopmentSeeds do
     end
 
     # 受け取りが0冊のとき、結果画面は枠が無かったのか回ってこなかったのかを
-    # 言い分ける（docs/spec.md 6.5）。言い分けを見るための状態なので、
+    # 言い分ける。言い分けを見るための状態なので、
     # どちらも主役が0冊であること。他人として見ても文面は出ない
     it '取得枠が0のまま結果公開を迎えた交換会がある' do
       no_slots = published_participations_of(viewer, at:).select do |participation|
@@ -189,7 +189,7 @@ RSpec.describe DevelopmentSeeds do
       expect(unlucky).to be_present
     end
 
-    # 全体の成立結果は、並べるものが無ければ節ごと畳む（docs/spec.md 6.5）。
+    # 全体の成立結果は、並べるものが無ければ節ごと畳む。
     # 見出しと列名だけの表が残っていないかを、この交換会でしか確かめられない
     it '本が1冊も登録されないまま実行された結果公開の交換会がある' do
       empty = in_phase(:published, at:).select { |exchange| exchange.result_books.empty? }

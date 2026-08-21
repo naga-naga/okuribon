@@ -34,7 +34,7 @@ RSpec.describe ManagementsController do
   end
 
   # りくの5冊に対してほかの全員は合わせて2冊。自分が登録した本は受け取れないので、
-  # 差の3冊は渡す相手がいない（docs/spec.md 6.8）
+  # 差の3冊は渡す相手がいない
   def register_imbalanced
     register('りく', 5)
     register('ゆうと', 1)
@@ -92,7 +92,7 @@ RSpec.describe ManagementsController do
         expect(response.body).to include(I18n.l(owner_participation.created_at.to_date, format: :compact))
       end
 
-      # 主催者に特権はない（docs/spec.md 8.）。自分の本のコードも、
+      # 主催者に特権はない。自分の本のコードも、
       # 取得経路をこの画面に増やさないためここには出さない
       it '他人のギフトコードもこの画面には出ない' do
         create(:book, participation: join('ゆうと'), gift_code: 'OTHERS-CODE-9999')
@@ -125,7 +125,7 @@ RSpec.describe ManagementsController do
         expect(response.body).to include('みずき', '0冊')
       end
 
-      # 自分が登録した本は受け取れないので（docs/spec.md 3.）、1人の登録冊数が
+      # 自分が登録した本は受け取れないので、1人の登録冊数が
       # ほかの全員の合計を超えた分は、渡す相手がいないまま残る
       it '受け取り手のない冊数を添えて警告する' do
         register_imbalanced
@@ -157,7 +157,7 @@ RSpec.describe ManagementsController do
       end
 
       # 打つ手は登録期間を延ばして追加登録を促すことだけ。
-      # 日時の入力欄は交換会の編集画面に1つだけ置く（docs/spec.md 6.9）
+      # 日時の入力欄は交換会の編集画面に1つだけ置く
       it '登録期間を延ばす導線を添える' do
         register_imbalanced
 
@@ -167,7 +167,7 @@ RSpec.describe ManagementsController do
                                          edit_exchange_path(exchange))
       end
 
-      # 締切を過ぎてからでは主催者にできることがない（docs/spec.md 6.8）
+      # 締切を過ぎてからでは主催者にできることがない
       it '登録の締切を過ぎたら警告が消える' do
         register_imbalanced
 
@@ -176,7 +176,7 @@ RSpec.describe ManagementsController do
         expect(response.body).not_to include(I18n.t('management.imbalance.eyebrow'))
       end
 
-      # 結果公開後は日程を戻しても登録が再開しない（docs/spec.md 6.9）。
+      # 結果公開後は日程を戻しても登録が再開しない。
       # 締切を動かして警告だけが戻ってきても、打つ手はもう無い
       it '結果公開後は、日程を登録期間へ戻しても警告が出ない' do
         register_imbalanced
@@ -222,7 +222,7 @@ RSpec.describe ManagementsController do
                                          I18n.t('exchange.schedule.states.current'))
       end
 
-      # 日時の入力欄は交換会の編集画面に1つだけ置く（docs/spec.md 6.9）。
+      # 日時の入力欄は交換会の編集画面に1つだけ置く。
       # ここは現在の日程を見せて、変更はそちらへ送る
       it '変更は交換会の編集画面へ送る' do
         travel_to(registration_phase) { get exchange_management_path(exchange) }
@@ -238,7 +238,7 @@ RSpec.describe ManagementsController do
         expect(response.body).to include(I18n.t('management.schedule.note'))
       end
 
-      # 結果公開後も日程は変更できる（docs/spec.md 6.9）。ただし動かしても
+      # 結果公開後も日程は変更できる。ただし動かしても
       # 結果公開のままなので、締切を戻せば登録が開き直ると読ませない
       it '結果公開後は、日程を変えても再開しないことを添える' do
         at = phase_times.fetch(:published)
@@ -250,7 +250,7 @@ RSpec.describe ManagementsController do
         expect(response.body).not_to include(I18n.t('management.schedule.note'))
       end
 
-      # 除外できるのは参加できる期間と同じく登録の締切まで（docs/spec.md 4.）
+      # 除外できるのは参加できる期間と同じく登録の締切まで
       it '登録期間中なら、参加者の行に除外の口が出る' do
         participation = join('ゆうと')
 
@@ -269,7 +269,7 @@ RSpec.describe ManagementsController do
                                          I18n.t('management.participants.exclude_confirm', name: 'ゆうと'))
       end
 
-      # 主催者は必ず参加者を兼ねる（docs/spec.md 6.9）。押しても 403 になる口は出さない
+      # 主催者は必ず参加者を兼ねる。押しても 403 になる口は出さない
       it '主催者自身の行には除外の口が出ない' do
         travel_to(registration_phase) { get exchange_management_path(exchange) }
 
@@ -316,7 +316,7 @@ RSpec.describe ManagementsController do
       end
 
       # 締切前に確認画面へ送っても、そちらが 409 を返す。
-      # 押しても断られる口は残さない（docs/spec.md 6.8）
+      # 押しても断られる口は残さない
       it '締切前は確認画面への口が出ない' do
         travel_to(phase_times.fetch(:wish)) { get exchange_management_path(exchange) }
 
@@ -364,7 +364,7 @@ RSpec.describe ManagementsController do
         expect(response.body).to include(I18n.t('management.matching.checklist.unsubmitted', count: 2))
       end
 
-      # 0冊は締め出しではなく仕組みの結果（docs/spec.md 6.9）
+      # 0冊は締め出しではなく仕組みの結果
       it '締切後、1冊も登録していない人がいれば人数が出る' do
         create(:book, participation: owner_participation)
         join('たける')
@@ -375,7 +375,7 @@ RSpec.describe ManagementsController do
       end
 
       # 実行するほかに、締切を延ばして待つ道もある。
-      # 日時の入力欄は交換会の編集画面に1つだけ置く（docs/spec.md 6.9）
+      # 日時の入力欄は交換会の編集画面に1つだけ置く
       it '締切後、気になる点があれば締切を延ばす道を添える' do
         create(:book, participation: owner_participation)
         join('たける')
@@ -437,7 +437,7 @@ RSpec.describe ManagementsController do
     end
 
     # 403 だと、招待されていない交換会が実在することを URL を試すだけで
-    # 確かめられてしまう（docs/spec.md 8.）
+    # 確かめられてしまう
     it '参加しているだけの人には 404 を返す' do
       participant = create(:user)
       create(:participation, exchange:, user: participant)
@@ -464,7 +464,7 @@ RSpec.describe ManagementsController do
 
     # ログインを挟むぶん、主催者以外の 404 とは応答が変わる。実在する交換会だけが
     # ログイン画面へ、存在しない id が 404 へ分かれると、未ログインのまま
-    # id を試すだけで実在を確かめられてしまう（docs/spec.md 8.）。
+    # id を試すだけで実在を確かめられてしまう。
     # require_login が Exchange を引く前に返すことで、両者は同じ応答になる。
     # 交換会を先に引く形へ直すと、ここが落ちる
     it '未ログインなら、実在しない交換会でも応答が変わらない' do

@@ -32,8 +32,6 @@ RSpec.describe Book do
     expect(book).to be_persisted
   end
 
-  # DB の例外ではなくフォームのエラーとして返す。
-  # NOT NULL に任せると、入力欄に戻さず 500 になる。
   # 型ではなく画面に出る文言で固定する。型で照合すると、属性名の訳を
   # ja.yml から落としても spec が通り、「Titleを入力してください」が出続ける
   it 'タイトルが空だと保存できない' do
@@ -136,7 +134,6 @@ RSpec.describe Book do
       expect(book.gift_code_for(recipient.user, at:)).to be_nil
     end
 
-    # 既定値を置くと呼ぶたびに現在時刻が進む。基準時刻は入口で1回読んで回す
     it '基準時刻を省略すると呼べない' do
       expect { book.gift_code_for(registrant.user) }.to raise_error(ArgumentError)
     end

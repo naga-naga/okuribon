@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 module Notifications
-  # 1つの交換会がフェーズの変わり目に来たかを確かめ、来ていれば知らせる。
-  #
   # フェーズが切り替わる時刻は交換会の日時カラムそのものなので、その時刻を予約して
   # 確認しに行く。定期的に全件を見に回るより、境目を直接指せる。
   #
@@ -23,8 +21,8 @@ module Notifications
     discard_on ActiveJob::DeserializationError
 
     def perform(exchange)
-      # 基準時刻はここで1回だけ読む（docs/spec.md 11.）。予約した時刻ではなく
-      # 実際に走った時刻で見る。遅れて走ったなら、遅れた時点のフェーズが正しい
+      # 予約した時刻ではなく実際に走った時刻で見る。
+      # 遅れて走ったなら、遅れた時点のフェーズが正しい
       Notifications::PhaseChange.new(exchange, at: Time.current).deliver
     end
   end

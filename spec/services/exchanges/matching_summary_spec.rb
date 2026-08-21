@@ -26,7 +26,7 @@ RSpec.describe Exchanges::MatchingSummary do
   end
 
   # 割当に加わるのは本を登録した人だけ。1冊も登録していない人は取得枠が0で、
-  # 何も受け取らない（docs/spec.md 6.9）。主催者に人数を数え直させない
+  # 何も受け取らない。主催者に人数を数え直させない
   it '本を登録した人数と、登録された総冊数を数える' do
     register(owner_participation, 2)
     register(join, 1)
@@ -43,7 +43,7 @@ RSpec.describe Exchanges::MatchingSummary do
   end
 
   # 希望を出していない人にも余り物が回る。実行しても締め出されないことを
-  # 主催者が確かめられるよう、人数だけを出す。何を希望したかは出さない（docs/spec.md 8.）
+  # 主催者が確かめられるよう、人数だけを出す。何を希望したかは出さない
   it '本を登録したのに希望を出していない人数を数える' do
     books = register(owner_participation, 2)
     wisher = join
@@ -63,7 +63,7 @@ RSpec.describe Exchanges::MatchingSummary do
     expect(summary.unsubmitted_count).to eq(1)
   end
 
-  # 0冊なら取得枠も0で、実行しても何も受け取らない（docs/spec.md 6.9）。
+  # 0冊なら取得枠も0で、実行しても何も受け取らない。
   # 締め出されたのではなく仕組みの結果なので、実行前に主催者へ知らせる
   it '1冊も登録していない人数を数える' do
     register(owner_participation, 1)
@@ -73,7 +73,7 @@ RSpec.describe Exchanges::MatchingSummary do
     expect(summary.without_books_count).to eq(2)
   end
 
-  # 自分が登録した本は受け取れないので（docs/spec.md 3.）、1人の登録冊数が
+  # 自分が登録した本は受け取れないので、1人の登録冊数が
   # ほかの全員の合計を超えた分は渡す相手がいない
   it '受け取り手のない本の冊数を出す' do
     register(owner_participation, 5)

@@ -6,19 +6,14 @@ class ExchangesController < ApplicationController
 
   before_action :require_login
 
-  # 並ぶのは参加している交換会だけ。主催者は必ず参加者を兼ねるので、
-  # 主催した交換会もここに並ぶ。カード1枚に載るものは交換会だけでは足りず、
+  # カード1枚に載るものは交換会だけでは足りず、
   # 並び順も日時から導出するので、組み立てはサービスに置く
   def index
     @cards = Exchanges::Listing.new(current_user, at: requested_at).call
   end
 
-  # 交換会ページ。状態ヘッダー（docs/spec.md 6.1）と本の一覧（6.2）を1枚で出す。
-  # 参加から引くので、参加していなければ見つからない。主催者も参加者を兼ねるので
-  # ここを開ける。主催者管理画面への導線もこの画面が持つ。
   # 自分の取得枠を出すのに参加そのものが要るため、交換会ではなく参加を引いて、
-  # 権限の判定と取り出しを1回で済ませる。
-  # 読み取りは5フェーズすべてで開いており、止めるのは書き込みだけ（4. フェーズ）
+  # 権限の判定と取り出しを1回で済ませる
   def show
     # ネストされた口と違い、ここだけ交換会 id が :id で来る
     set_participation(params.expect(:id))

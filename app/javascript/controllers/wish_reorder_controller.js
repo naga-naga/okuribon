@@ -22,7 +22,7 @@ const STEPS = {
 //
 // 口はハンドル1つ。つまんで動かすほかに、フォーカスしてキーでも動かせる。
 // ↑↓ のボタンを並べると行の口が4つになり、題に6文字しか残らないので、
-// キーボードと読み上げに渡る道はハンドル自身が持つ（docs/spec.md 6.2）
+// キーボードと読み上げに渡る道はハンドル自身が持つ
 export default class extends Controller {
   static targets = ["row", "controls", "position", "title", "handle", "book", "form"]
   static values = { status: String }

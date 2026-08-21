@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module ExchangesHelper
-  # 期間を数える単位。大きいほうから順に、最初に1つ以上たまる単位で出す。
+  # 大きいほうから順に、最初に1つ以上たまる単位で出す。
   # 「3日と5時間」のように併記しない。ざっと見て切迫度だけ掴めればよく、
   # 桁を増やすと、久しぶりに開いた人が読み解く手間が増える
   DURATION_UNITS = [[1.day.to_i, '日'], [1.hour.to_i, '時間'], [1.minute.to_i, '分']].freeze
@@ -19,7 +19,7 @@ module ExchangesHelper
             headline: 'text-paper', detail: 'text-success-mute' },
   }.freeze
 
-  # 状態ヘッダーの地と、その上に載る締切・状況の数字（docs/spec.md 6.1）。
+  # 状態ヘッダーの地と、その上に載る締切・状況の数字。
   # 結果公開だけ面ごと松葉に変わり、そのまま結果への入口になる。
   # 地が濃い側では墨の濃淡が読めないので、罫と文字の色まで組で持つ
   HEADER_STYLES = {
@@ -33,7 +33,7 @@ module ExchangesHelper
   # ざっと見て1枚だけが目に飛び込む
   CARD_URGENT_WITHIN = 1.day
 
-  # 交換会一覧のカードの描き分け（docs/spec.md 6.6）。
+  # 交換会一覧のカードの描き分け。
   # 朱＝押すものと締切、松葉＝成立と完了の担当なので、締切が迫ったものを朱、
   # 結果公開を松葉にし、待つだけのものは生成りへ沈める。
   # 面が濃いと墨の濃淡が読めなくなるため、文字の色まで組で持つ
@@ -60,7 +60,7 @@ module ExchangesHelper
     TODO_TONE_STYLES.fetch(tone).fetch(part)
   end
 
-  # 「あなたがすること」の直下に置く操作の見た目（docs/spec.md 6.1）。
+  # 「あなたがすること」の直下に置く操作の見た目。
   # 行き先はフェーズごとに違うが、どれもそのフェーズの主となる導線にあたるので、
   # 位置も大きさも分けず、文言と行き先だけを差し替える。
   # 朱は1画面に1箇所だけなので、「あなたがすること」を朱で塗ったときは
@@ -83,7 +83,7 @@ module ExchangesHelper
     HEADER_STYLES.fetch(published ? :success : :paper).fetch(part)
   end
 
-  # 状態ヘッダーに並べる3つの数字（docs/spec.md 6.1 の表）。
+  # 状態ヘッダーに並べる3つの数字。
   # 枠の位置は動かさず、中身だけをフェーズで入れ替える。
   # 参加人数を出すのは登録期間まで。それより後は登録の締切が過ぎており、
   # まだ登録していない人が何人残っているかを数える用が無い。
@@ -121,13 +121,13 @@ module ExchangesHelper
     end
   end
 
-  # 交換会一覧のカードに出す主催者。自分が主催なら名前ではなく「あなた」と書く。
+  # 自分が主催なら名前ではなく「あなた」と書く。
   # 自分の名前を出しても、誰のことか読み替える手間が増えるだけ
   def exchange_owner_name(exchange, viewer)
     exchange.owner?(viewer) ? 'あなた' : exchange.owner.display_name
   end
 
-  # 締切までの残り。基準時刻は呼ぶ側から渡す。ここで現在時刻を読むと、
+  # 基準時刻は呼ぶ側から渡す。ここで現在時刻を読むと、
   # 同じ画面に並んだフェーズと残り時間が別々の時刻を指しうる
   def remaining_time_text(deadline, at:)
     counted = duration_text(deadline - at)
@@ -139,7 +139,6 @@ module ExchangesHelper
     "あと#{counted}"
   end
 
-  # 締切を過ぎてからの経過。マッチングの押し忘れが何日続いているかを出す。
   # 単位の選び方は残り時間と分け合う。片方だけ端数の扱いが違うと、
   # 同じ交換会の画面に並んだ「あと1日」と「1日」が別の長さを指すことになる
   def elapsed_time_text(since, at:)

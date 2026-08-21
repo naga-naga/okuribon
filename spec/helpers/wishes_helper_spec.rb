@@ -4,7 +4,7 @@ require 'rails_helper'
 
 RSpec.describe WishesHelper do
   describe '#wish_guidance_state' do
-    # 希望リストは長いほうが有利。取得枠の2倍以上を推奨する（docs/spec.md 3.）
+    # 希望リストは長いほうが有利。取得枠の2倍以上を推奨する
     it '取得枠の2倍に満たなければ増やすことを促す' do
       expect(helper.wish_guidance_state(slots: 2, wishes: 3)).to eq(:short)
     end

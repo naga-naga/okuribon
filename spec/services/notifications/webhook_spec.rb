@@ -46,7 +46,7 @@ RSpec.describe Notifications::Webhook do
       expect(described_class.for(build(:exchange, webhook_url: 'ほげ'))).to be_nil
     end
 
-    # 開発用データの URL はホストだけ本物にしてある（docs/spec.md 9.1）。
+    # 開発用データの URL はホストだけ本物にしてある。
     # 形式を手元で見分けられることが、そうしてある理由そのものにあたる
     it '開発用データの URL を見分けられる' do
       formats = [DevelopmentSeeds::DISCORD_WEBHOOK_URL, DevelopmentSeeds::SLACK_WEBHOOK_URL]

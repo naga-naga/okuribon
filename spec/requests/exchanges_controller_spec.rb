@@ -41,7 +41,6 @@ RSpec.describe ExchangesController do
 
     # 主催をはじめる道はこの画面にしかない。共通ヘッダーに置いていた頃は、
     # 並ぶものが1件でもあると本文から消え、いちばん小さい字だけが残っていた
-    # （docs/spec.md 6.6）
     it '参加している交換会があっても本文から交換会をつくれる' do
       registration_exchange(name: '夏の交換会')
 
@@ -322,7 +321,7 @@ RSpec.describe ExchangesController do
   end
 
   # フェーズも残り時間も日時から導出されるため、現在時刻を固定してから作る。
-  # 交換会ページは状態ヘッダー（docs/spec.md 6.1）と本の一覧（6.2）を1枚で出す
+  # 交換会ページは状態ヘッダーと本の一覧を1枚で出す
   describe '#show' do
     let!(:now) { '2026-08-04T00:00:00+09:00' }
 
@@ -431,7 +430,6 @@ RSpec.describe ExchangesController do
       card_for(book).at_css(%(form[action="#{exchange_book_wish_path(exchange, book)}"]))
     end
 
-    # 取得枠は自分が登録した冊数と同じ（docs/spec.md 3.）
     def register_own(count)
       count.times { create(:book, participation:) }
     end
@@ -471,7 +469,6 @@ RSpec.describe ExchangesController do
     end
 
     # 読み取りは5フェーズすべてで開いている。止めるのは書き込みだけ
-    # （docs/spec.md 4. フェーズ）
     it '結果公開でも開ける' do
       publish!
 
@@ -481,7 +478,7 @@ RSpec.describe ExchangesController do
     end
 
     # 主催者管理画面へ辿り着く経路はこのページだけ。交換会一覧は主催と参加を
-    # 区別せずに並べるので（6.6）、ここに無いと入口を持てない
+    # 区別せずに並べるので、ここに無いと入口を持てない
     it '主催者には主催者管理画面への導線が出る' do
       owned = create(:exchange, owner: user)
 
@@ -491,7 +488,7 @@ RSpec.describe ExchangesController do
     end
 
     # 押しても 404 になるリンクを見せない。主催者以外にはその画面の
-    # 存在自体を知らせない（docs/spec.md 8.）
+    # 存在自体を知らせない
     it '主催者以外には導線が出ない' do
       open_page
 
@@ -558,7 +555,7 @@ RSpec.describe ExchangesController do
         expect(band.select { it['aria-current'] == 'step' }.map { it.text.strip }).to eq(['結果公開'])
       end
 
-      # フェーズは日時から導出されるもので、選べる先ではない（docs/spec.md 4.）。
+      # フェーズは日時から導出されるもので、選べる先ではない。
       # タブの形に寄せると押せると読まれる
       it 'リンクにも button にもならない' do
         open_page
@@ -729,7 +726,7 @@ RSpec.describe ExchangesController do
       end
     end
 
-    # 枠の位置は動かさず、中身だけをフェーズで入れ替える（docs/spec.md 6.1 の表）
+    # 枠の位置は動かさず、中身だけをフェーズで入れ替える
     describe '状況の数字' do
       before do
         create_list(:participation, 2, exchange:)
@@ -931,7 +928,7 @@ RSpec.describe ExchangesController do
       end
     end
 
-    # 交換会を開くと本が並んでいる（docs/spec.md 6.2）。
+    # 交換会を開くと本が並んでいる。
     # 読み取りは5フェーズすべてで開いており、フェーズで変わるのは書き込みの口だけ
     describe '本の一覧' do
       # 選ぶ材料は全員の本。自分の登録した本だけでは読み比べにならない
@@ -1001,7 +998,7 @@ RSpec.describe ExchangesController do
       end
     end
 
-    # 並ぶ本がまだ無いフェーズ（docs/spec.md 6.2）。空白のまま落とすと、
+    # 並ぶ本がまだ無いフェーズ。空白のまま落とすと、
     # 読み込みに失敗したのか、まだ誰も登録していないのかが読み取れない
     describe '準備中' do
       def open_preparing
@@ -1376,7 +1373,7 @@ RSpec.describe ExchangesController do
         expect(wish_summary.text).not_to include('推奨')
       end
 
-      # 何人がその本を希望しているかは誰にも見えない（docs/spec.md 8.）。
+      # 何人がその本を希望しているかは誰にも見えない。
       # 案内が数えるのは自分の希望だけで、他の人の希望では動かない
       it '他の人の希望は冊数に混ざらない' do
         register_own(1)
@@ -1420,7 +1417,7 @@ RSpec.describe ExchangesController do
         wish_summary.parent
       end
 
-      # 並べ替えは順序だけをまとめて送る（docs/spec.md 6.2）。
+      # 並べ替えは順序だけをまとめて送る。
       # ここで確かめるのは送る材料が画面に揃っていることまで。
       # つまんで動かす操作そのものはブラウザでしか確かめられない
       it '希望リストの並びをそのまま送れる' do
@@ -1442,7 +1439,7 @@ RSpec.describe ExchangesController do
       end
 
       # 行に口が4つ並ぶと、広い画面の340pxのリストでは題に92pxしか残らず、
-      # 6文字で切れる。並べ替えはハンドル1つに寄せる（docs/spec.md 6.2）
+      # 6文字で切れる。並べ替えはハンドル1つに寄せる
       it '行の口は並べ替えと外すの2つだけ' do
         wish_for('1冊目')
 
@@ -1455,7 +1452,7 @@ RSpec.describe ExchangesController do
 
       # つまむ口は順位そのもの。⠿ と × が隣り合っていた間は、44pxの的が4pxの
       # 隙間で並び、並べ替えようとして希望から外す取り違えが起こりえた。
-      # 順位へ移すと、押すものが行の両端に離れる（docs/spec.md 6.2）
+      # 順位へ移すと、押すものが行の両端に離れる
       it 'つまむ口が順位そのものである' do
         wish_for('1冊目')
 
@@ -1616,7 +1613,7 @@ RSpec.describe ExchangesController do
           .to include(a_string_matching(/:relative/)).and include(a_string_matching(/:z-/))
       end
 
-      # 階層は文字と色と輪郭で作る（docs/spec.md 10.1）
+      # 階層は文字と色と輪郭で作る
       it 'つまんでも影は落とさない' do
         wish_for('1冊目')
 
@@ -1635,7 +1632,7 @@ RSpec.describe ExchangesController do
         expect(dragging_styles(rows.first)).not_to include(a_string_matching(/\b(sm|md|lg|xl):/))
       end
 
-      # 絞り込みは URL に残る（docs/spec.md 6.2）
+      # 絞り込みは URL に残る
       it '絞り込みを保ったまま並べ替えられる' do
         wish_for('1冊目')
 
@@ -1645,7 +1642,7 @@ RSpec.describe ExchangesController do
       end
 
       # 外す口をカードの側にしか置かないと、リストを見て「これを消したい」と
-      # 思った人が、同じ本のカードを一覧から探し直すことになる（docs/spec.md 6.2）
+      # 思った人が、同じ本のカードを一覧から探し直すことになる
       it '各行から希望を外せる' do
         first = wish_for('1冊目')
         second = wish_for('2冊目')
@@ -1721,7 +1718,7 @@ RSpec.describe ExchangesController do
         expect(wish_list.at_css('form')).to be_nil
       end
 
-      # 自分の本は受け取れない（docs/spec.md 3.）。押しても通らないボタンを
+      # 自分の本は受け取れない。押しても通らないボタンを
       # 出しておいて断るのではなく、選べないことをその場で示す
       it '自分の本は選べないことが分かる' do
         book = create(:book, participation:)
@@ -1732,7 +1729,7 @@ RSpec.describe ExchangesController do
         expect(wish_form(book)).to be_nil
       end
 
-      # 何人がその本を希望しているかは誰にも見せない（docs/spec.md 8.）。
+      # 何人がその本を希望しているかは誰にも見せない。
       # 中身まで揃えた2冊を並べ、希望された側とされていない側で
       # カードが1文字も変わらないことを見る
       it '何人がその本を希望しているかは出ない' do
@@ -1821,7 +1818,7 @@ RSpec.describe ExchangesController do
       end
     end
 
-    # 希望の受付が終わってから結果が出るまでの間（docs/spec.md 6.2）。
+    # 希望の受付が終わってから結果が出るまでの間。
     # 締め切られた事実だけを消して並びも消すと、自分が何を出したのかを
     # 確かめる先がどこにも無くなる
     describe 'マッチング実行待ち' do
@@ -1965,7 +1962,7 @@ RSpec.describe ExchangesController do
         expect(card_for(mine).text).not_to include('希望に入れた')
       end
 
-      # 何人がその本を希望しているかは誰にも見せない（docs/spec.md 8.）。
+      # 何人がその本を希望しているかは誰にも見せない。
       # 中身まで揃えた2冊を並べ、他の人に希望された側とされていない側で
       # カードが1文字も変わらないことを見る
       it '他人の希望も、その本を何人が希望したかも出ない' do
@@ -2075,7 +2072,7 @@ RSpec.describe ExchangesController do
         expect(card_for(book).text).to include('佐藤 花子 さんに返却')
       end
 
-      # 選ばれなかったことを本の評価として読ませない（docs/spec.md 6.5）。
+      # 選ばれなかったことを本の評価として読ませない。
       # 戻った理由は結果画面が引き受ける
       it '返却の理由は書かない' do
         book = book_by('佐藤 花子', title: '金曜日の献立')
@@ -2112,7 +2109,7 @@ RSpec.describe ExchangesController do
     end
 
     # 見えるのは登録した本人と、成立後の受取人だけ。
-    # この画面はどちらの経路でもない（docs/spec.md 8.）
+    # この画面はどちらの経路でもない
     it 'ギフトコードが含まれない' do
       mine = create(:book, participation:, gift_code: 'MYOWNGIFTCODE')
       theirs = book_by('佐藤 花子', gift_code: 'OTHERGIFTCODE')
@@ -2367,15 +2364,13 @@ RSpec.describe ExchangesController do
       expect(exchange.reload.name).to eq('初夏の交換会')
     end
 
-    # 主催者は各期間の日時を後から変更できる（docs/spec.md 4. フェーズ）
+    # 主催者は各期間の日時を後から変更できる
     it '日程を変更できる' do
       patch exchange_path(exchange), params: { exchange: { wish_ends_at: '2026-10-01T10:00' } }
 
       expect(exchange.reload.wish_ends_at.rfc3339).to eq('2026-10-01T10:00:00+09:00')
     end
 
-    # 登録期間の開始と終了が入れ替わる変更。DB の例外ではなく、
-    # フォームに戻せる日本語のエラーとして返す
     it '登録期間の開始が終了より後になる変更は拒否される' do
       patch exchange_path(exchange),
             params: { exchange: { registration_starts_at: '2026-09-01T10:00',
@@ -2424,7 +2419,7 @@ RSpec.describe ExchangesController do
       expect(exchange.writable?(:wish, at:)).to be(true)
     end
 
-    # 結果公開後も日程は変更できる（docs/spec.md 6.9）。マッチングを実行したかどうかで
+    # 結果公開後も日程は変更できる。マッチングを実行したかどうかで
     # フェーズが決まるので、日時を動かしても結果公開のままになる（4.）
     context 'マッチングの実行後' do
       let!(:at) { '2026-08-20T00:00:00+09:00'.in_time_zone }
@@ -2440,7 +2435,7 @@ RSpec.describe ExchangesController do
       end
 
       # 日時を過去へ戻しても結果公開のまま。ここが崩れると、
-      # 受け取った人に見えていたギフトコードが見えなくなる（docs/spec.md 8.）
+      # 受け取った人に見えていたギフトコードが見えなくなる
       it '日程を過去へ戻しても結果公開のままになる' do
         travel_to(at) do
           patch exchange_path(exchange),

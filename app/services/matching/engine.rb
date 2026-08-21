@@ -11,8 +11,6 @@ module Matching
 
   Result = Struct.new(:assignments, :quotas, :draft_order, keyword_init: true)
 
-  # スネークドラフト方式で、誰がどの本を受け取るかを決める。
-  #
   # レコードに依存せず、識別子だけで完結する処理として書いてある。
   # 呼び出し側でレコードを Book 構造体へ詰め替え、戻り値を保存すること。
   #
@@ -52,7 +50,6 @@ module Matching
 
     private
 
-    # 取得枠は登録冊数と同数
     def build_quotas
       quotas = @participants.index_with(0)
       @books.each { |book| quotas[book.owner_id] = quotas.fetch(book.owner_id, 0) + 1 }
@@ -97,7 +94,6 @@ module Matching
       end
     end
 
-    # 希望リストの上位から、まだ残っていて自分の本でないものを1冊
     def pick_for(participant)
       @wishes.fetch(participant, []).find do |book_id|
         @assigned_book_ids.exclude?(book_id) &&

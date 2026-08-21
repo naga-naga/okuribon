@@ -76,7 +76,7 @@
     <div class="mt-8 border-t border-line pt-8">
       <p class="text-[14.5px] font-medium text-success">この交換会にはすでに参加しています。</p>
 
-      <%# ここは未参加の人のための画面。辞退の口があるので追い返しはしないが、
+      <%# ここは未参加の人のための画面。辞退の導線があるので追い返しはしないが、
           行き先を示さないと、参加したあと何をすればよいのか分からない %>
       <p class="mt-2 text-[13.5px]"><%= link_to '交換会トップを開く', exchange_path(@exchange) %></p>
 
@@ -94,7 +94,7 @@
     </div>
   <% elsif joinable %>
     <div class="mt-8 border-t border-line pt-8">
-      <%# 未ログインでも参加の口へ送る。押した事実がサーバーに残ってはじめて、
+      <%# 未ログインでも参加のボタンへ送る。押した事実がサーバーに残ってはじめて、
           ログインを終えたあとに参加を確定させられる。
           押す前に Google へ出ることが分かるよう、ラベルで断っておく %>
       <%= button_to logged_in? ? '参加する' : 'ログインして参加する',

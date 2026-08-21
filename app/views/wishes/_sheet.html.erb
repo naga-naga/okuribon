@@ -3,7 +3,7 @@
     一覧を読んでいる間ずっと「いま何冊・何位まで選んだか」が見えている。
 
     マッチング実行待ちには editable: false で入る。並びも置き場所もそのままで、
-    編集の口だけが外れる。同じ枠を通すのは、締切をまたいだ瞬間に希望リストが
+    編集の操作だけが外れる。同じ枠を通すのは、締切をまたいだ瞬間に希望リストが
     別の場所へ移ったように見えるのを避けるため。
 
     開閉の状態はこの外枠が持つ。Turbo Stream で入れ替えるのは中身（#wish_list）だけで、
@@ -22,7 +22,7 @@
         もう出したものであることを見出しの脇でも言う %>
     <span class="text-[11.5px] text-ink-subtle"><%= editable ? '自動保存' : '確定済み' %></span>
 
-    <%# 畳む口は狭い画面にだけ要る。広い画面では常に開いている %>
+    <%# 畳むボタンは狭い画面にだけ要る。広い画面では常に開いている %>
     <button type="button" data-action="wish-sheet#toggle" data-wish-sheet-target="toggle"
             aria-expanded="false" aria-controls="wish_list"
             class="ml-auto cursor-pointer text-[12.5px] text-accent underline lg:hidden">

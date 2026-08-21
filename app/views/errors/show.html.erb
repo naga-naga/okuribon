@@ -22,7 +22,7 @@
     </p>
 
     <%# 未ログインで交換会一覧へ送ると require_login がログイン画面へ跳ね返すので、
-        行き先は最初からログイン画面にする。ログアウトの口は共通ヘッダーにある %>
+        行き先は最初からログイン画面にする。ログアウトの導線は共通ヘッダーにある %>
     <div class="pt-1">
       <% if logged_in? %>
         <%= link_to t('error.actions.exchanges'), exchanges_path,

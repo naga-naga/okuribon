@@ -134,7 +134,7 @@
                  class: 'cursor-pointer rounded-[5px] bg-accent px-6 py-3 text-[14px] ' \
                         'font-medium text-paper hover:bg-accent-hover' %>
 
-    <%# 何冊でも登録できるので、一覧を経由せずそのまま次を書ける口を主ボタンの隣に置く。
+    <%# 何冊でも登録できるので、一覧を経由せずそのまま次を書けるボタンを主ボタンの隣に置く。
         編集には次の1冊が無いので出さない %>
     <% if book.new_record? %>
       <%= f.submit '登録して、続けてもう1冊', name: 'continue',

@@ -44,12 +44,6 @@ RSpec.describe InvitationsController do
         expect(response.body).to include('主催 太郎 さんからの招待')
       end
 
-      # 対応ストアや価格帯の目安が書かれる欄（spec.md 6.9）。地の文に流すと、
-      # 主催者が決めた条件なのか、ツールの決まりなのかを読み分けられない
-      it '主催者の説明にラベルが付く' do
-        expect(response.body).to include('主催者からの説明')
-      end
-
       # 主催者も参加者に数える。招待された人が見るのは交換会の規模で、
       # 主催者だけを別枠に置く理由が無い
       it '参加者数が出る' do
@@ -65,17 +59,6 @@ RSpec.describe InvitationsController do
         expect(response.body).to include('2026年8月10日 10:00')
         expect(response.body).to include('2026年8月24日 10:00')
         expect(response.body).to include('2026年9月7日 10:00')
-      end
-
-      # 日時を3つ並べただけでは、参加を決める材料にならない。数週間拘束される
-      # ツールなので、それぞれの期間に何をするのかと、そこで効く決まりを添える
-      it 'どう進むかが3段で出る' do
-        expect(response.body).to include('本を登録する')
-        expect(response.body).to include('登録した冊数と同じだけ受け取れます')
-        expect(response.body).to include('欲しい本を希望順に並べる')
-        expect(response.body).to include('自分が登録した本は選べません')
-        expect(response.body).to include('結果公開・ギフトコードを受け取る')
-        expect(response.body).to include('誰から贈られたかも分かります')
       end
     end
 

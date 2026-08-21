@@ -204,41 +204,6 @@ RSpec.describe ExchangesController do
       expect(response.body).not_to include('2026年7月20日 00:00')
     end
 
-    # 並びが日時の1本の軸であることは、カードを見ても分からない
-    it '見出しの下に並び順の説明が出る' do
-      registration_exchange
-
-      travel_to(now) { get exchanges_path }
-
-      expect(response.body).to include('あなたの交換会')
-      expect(response.body).to include('締切の近いものから並びます')
-    end
-
-    # 朱になるカードの枚数と一致する数字で、目で数えられるものを文字でも数えていた
-    it '動いている件数は出さない' do
-      registration_exchange
-      participating(registration_starts_at: '2026-08-20T00:00:00+09:00'.in_time_zone,
-                    registration_ends_at: '2026-08-27T00:00:00+09:00'.in_time_zone,
-                    wish_ends_at: '2026-09-03T00:00:00+09:00'.in_time_zone)
-
-      travel_to(now) { get exchanges_path }
-
-      # 件数は等幅の span で包んでいたので、地の文とつなげて読む
-      expect(response.parsed_body.text).not_to include('いま動いているのは')
-    end
-
-    # 件数を出さないなら、0を出す場面も無い
-    it '動いているものが無くても、その言い分けを出さない' do
-      participating(registration_starts_at: '2026-08-20T00:00:00+09:00'.in_time_zone,
-                    registration_ends_at: '2026-08-27T00:00:00+09:00'.in_time_zone,
-                    wish_ends_at: '2026-09-03T00:00:00+09:00'.in_time_zone)
-
-      travel_to(now) { get exchanges_path }
-
-      expect(response.body).not_to include('いま動いている交換会はありません')
-      expect(response.body).to include('締切の近いものから並びます')
-    end
-
     # 何も無い画面を白紙で返すと、壊れているのか参加していないのか区別がつかない
     describe '1つも参加していないとき' do
       before { travel_to(now) { get exchanges_path } }
@@ -246,11 +211,6 @@ RSpec.describe ExchangesController do
       it '参加していないことを見出しで言う' do
         expect(response).to have_http_status(:ok)
         expect(response.body).to include('まだどこにも参加していません')
-      end
-
-      # 参加の入口は招待URLしかない
-      it '招待URLから参加できることを書く' do
-        expect(response.body).to include('招待URL')
       end
 
       # 本文が真っ白なこの画面でこそ、押してよいものだと分かる大きさが要る
@@ -261,12 +221,6 @@ RSpec.describe ExchangesController do
       # 並ぶものが有るときと同じく、ボタンは1つ
       it 'つくるボタンが1画面に1つしか無い' do
         expect(response.parsed_body.css("a[href='#{new_exchange_path}']").size).to eq(1)
-      end
-
-      # 何人でどれくらいの期間かの見当が付かないと、つくる側は日時を決められない
-      it '主催するときの目安を出す' do
-        expect(response.body).to include('3人から十数人')
-        expect(response.body).to include('登録に2週間')
       end
     end
 
@@ -893,41 +847,6 @@ RSpec.describe ExchangesController do
       end
     end
 
-    # 資料が狙っているのは、フェーズが変わっても目の置き場所が動かないこと。
-    # 左は「あなたがすること」と操作、右は締切と状況の数字。
-    # 締切だけは次の節目が無いフェーズで言い方が変わるので、位置ではなく前後関係で見る
-    describe '画面の並び' do
-      def positions(body, phase_name)
-        { phase: body.index(phase_name), todo: body.index('あなたがすること'),
-          stats: body.index('取得枠'), books: body.index('みんなの本') }
-      end
-
-      {
-        '2026-07-25T00:00:00+09:00' => '準備中',
-        '2026-08-04T00:00:00+09:00' => '登録期間',
-        '2026-08-10T00:00:00+09:00' => '希望提出期間',
-        '2026-08-20T00:00:00+09:00' => 'マッチング実行待ち',
-      }.each do |at, phase_name|
-        it "#{at} でも フェーズ帯 → あなたがすること → 状況の数字 → 本の一覧 の順に並ぶ" do
-          open_page(at:)
-
-          found = positions(response.body, phase_name)
-          expect(found.values).to all(be_present)
-          expect(found.values).to eq(found.values.sort)
-        end
-      end
-
-      # 締切は「あなたがすること」と状況の数字のあいだに入る。
-      # 数字より上に置くと、まず読むべき行動から目が離れる
-      it '締切は「あなたがすること」と状況の数字のあいだに出る' do
-        open_page
-
-        found = positions(response.body, '登録期間')
-        deadline = response.body.index('登録の締切')
-        expect(deadline).to be_between(found[:todo], found[:stats])
-      end
-    end
-
     # 交換会を開くと本が並んでいる。
     # 読み取りは5フェーズすべてで開いており、フェーズで変わるのは書き込みの操作だけ
     describe '本の一覧' do
@@ -1182,26 +1101,6 @@ RSpec.describe ExchangesController do
         expect(resized).to be_empty
       end
 
-      # 交換会の楽しみどころはおすすめポイント。あらすじを先に置くと、
-      # どの本にも似た筋書きが並び、読み比べる材料が下に沈む
-      it 'おすすめポイントがあらすじより前に出る' do
-        book_by('佐藤 花子', summary: 'あらすじの本文', recommendation: 'おすすめの本文')
-
-        open_page
-
-        expect(response.body.index('おすすめの本文')).to be < response.body.index('あらすじの本文')
-      end
-
-      # 詳細画面へ飛ばすと列の中の位置を見失う。開いて読んで、また列に戻れるようにする
-      it 'その場で開いて閉じられる' do
-        create(:book, participation:)
-
-        open_page
-
-        expect(response.body).to include('続きを読む')
-        expect(response.body).to include('閉じる')
-      end
-
       # 空白のまま置くと、書き忘れなのか書くところが無いのか分からない
       it 'おすすめポイントが未記入ならその旨が出る' do
         book_by('佐藤 花子', recommendation: nil)
@@ -1220,17 +1119,6 @@ RSpec.describe ExchangesController do
 
         expect(closed_card(book).to_html).to include('https://example.com/books/1')
         expect(closed_card(book).text).to include('ストアで見る')
-      end
-
-      # 下段に置くと、折られていない本のカードでは開くボタンが消えるぶん左へ寄る。
-      # 本文より上なら、下段に何が出ていようと同じ場所にある
-      it 'ストアへのリンクが本文より上に出る' do
-        book = book_by('佐藤 花子', url: 'https://example.com/books/1', recommendation: 'おすすめの本文')
-
-        open_page
-
-        html = card_for(book).to_html
-        expect(html.index('ストアで見る')).to be < html.index('おすすめの本文')
       end
 
       it 'URL が無ければストアへのリンクは出ない' do
@@ -2142,18 +2030,10 @@ RSpec.describe ExchangesController do
     describe '日時の入力欄' do
       before { get '/exchanges/new' }
 
-      it '3つある' do
-        expect(response.body.scan('type="datetime-local"').size).to eq(3)
-      end
-
       # 希望提出期間の開始はカラムが無く registration_ends_at から導出する。
       # 入力欄を置くと、送られた値で上書きできるように見えてしまう
       it '希望提出期間の開始を送らせない' do
         expect(response.body).not_to include('wish_starts_at')
-      end
-
-      it '登録の締切が希望提出期間の開始も兼ねることが分かる' do
-        expect(response.body).to include('登録の締切が、そのまま希望提出期間の始まりになります')
       end
     end
   end

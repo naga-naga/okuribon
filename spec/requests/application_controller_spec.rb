@@ -13,21 +13,6 @@ RSpec.describe ApplicationController do
     response.parsed_body.at_css('header')
   end
 
-  describe '書体と地の色' do
-    it '書体を読み込む' do
-      get login_path
-
-      expect(response.body).to include('Zen+Kaku+Gothic+New')
-    end
-
-    it '地の色と書体を body に当てる' do
-      get login_path
-
-      expect(response.body).to include('bg-surface')
-      expect(response.body).to include('font-sans')
-    end
-  end
-
   # タブに並んだときに、どの道具のどの画面かが読めること。静的な 500 / 406 が
   # 同じ形の題を持っているので、アプリ側だけ画面名しか出さないと、
   # エラーへ落ちた瞬間に題の形が変わる

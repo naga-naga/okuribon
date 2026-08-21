@@ -8,7 +8,7 @@ module Notifications
   # 本文に載せるのは交換会名・締切・リンクだけにする。チャンネルへの投稿は誰が読むかを
   # 選べないので、ギフトコードと個人の希望リストは載せられない
   class DeadlineReminder
-    # 締切の何時間前から知らせるか。網（Notifications::RemindAllDeadlinesJob）の間隔と
+    # 締切の何時間前から知らせるか。定期走査（Notifications::RemindAllDeadlinesJob）の間隔と
     # 同じ24時間にする。これより短くすると、予約を取りこぼした日に走査が窓の中へ落ちない。
     # 24時間ちょうどなら、1日1回の走査が必ず1回だけ窓の中に入る
     WINDOW = 24.hours

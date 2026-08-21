@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Notifications
-  # 予約を取りこぼした交換会を拾う網。
+  # 予約を取りこぼした交換会を拾う定期走査。
   #
   # 締切そのものは Notifications::RemindDeadlineJob の予約が拾う。ここが要るのは、
   # 予約が queue のデータベースにしか無いためで、積み損ねたときも、ジョブが失敗して

@@ -30,7 +30,6 @@ RSpec.describe BooksController do
     end
   end
 
-  # フェーズは日時から導出されるため、日程を丸ごと先へずらして準備中に戻す
   def outside_registration
     exchange.update!(registration_starts_at: 3.weeks.from_now,
                      registration_ends_at: 4.weeks.from_now,

@@ -284,16 +284,13 @@ RSpec.describe ExchangesController do
 
     let!(:participation) { create(:participation, user:, exchange:) }
 
-    # now は登録期間の中に落ちる。主催した交換会もこの日程で作り、
-    # どちらを開いても同じフェーズを見ていることにする。
-    # 覚えさせる値ではないので let! ではなくメソッドで持つ
+    # 主催した交換会にも同じ日程を渡し、どちらを開いても同じフェーズにする
     def dates
       { registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
         registration_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
         wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone }
     end
 
-    # 主催者として開く交換会。主催者の参加は factory が作るので、参加は重ねて作らない
     def owned_exchange(**attributes)
       create(:exchange, owner: user, **dates, **attributes)
     end

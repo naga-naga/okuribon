@@ -7,7 +7,7 @@ RSpec.describe Notifications::NotifyAllPhaseChangesJob do
 
   # 登録期間に入ったまま、まだ知らせていない交換会。予約を取りこぼした状態にあたる
   let!(:exchange) do
-    create(:exchange, registration_starts_at: 1.day.ago, notified_phase: 'preparing')
+    create(:exchange, :registration, notified_phase: 'preparing')
   end
 
   before { clear_enqueued_jobs }

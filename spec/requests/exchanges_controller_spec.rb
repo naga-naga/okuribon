@@ -279,13 +279,24 @@ RSpec.describe ExchangesController do
     let!(:now) { '2026-08-04T00:00:00+09:00' }
 
     let!(:exchange) do
-      create(:exchange, name: '夏の交換会', description: 'Kindle のみ。1000円前後を目安に。',
-                        registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
-                        registration_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
-                        wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone)
+      create(:exchange, name: '夏の交換会', description: 'Kindle のみ。1000円前後を目安に。', **dates)
     end
 
     let!(:participation) { create(:participation, user:, exchange:) }
+
+    # now は登録期間の中に落ちる。主催した交換会もこの日程で作り、
+    # どちらを開いても同じフェーズを見ていることにする。
+    # 覚えさせる値ではないので let! ではなくメソッドで持つ
+    def dates
+      { registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
+        registration_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
+        wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone }
+    end
+
+    # 主催者として開く交換会。主催者の参加は factory が作るので、参加は重ねて作らない
+    def owned_exchange(**attributes)
+      create(:exchange, owner: user, **dates, **attributes)
+    end
 
     # 5つのフェーズの中の1点ずつ。フェーズは日時から導出されるので時刻で作る。
     # 結果公開だけは matched_at が入っているかどうかで決まる（publish!）。
@@ -404,7 +415,7 @@ RSpec.describe ExchangesController do
 
     # 主催者は必ず参加者を兼ねるので、自分の交換会を開ける
     it '主催者も開ける' do
-      owned = create(:exchange, owner: user, name: '主催した交換会')
+      owned = owned_exchange(name: '主催した交換会')
 
       travel_to(now) { get exchange_path(owned) }
 
@@ -432,7 +443,7 @@ RSpec.describe ExchangesController do
     # 主催者管理画面へ辿り着く経路はこのページだけ。交換会一覧は主催と参加を
     # 区別せずに並べるので、ここに無いと入口を持てない
     it '主催者には主催者管理画面への導線が出る' do
-      owned = create(:exchange, owner: user)
+      owned = owned_exchange
 
       travel_to(now) { get exchange_path(owned) }
 
@@ -463,7 +474,7 @@ RSpec.describe ExchangesController do
 
     # 自分の名前を出しても、誰のことか読み替える手間が増えるだけ
     it '自分が主催なら「あなた」と書く' do
-      owned = create(:exchange, owner: user)
+      owned = owned_exchange
 
       travel_to(now) { get exchange_path(owned) }
 

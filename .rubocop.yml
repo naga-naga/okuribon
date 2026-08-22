@@ -61,10 +61,12 @@ RSpec/ExampleLength:
 
 # request spec には対応するコントローラか concern があるので、describe に定数を求める。
 # 既定では spec/requests と type: request の両方が除外されているため、どちらも外す。
-# spec/config は設定そのものを固定する spec で、渡せる定数が無いので除外に残す
+# spec/config は設定そのものを固定する spec で、渡せる定数が無いので除外に残す。
+# spec/factories_spec.rb も同じで、確かめる相手は factory の定義であってモデルではない
 RSpec/DescribeClass:
   Exclude:
     - "**/spec/config/**/*"
+    - "**/spec/factories_spec.rb"
     - "**/spec/features/**/*"
     - "**/spec/routing/**/*"
     - "**/spec/system/**/*"

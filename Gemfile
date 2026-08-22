@@ -71,6 +71,10 @@ group :development, :test do
   gem 'faker'
   gem 'rspec-rails'
 
+  # system spec 用。cuprite は CDP で Chrome に直接繋ぐので、chromedriver を持たない
+  gem 'capybara'
+  gem 'cuprite'
+
   # 通知の Webhook を spec から本当に叩かないための封じ。
   # 送信サービスに口を差し込むだけでは、そこを通らない経路が塞がらない
   gem 'webmock', require: false

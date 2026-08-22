@@ -108,5 +108,10 @@ jobs:
       - name: Prepare database
         run: bin/rails db:prepare
 
+      # ビルド済みの CSS は追跡していない。system spec は本物のブラウザで開くので、
+      # 無いまま走らせると描画そのものが 500 になる
+      - name: Build stylesheet
+        run: bin/rails tailwindcss:build
+
       - name: Run tests
         run: bin/rspec

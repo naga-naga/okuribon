@@ -38,8 +38,7 @@
         <h1 class="text-[26px] font-bold leading-[1.45] text-ink">あなたの交換会</h1>
 
         <%# 並びが日時の1本の軸であることは、カードを見ても分からない。
-            動いている件数のほうは出さない。朱になるカードの枚数と一致するので、
-            十数件しか並ばないこの画面では、目で数えられるものを文字でも数えることになる %>
+            動いている件数のほうは出さない。朱になるカードの枚数と一致する %>
         <p class="mt-1.5 text-[13px] text-ink-muted">締切の近いものから並びます。</p>
       </div>
 
@@ -81,20 +80,16 @@
               <%= link_to exchange.name, exchange_path(exchange) %>
             </h2>
 
-            <%# フェーズと締切だけでは、この会で自分が何をすればよいかまでは分からない。
-                交換会トップの「あなたがすること」と同じ置き場所から引く。
-                2か所で別々に組むと、片方だけが古い言い方で残る %>
+            <%# 交換会トップの「あなたがすること」と同じ置き場所から引く %>
             <p class="mt-2 text-[13px] leading-[1.7] text-ink"><%= card.headline %></p>
           </div>
 
-          <%# 締切の欄。待つ日時が無いフェーズでも欄ごと消さない。
-              空けてしまうと、締切を見落としたのか、そもそも無いのかが読み取れない %>
+          <%# 締切の欄は、待つ日時が無いフェーズでも消さない %>
           <div class="flex flex-none flex-col justify-center gap-1 px-5 py-4 sm:w-[220px] sm:py-5
                       <%= exchange_card_style(tone, :aside) %>">
             <% if exchange.published?(at: requested_at) %>
-              <%# 結果公開はもう終わっている。締切の代わりに、その日の行き先を置く。
-                  日時は他の画面と同じ書式で出す。ここだけ短い書式を持つと、
-                  同じ日時が画面をまたいで別の顔で出る %>
+              <%# 締切の代わりに、その日の行き先を置く。
+                  日時の書式は他の画面と揃える %>
               <span class="tabular text-[11.5px] <%= exchange_card_style(tone, :note) %>">
                 <%= l exchange.matched_at, format: :schedule %> 公開
               </span>

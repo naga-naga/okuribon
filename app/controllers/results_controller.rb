@@ -32,9 +32,8 @@ class ResultsController < ApplicationController
   private
 
   # 結果はまだ存在しないので 404 を返す。ただし本文は描く。
-  # 素の 404 だと、参加者が自分の交換会で行き止まりに当たり、URL を間違えたのか
-  # 時期が早いのかを区別できない。実在を伏せる必要があるのは主催者専用の画面だけで、
-  # ここへ来られるのは交換会もフェーズも既に見えている参加者。
+  # ここへ来られるのは交換会もフェーズも既に見えている参加者で、実在を伏せる相手ではなく、
+  # 素の 404 だと URL を間違えたのか時期が早いのかを言い分けられない。
   # 参加していない人には ParticipatingExchange が先に落ち、素の 404 が返る
   def render_unpublished
     render :unpublished, status: :not_found

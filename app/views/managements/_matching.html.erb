@@ -1,6 +1,5 @@
-<%# マッチングの実行。画面の最上部に置く。
-    締切前は静かな待機表示、締切後は朱の面に切り替えてほかの情報を下へ押しやる。
-    実行済みかどうかはフェーズから見る。日時カラムを直に読まない %>
+<%# 締切前は静かな待機表示、締切後は朱の面に切り替えてほかの情報を下へ押しやる。
+    実行済みかどうかはフェーズから見て、日時カラムを直に読まない %>
 <% if exchange.phase(at:) == :published %>
   <%# 押せるものはもう無い。いつ実行したかだけを残す %>
   <div class="rounded-[6px] border border-line bg-surface-sunken p-5 sm:p-6">
@@ -97,8 +96,7 @@
       </div>
 
       <div class="flex flex-none flex-col items-start gap-2 sm:items-end">
-        <%# 押しても断られる導線は残さないので、リンクにはしない。
-            形だけを置いて、締切後にここが押せるようになることを示す %>
+        <%# リンクにはせず、形だけを置いて、締切後にここが押せることを示す %>
         <span class="rounded-[5px] border border-line bg-fill px-6 py-3 text-[14px] text-ink-subtle">
           <%= t('management.matching.execute') %>
         </span>

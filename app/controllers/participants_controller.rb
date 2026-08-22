@@ -4,8 +4,7 @@
 class ParticipantsController < ApplicationController
   before_action :require_login
 
-  # 主催した交換会からしか引かない。管理画面と同じ理由で、
-  # 主催者以外には 404 を返して交換会の実在そのものを伏せる。
+  # 主催した交換会からしか引かず、主催者以外には 404 で実在を伏せる。
   # 参加も交換会の下から引く。id だけで引くと、番号を数えるだけで
   # 他の交換会の参加を消せてしまう
   def destroy

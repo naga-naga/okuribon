@@ -29,8 +29,7 @@ class Participation < ApplicationRecord
   }
 
   has_many :books, dependent: :destroy
-  # 希望リストは順序が意味を持つ。読む側それぞれに order を書かせると、
-  # 書き忘れた1か所だけが違う並びを見ることになる
+  # 希望リストは順序が意味を持つので、並びは関連に持たせる
   has_many :wishes, -> { order(:position) }, dependent: :destroy, inverse_of: :participation
   has_many :assignments, dependent: :destroy
 
@@ -108,8 +107,7 @@ class Participation < ApplicationRecord
     end
   end
 
-  # フェーズの判定はコントローラに置かない。希望リストの変更の入口は
-  # 追加・削除・並べ替えの3つあり、それぞれに条件を手書きすると経路ごとに食い違う
+  # フェーズの判定はコントローラに置かず、追加・削除・並べ替えの3経路がここを通る
   def verify_wish_writable!(at:)
     return if exchange.writable?(:wish, at:)
 

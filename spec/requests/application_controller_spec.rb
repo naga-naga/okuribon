@@ -49,8 +49,6 @@ RSpec.describe ApplicationController do
         expect(header.at_css("a[href='#{exchanges_path}']").text).to eq('交換会一覧')
       end
 
-      # 現在地はリンクにしない。押しても同じ画面が返るだけのものを、
-      # 行き先があるように見せない
       it '交換会一覧そのものではパンくずの根をリンクにしない' do
         get exchanges_path
 

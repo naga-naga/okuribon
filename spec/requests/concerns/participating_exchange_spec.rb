@@ -59,7 +59,6 @@ RSpec.describe ParticipatingExchange do
     expect(response.body).to eq("#{participation.id},#{exchange.id}")
   end
 
-  # 参加していない人に 403 を返すと、その交換会が実在することが URL を試すだけで分かる
   it '参加していない交換会は見つからない' do
     other = create(:exchange)
 
@@ -68,16 +67,14 @@ RSpec.describe ParticipatingExchange do
     expect(response).to have_http_status(:not_found)
   end
 
-  # 実在しない id と、実在するが参加していない交換会の応答が同じであること。
-  # 分かれると、参加していない交換会の実在が応答の違いから読める
+  # 実在しない id と、実在するが参加していない交換会の応答を突き合わせる
   it '存在しない交換会も見つからない' do
     get '/participating_test/exchanges/0/nested'
 
     expect(response).to have_http_status(:not_found)
   end
 
-  # 交換会そのものを開くルートだけキーが :id になる。
-  # ルートごとに条件を手書きしないために、キーだけを呼ぶ側から渡す
+  # 交換会そのものを開くルートだけキーが :id になる
   it '交換会 id を渡す口も同じ入口を通る' do
     get "/participating_test/exchanges/#{exchange.id}"
 

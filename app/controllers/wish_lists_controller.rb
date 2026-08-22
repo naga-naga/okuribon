@@ -9,8 +9,7 @@ class WishListsController < ApplicationController
   before_action :set_participation
 
   # PhaseGuard は重ねない。フェーズの検証も行ロックも順位の再採番も
-  # Participation の中にある。希望リストを変える入口は追加・削除・並べ替えの
-  # 3つあり、条件をコントローラにも書くと、片方だけ直したときに経路ごとに食い違う。
+  # Participation に集約してあり、追加・削除・並べ替えの3経路が同じ検証を通る。
   # 送られた順序もそのまま順位にはせず、モデル側で1から振り直す
   def update
     @participation.reorder_wishes!(params.expect(book_ids: []), at: requested_at)

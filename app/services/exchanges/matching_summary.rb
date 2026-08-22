@@ -30,8 +30,7 @@ module Exchanges
         # count ではなく length で数える。with_counts は GROUP BY を持つので、
         # count は全体の件数ではなくグループごとの件数を数える SQL になる
         without_books_count: @participations.length - targets.length,
-        # 冊数だけから決まる下限。判定は登録期間中の警告と同じものを使う。
-        # 別に書くと、確認画面と管理画面の警告で冊数が食い違う
+        # 冊数だけから決まる下限。判定は登録期間中の警告と同じものを使う
         returning_count: Exchanges::BookImbalance.new(@participations).call&.returning_count.to_i
       )
     end

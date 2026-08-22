@@ -82,7 +82,6 @@ RSpec.describe ResultsController do
         expect(response.body).to include('ゆうと さんから', '後半で数字の意味が反転します')
       end
 
-      # 一度見えたら取り消せない。既定は伏せ字にする
       it 'ギフトコードは伏せ字で入る' do
         receive_book(from: join('ゆうと'), gift_code: 'MINE-CODE-0001')
         publish
@@ -112,7 +111,6 @@ RSpec.describe ResultsController do
         expect(response.body).to include('コピー', 'data-action="clipboard#copy"')
       end
 
-      # ギフトコードが見えるのは登録した本人と、受け取った人だけ
       it '他人が受け取った本のギフトコードは含まれない' do
         others = join('ゆうと')
         receive_book(from: join('はるか'), to: others, gift_code: 'OTHERS-CODE-9999')
@@ -123,8 +121,6 @@ RSpec.describe ResultsController do
         expect(response.body).not_to include('OTHERS-CODE-9999')
       end
 
-      # 主催者に特権はない。参加者を兼ねるので自分の結果は見られるが、
-      # 見えるものは他の参加者と同じ
       it '主催者が開いても、自分のぶんしか見えない' do
         # 主催者は必ず参加者を兼ねる。その参加は factory が作る
         organizer_participation = exchange.participations.find_by!(user: organizer)
@@ -191,7 +187,6 @@ RSpec.describe ResultsController do
         expect(response.body).to include('金曜日の献立', '返却')
       end
 
-      # 一覧系に絶対に含めない（CLAUDE.md「ギフトコードの可視性」）
       it '他人どうしで成立した本のギフトコードは含まれない' do
         riku = join('りく')
         sayaka = join('さやか')
@@ -455,8 +450,7 @@ RSpec.describe ResultsController do
       expect(response).to redirect_to(login_path)
     end
 
-    # 実在する交換会だけがログイン画面へ、存在しない id が 404 へ分かれると、
-    # ログインしないまま id を試すだけで実在を確かめられてしまう
+    # require_login が Exchange を引く前に返すので応答が揃う
     it '未ログインなら、実在しない交換会でも応答が変わらない' do
       publish
 

@@ -5,10 +5,7 @@ require 'net/http'
 module Notifications
   # 交換会から読むのは URL だけで、本文は呼ぶ側が組んだものをそのまま投げる。
   # ここで交換会の中身を足せるようにすると、文面を組む側が除いたはずのものが
-  # 送信側で戻ってくる。ギフトコードを含めない責任は文面の側にある。
-  # 本文とギフトコードを突き合わせる検査は置かない。平文の取得経路を
-  # Book#gift_code_for の1つに保つため、
-  # 照合のために2つ目の復号経路を作ることになるほうが危うい
+  # 送信側で戻ってくる
   class Webhook
     # 送り先ごとの作法を、送り方から切り離して置く。送り方（https の限定、失敗の
     # 分け方、例外に URL を書かないこと）はどの送り先でも同じでなければ困るため。
@@ -22,7 +19,6 @@ module Notifications
     DISCORD = Format.new(name: :discord, body_key: 'content')
     SLACK = Format.new(name: :slack, body_key: 'text')
 
-    # 交換会は URL を1つしか持たないので、形式を選ばせる項目は要らない。
     # ホストと作法を別の表に分けると、送り先を足す人が片方だけを直したときに、
     # 起動時には何も起きず、送信のときになって初めて落ちる
     FORMATS = {
@@ -40,8 +36,8 @@ module Notifications
     class TransientFailure < Error; end
     class PermanentFailure < Error; end
 
-    # 呼ぶ側それぞれに URL の有無と対応可否を書かせない。
-    # 未設定は異常ではない。通知は交換会ごとの任意の設定にあたる
+    # 送れない交換会には nil を返す。未設定は異常ではなく、
+    # 通知は交換会ごとの任意の設定にあたる
     def self.for(exchange)
       uri = parse(exchange.webhook_url)
       return nil if uri.nil?
@@ -98,8 +94,7 @@ module Notifications
       end
     end
 
-    # 失敗のメッセージにホストより先を出さない。URL のトークンは、
-    # 例外がログとジョブの失敗の両方に残る以上、載せた時点で漏れたことになる
+    # 失敗のメッセージにホストより先を出さない。トークンを例外に載せない
     def verify(response)
       return if response.is_a?(Net::HTTPSuccess)
 

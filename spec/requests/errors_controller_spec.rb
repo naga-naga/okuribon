@@ -23,8 +23,7 @@ RSpec.describe ErrorsController, :rendered_error_pages do
       expect(main_text).to include('このページはありません')
     end
 
-    # 8. 情報の可視性ルール。403 だと、招待されていない交換会が実在することを
-    # URL を試すだけで確かめられてしまう。ステータスだけでなく本文も揃える必要がある
+    # ステータスだけでなく本文も揃っていることを見る
     it '参加していない交換会と存在しない交換会を区別できない' do
       other = create(:exchange)
       log_in_as(user)

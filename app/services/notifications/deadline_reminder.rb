@@ -1,21 +1,13 @@
 # frozen_string_literal: true
 
 module Notifications
-  # 出すかどうかは交換会の日時だけから決める。誰が登録したか、誰が希望を出したかは
-  # 読まない。「全員が対応済み」は定義できず、0冊かどうかで
-  # 測れるのは「まったく手を付けていない」だけになる。
-  #
-  # 本文に載せるのは交換会名・締切・リンクだけにする。チャンネルへの投稿は誰が読むかを
-  # 選べないので、ギフトコードと個人の希望リストは載せられない
+  # 出すかどうかは交換会の日時だけから決め、誰が登録したか、誰が希望を出したかは
+  # 読まない。本文にも人数や名前を載せない
   class DeadlineReminder
-    # 締切の何時間前から知らせるか。定期走査（Notifications::RemindAllDeadlinesJob）の間隔と
-    # 同じ24時間にする。これより短くすると、予約を取りこぼした日に走査がウィンドウの中へ落ちない。
-    # 24時間ちょうどなら、1日1回の走査が必ず1回だけウィンドウの中に入る
+    # 締切の何時間前から知らせるか。
+    # 定期走査（Notifications::RemindAllDeadlinesJob）の間隔と揃えて24時間にする
     WINDOW = 24.hours
 
-    # 準備中が待っているのは締切ではなく登録期間の開始で、
-    # まだ促す行動が無い。マッチング実行待ちが待っているのは主催者の操作、
-    # 結果公開はもう終わっている。
     # Exchange#next_deadline は準備中にも日時を返すので、任せきりにせずここで絞る
     REMINDABLE_PHASES = [:registration, :wish].freeze
 
@@ -69,8 +61,7 @@ module Notifications
       end
     end
 
-    # 記録するのは締切の時刻そのもの。フェーズ名だと、登録期間のうちに主催者が
-    # 締切を先へずらしても「登録期間は出し済み」のまま残り、新しい締切のリマインドが出ない
+    # 記録するのはフェーズ名ではなく締切の時刻そのもの。締切がずれたら改めて出す
     def reminded?(deadline)
       @exchange.reminded_deadline_at == deadline
     end
@@ -82,8 +73,7 @@ module Notifications
         I18n.t("headline.#{phase}", scope: SCOPE, name: @exchange.name),
         I18n.t("detail.#{phase}", scope: SCOPE),
         deadline_line(deadline),
-        # リンクは素の URL を1行で置く。Slack と Discord で記法が割れるが、
-        # 素の URL はどちらもリンクになる。ジョブにはリクエストが無いので、
+        # リンクは素の URL で置く。ジョブにはリクエストが無いので、
         # ホストは設定から採る（config/initializers/default_url_options.rb）
         Rails.application.routes.url_helpers.exchange_url(@exchange),
       ].join("\n")

@@ -3,8 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe Exchanges::Todo do
-  # 基準時刻は呼ぶ側から渡す。ここで現在時刻を読むと、フェーズの境目を突く例で
-  # 判定が実行のたびにずれる
+  # フェーズの境目を突くので、基準時刻を1つ決めて全体で回す
   let!(:at) { Time.zone.parse('2026-02-10 12:00') }
   let!(:exchange) do
     create(:exchange,

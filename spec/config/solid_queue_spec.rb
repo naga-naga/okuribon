@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-# 通知（7.）はジョブとして走る。設定ファイルの誤りは Puma を起動するまで
+# 通知はジョブとして走る。設定ファイルの誤りは Puma を起動するまで
 # 分からず、起動しても supervisor のログにしか出ない。ここで固定しておく。
 RSpec.describe 'Solid Queue の設定' do
   it 'ワーカーとディスパッチャの構成が読める' do

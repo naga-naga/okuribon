@@ -46,7 +46,6 @@ RSpec.describe SessionsController do
 
     # デザインの「01 ログイン」には3つのプロバイダが並ぶが、実装があるのは
     # Google だけ。デザインに引きずられて、
-    # 押しても認証できないボタンが混ざらないようにする。
     # プロバイダを増やすときは、omniauth.rb に足したうえでここにも並べる
     it '実装のあるプロバイダの分だけ認証開始のボタンを置く' do
       get '/login'
@@ -89,7 +88,7 @@ RSpec.describe SessionsController do
         expect(response.body).to include(dev_login_path)
       end
 
-      # 経路の無い環境でリンクだけ残ると、押しても404になる案内が出る
+      # production にはルーティングごと経路が無い
       it 'production では出さない' do
         allow(Rails).to receive(:env).and_return(ActiveSupport::EnvironmentInquirer.new('production'))
 

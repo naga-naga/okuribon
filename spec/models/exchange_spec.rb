@@ -694,7 +694,7 @@ RSpec.describe Exchange do
       expect(exchange.participant?(user)).to be(false)
     end
 
-    # 未ログインの人は着地画面をそのまま見る。呼ぶ側で nil を弾かせない
+    # 未ログインの人も着地画面を見る
     it '利用者がいなければ false になる' do
       expect(exchange.participant?(nil)).to be(false)
     end
@@ -711,7 +711,7 @@ RSpec.describe Exchange do
       expect(exchange.owner?(create(:user))).to be(false)
     end
 
-    # 未ログインの人は着地画面をそのまま見る。呼ぶ側で nil を弾かせない
+    # 未ログインの人も着地画面を見る
     it '利用者がいなければ false になる' do
       expect(exchange.owner?(nil)).to be(false)
     end

@@ -11,14 +11,17 @@ Rails.application.routes.draw do
   # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
   # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
 
+  # 対象が1つに定まるものは単数リソースで置き、id を取らない。
+  # 参加・希望・希望リスト・結果・管理画面・招待トークン・マッチングがこれにあたる。
+  # 副作用のある操作は GET で受けない。外部サイトに置いたリンクや画像だけで
+  # 実行させられてしまう。
+
   # OAuth のコールバック。プロバイダからのリダイレクトで来るため GET で受ける。
   # 認証開始（POST /auth/google_oauth2）は OmniAuth のミドルウェアが横取りするので、ここには書かない
   get '/auth/google_oauth2/callback' => 'sessions#create', as: :oauth_callback
 
   get '/login' => 'sessions#new', as: :login
 
-  # 副作用のある操作なので GET では受けない。
-  # 外部サイトに置いたリンクや画像だけでログアウトさせられてしまう
   delete '/logout' => 'sessions#destroy', as: :logout
 
   # 本は必ずどれか1つの交換会に属し、単独では意味を持たない。
@@ -29,24 +32,20 @@ Rails.application.routes.draw do
     # 一覧そのものも交換会ページに畳んだので index も持たない。
     # 本には書き込みのルートだけが残る
     resources :books, except: [:show, :index] do
-      # 1冊に対する自分の希望は1つしかないので単数で置く。参加と同じ理由。
       # 順位はここでは受け取らない。並べ替えは希望リスト全体を1度に送る
       resource :wish, only: [:create, :destroy]
     end
 
     # 並べ替えは希望リスト全体を1度に送る。本を特定しない操作なので、
-    # 本の下ではなく交換会の直下に置く。1人が持つ希望リストは1つなので単数
+    # 本の下ではなく交換会の直下に置く
     resource :wish_list, only: [:update]
 
-    # 結果画面。1つの交換会が出す結果は1つなので単数で置く。
     # 見えるものは開いた人によって変わるが、それは結果の切り口であって別のリソースではない
     resource :result, only: [:show]
 
-    # 主催者管理画面。1つの交換会に管理画面は1つなので単数で置く
     resource :management, only: [:show] do
-      # 招待トークンの再発行。1つの交換会が持つトークンは1つなので単数で置く。
-      # 作り直すのではなく差し替えなので create ではなく update で受ける。
-      # 管理画面の下に置くのは、主催者以外に触らせない経路だから
+      # 招待トークンの再発行。作り直すのではなく差し替えなので、
+      # create ではなく update で受ける。管理画面の下は主催者しか触らない
       resource :invite_token, only: [:update]
 
       # 主催者による参加者の除外。外す相手を選ぶので複数形で置き、id で特定する。
@@ -54,10 +53,8 @@ Rails.application.routes.draw do
       # 経路を分ける。押せる人も、対象を選べるかどうかも違う
       resources :participants, only: [:destroy]
 
-      # マッチングの実行。一度しか実行できないので単数で置く。
       # new は実行前の確認画面。取り返しがつかない操作なので、ブラウザの
-      # ダイアログではなく画面を1枚挟む。
-      # 管理画面の下に置くのは、招待トークンの再発行と同じく主催者しか触らないため
+      # ダイアログではなく画面を1枚挟む
       resource :matching, only: [:new, :create]
     end
   end
@@ -66,12 +63,11 @@ Rails.application.routes.draw do
   # id で引けると、番号を数えるだけで招待されていない交換会に着地できてしまう
   get '/invitations/:token' => 'invitations#show', as: :invitation
 
-  # 参加も招待トークンで引く。1人が同じ交換会に持てる参加は1つなので単数で置く
+  # 参加も招待トークンで引く
   post '/invitations/:token/participation' => 'participations#create',
        as: :invitation_participation
 
-  # 辞退。自分の参加を1つ消すだけなので id は要らない。
-  # 副作用のある操作なので GET では受けない
+  # 辞退。自分の参加を1つ消すだけなので id は要らない
   delete '/invitations/:token/participation' => 'participations#destroy'
 
   # 開発用の裏口ログイン。seed が作った利用者は Google のアカウントを持たないため、

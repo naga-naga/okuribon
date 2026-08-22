@@ -130,7 +130,6 @@ RSpec.describe InvitationsController do
       end
 
       # 希望提出期間に入ってから抜けられると、取得枠の計算が壊れる。
-      # 押しても拒否されるボタンを見せない
       it '登録の締切ちょうどからは辞退ボタンを出さない' do
         travel_to '2026-08-24T10:00:00+09:00' do
           get invitation_path(exchange.invite_token)
@@ -153,7 +152,7 @@ RSpec.describe InvitationsController do
         expect(response.body).to include('すでに参加しています')
       end
 
-      # 主催者は抜けられない。押しても断られるボタンを見せない
+      # 主催者は抜けられない
       it '辞退ボタンを出さない' do
         expect(response.body).not_to include('参加を取り消す')
       end
@@ -268,8 +267,7 @@ RSpec.describe InvitationsController do
       end
     end
 
-    # 招待URLを知っているだけの人が開く画面なので、参加者向けの情報を一切載せない。
-    # とくにギフトコードは、一度見えたら取り消せない
+    # 招待URLを知っているだけの人が開く画面なので、参加者向けの情報を一切載せない
     describe '載せない情報' do
       it '本の情報とギフトコードが含まれない' do
         book = create(:book, title: '吾輩は猫である', gift_code: 'GIFTCODE12345678',

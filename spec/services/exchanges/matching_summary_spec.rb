@@ -11,8 +11,7 @@ RSpec.describe Exchanges::MatchingSummary do
     create(:participation, exchange:, user: create(:user))
   end
 
-  # 冊数と希望冊数は SQL で数える。冊数だけが要る場に Book を読み込むと、
-  # 暗号化されたギフトコードまで取得してしまう
+  # 冊数と希望冊数は with_counts が SQL で数える。Book は読み込まない
   def summary
     described_class.new(exchange.participations.with_counts).call
   end
@@ -83,8 +82,7 @@ RSpec.describe Exchanges::MatchingSummary do
     expect(summary.returning_count).to eq(3)
   end
 
-  # 偏りが無ければ返却の見込みは無い。nil ではなく0を返して、
-  # 表に並べる呼ぶ側に「出るか出ないか」の分岐を書かせない
+  # 偏りが無ければ返却の見込みは無い。nil ではなく0を返す
   it '冊数が釣り合っていれば0冊とする' do
     register(owner_participation, 1)
     register(join, 1)

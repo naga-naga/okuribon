@@ -3,15 +3,11 @@
 class ManagementsController < ApplicationController
   before_action :require_login
 
-  # 主催した交換会からしか引かない。見つからなければ 404 になり、
-  # 主催者以外には交換会の実在そのものを伏せる。403 を返すと、
-  # 招待されていない交換会が在ることを URL を試すだけで確かめられてしまう。
+  # 主催した交換会からしか引かず、主催者以外には 404 で実在を伏せる。
   # フェーズでは閉じない。締切を延ばすのも実行するのもこの画面の仕事なので、
   # 特定のフェーズで閉じると主催者が自分の交換会に入れなくなる
   def show
     @exchange = current_user.owned_exchanges.find(params.expect(:exchange_id))
-    # 冊数は SQL で数える。Book を読み込むと、数を出すだけの画面で
-    # 暗号化されたギフトコードまで取得してしまう
     @participations = @exchange.participations
                                .with_counts
                                .includes(:user)

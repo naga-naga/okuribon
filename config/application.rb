@@ -45,10 +45,8 @@ module Okuribon
     # 画面もエラーメッセージも日本語だけを出す。ロケールの切り替えは持たない
     config.i18n.default_locale = :ja
 
-    # エラー画面のうち 4xx はアプリのルーティングへ流し、共通ヘッダーと
-    # デザイントークンを通して描く。5xx は Rails 既定のまま public/*.html を返す。
-    # 500 が出ている状況では DB もセッションも読めないことがあり、
-    # ビューを通すとエラー画面そのものが描けなくなる
+    # 5xx を Rails 既定に落とすのは、DB もセッションも読めない状況があり、
+    # ビューを通すとエラー画面そのものを描けなくなるため
     config.exceptions_app = lambda do |env|
       if RENDERED_ERROR_PATHS.include?(env['PATH_INFO'])
         Rails.application.routes.call(env)

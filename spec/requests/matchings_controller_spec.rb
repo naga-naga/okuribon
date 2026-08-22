@@ -148,8 +148,7 @@ RSpec.describe MatchingsController do
         expect(response).to have_http_status(:conflict)
       end
 
-      # ギフトコードは登録した本人と受け取った人だけに見える。
-      # 主催者に特権はなく、実行の直前でも変わらない
+      # 主催者が見る画面で、実行の直前という条件でも変わらないことを突く
       it 'ギフトコードは含まれない' do
         create(:book, participation: join, gift_code: 'OTHERS-CODE-9999')
         create(:book, participation: owner_participation, gift_code: 'OWN-CODE-1111')
@@ -161,8 +160,6 @@ RSpec.describe MatchingsController do
       end
     end
 
-    # 403 だと、招待されていない交換会が実在することを URL を試すだけで
-    # 確かめられてしまう
     it '参加しているだけの人には 404 を返す' do
       log_in_as(join.user)
 
@@ -271,8 +268,6 @@ RSpec.describe MatchingsController do
       end
     end
 
-    # 403 だと、招待されていない交換会が実在することを URL を試すだけで
-    # 確かめられてしまう
     it '参加しているだけの人には 404 を返し、実行もされない' do
       build_round_robin
       log_in_as(join.user)
@@ -304,9 +299,7 @@ RSpec.describe MatchingsController do
       expect(exchange.reload.matched_at).to be_nil
     end
 
-    # ログインを挟むぶん、主催者以外の 404 とは応答が変わる。実在する交換会だけが
-    # ログイン画面へ、存在しない id が 404 へ分かれると、未ログインのまま
-    # id を試すだけで実在を確かめられてしまう
+    # require_login が Exchange を引く前に返すので応答が揃う
     it '未ログインなら、実在しない交換会でも応答が変わらない' do
       travel_to(awaiting_matching) do
         post exchange_management_matching_path(exchange)

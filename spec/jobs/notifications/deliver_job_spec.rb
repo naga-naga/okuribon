@@ -27,9 +27,8 @@ RSpec.describe Notifications::DeliverJob do
     end
   end
 
-  # 送信の失敗を呼ぶ側へ返さない。フェーズの変わり目を拾う走査（#43）は
-  # 交換会を順に見ていくので、1件の Webhook の不調で残りが止まると
-  # 通知の届かない交換会が増える
+  # 送信の失敗を呼ぶ側へ返さない。1件の Webhook の不調で走査が止まると、
+  # 後ろの交換会に通知が届かなくなる
   context '時間をおけば通りうる失敗が続くとき' do
     before { stub_request(:post, url).to_return(status: 500) }
 

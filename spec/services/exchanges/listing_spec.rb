@@ -4,8 +4,7 @@ require 'rails_helper'
 
 RSpec.describe Exchanges::Listing do
   let!(:user) { create(:user) }
-  # 基準時刻は呼ぶ側から渡す。ここで現在時刻を読むと、締切の前後を突く例で
-  # 並び順が実行のたびに変わる
+  # 締切の前後を突くので、基準時刻を1つ決めて全体で回す
   let!(:at) { Time.zone.parse('2026-02-10 12:00') }
 
   # 並ぶ条件は参加していること。招待されただけでは並ばない
@@ -102,8 +101,7 @@ RSpec.describe Exchanges::Listing do
       expect(cards.first.participants_count).to eq(3)
     end
 
-    # 交換会トップと同じ一文を並べる。2か所で別々に組むと、
-    # 片方だけが古い言い方で残る（Exchanges::Todo）
+    # 交換会トップと同じ一文を Exchanges::Todo から引く
     it '「あなたがすること」の見出しが入る' do
       registration_exchange
 

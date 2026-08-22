@@ -100,8 +100,7 @@ RSpec.describe ParticipantsController do
         expect(response.body).to include('希望提出期間', '参加の変更')
       end
 
-      # 主催者は必ず参加者を兼ねる。待てば通るわけではないので
-      # 409 ではなく 403 で断る
+      # 主催者はいつ来ても抜けられないので、待てば通る 409 にはしない
       it '自分自身は外せず、403 になる' do
         travel_to(registration) { delete exchange_management_participant_path(exchange, owner_participation) }
 
@@ -127,8 +126,6 @@ RSpec.describe ParticipantsController do
       end
     end
 
-    # 403 だと、招待されていない交換会が実在することを URL を試すだけで
-    # 確かめられてしまう
     it '参加しているだけの人には 404 を返し、参加も残る' do
       log_in_as(participant)
 
@@ -154,9 +151,7 @@ RSpec.describe ParticipantsController do
       expect(exchange.participant?(participant)).to be(true)
     end
 
-    # ログインを挟むぶん、主催者以外の 404 とは応答が変わる。実在する交換会だけが
-    # ログイン画面へ、存在しない id が 404 へ分かれると、未ログインのまま
-    # id を試すだけで実在を確かめられてしまう
+    # require_login が Exchange を引く前に返すので応答が揃う
     it '未ログインなら、実在しない交換会でも応答が変わらない' do
       travel_to(registration) do
         exclude

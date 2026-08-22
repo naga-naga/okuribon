@@ -57,7 +57,6 @@ RSpec.describe BooksController do
                                '夏の交換会' => exchange_path(exchange))
     end
 
-    # 押しても通らないフォームを開かせない
     it '登録期間外は開けない' do
       outside_registration
 
@@ -82,7 +81,6 @@ RSpec.describe BooksController do
       expect(response).to redirect_to(login_path)
     end
 
-    # 伏せ字にしておかないと、肩越しに覗かれるだけでギフトコードが渡る
     it 'ギフトコードの入力欄が伏せ字になっている' do
       open_form
 
@@ -95,8 +93,7 @@ RSpec.describe BooksController do
       expect(response.body).to include('他の参加者には見えません')
     end
 
-    # 主催者に特権はない。ここを書かないと、
-    # 主催者には見えるのだろうと思ったまま入力することになる
+    # 書かないと、主催者には見えるのだろうと思ったまま入力することになる
     it '主催者にも見えないことが書かれている' do
       open_form
 
@@ -236,7 +233,6 @@ RSpec.describe BooksController do
       expect(response.body).to include('GIFT-1234')
     end
 
-    # 403 だと、その id の本が実在することを URL を試すだけで確かめられる
     it '他人の本は見つからない' do
       open_form(others_book)
 

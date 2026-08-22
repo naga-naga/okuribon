@@ -19,8 +19,7 @@ RSpec.describe Notifications::Webhook do
       expect(described_class.for(exchange).format.name).to eq(:slack)
     end
 
-    # 通知は交換会ごとの任意の設定なので、未設定は異常ではない。
-    # 呼ぶ側それぞれに URL の有無を書かせないため、ここで nil に落とす
+    # 通知は交換会ごとの任意の設定なので、未設定は異常ではない
     it 'URL が未設定なら nil を返す' do
       expect(described_class.for(build(:exchange, webhook_url: nil))).to be_nil
     end

@@ -61,7 +61,7 @@ RSpec.describe Book do
   end
 
   describe 'ギフトコード' do
-    # 結果公開の交換会。受け取った人にギフトコードが見えるのは成立後に限る
+    # 結果公開の交換会。受け取った人の可視性は成立後にしか突けない
     let!(:exchange) { create(:exchange, matched_at: '2026-08-16T00:00:00+09:00'.in_time_zone) }
     let!(:at) { '2026-08-20T00:00:00+09:00'.in_time_zone }
     let!(:registrant) { create(:participation, exchange:) }

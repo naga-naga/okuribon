@@ -92,8 +92,7 @@ RSpec.describe ManagementsController do
         expect(response.body).to include(I18n.l(owner_participation.created_at.to_date, format: :compact))
       end
 
-      # 主催者に特権はない。自分の本のコードも、
-      # 取得経路をこの画面に増やさないためここには出さない
+      # 自分の本のコードも、取得経路をこの画面に増やさないため出さない
       it '他人のギフトコードもこの画面には出ない' do
         create(:book, participation: join('ゆうと'), gift_code: 'OTHERS-CODE-9999')
         create(:book, participation: owner_participation, gift_code: 'OWN-CODE-1111')
@@ -259,7 +258,7 @@ RSpec.describe ManagementsController do
         expect(response.body).to include(exchange_management_participant_path(exchange, participation))
       end
 
-      # 外すと本もギフトコードも消える。取り消せないので、押す前に断りを出す
+      # 外すと本もギフトコードも消える
       it '除外には確認が挟まる' do
         join('ゆうと')
 
@@ -269,7 +268,7 @@ RSpec.describe ManagementsController do
                                          I18n.t('management.participants.exclude_confirm', name: 'ゆうと'))
       end
 
-      # 主催者は必ず参加者を兼ねる。押しても 403 になるボタンは出さない
+      # 主催者は必ず参加者を兼ねる
       it '主催者自身の行には除外のボタンが出ない' do
         travel_to(registration_phase) { get exchange_management_path(exchange) }
 
@@ -316,7 +315,6 @@ RSpec.describe ManagementsController do
       end
 
       # 締切前に確認画面へ送っても、そちらが 409 を返す。
-      # 押しても断られる導線は残さない
       it '締切前は確認画面への導線が出ない' do
         travel_to(phase_times.fetch(:wish)) { get exchange_management_path(exchange) }
 
@@ -413,7 +411,7 @@ RSpec.describe ManagementsController do
                                                 at: I18n.l(at, format: :schedule)))
       end
 
-      # 押すと古いURLが開けなくなる。取り消せないので、押す前に断りを出す
+      # 押すと古いURLが開けなくなる
       it '再発行には確認が挟まる' do
         travel_to(registration_phase) { get exchange_management_path(exchange) }
 
@@ -436,8 +434,6 @@ RSpec.describe ManagementsController do
       end
     end
 
-    # 403 だと、招待されていない交換会が実在することを URL を試すだけで
-    # 確かめられてしまう
     it '参加しているだけの人には 404 を返す' do
       participant = create(:user)
       create(:participation, exchange:, user: participant)
@@ -462,10 +458,7 @@ RSpec.describe ManagementsController do
       expect(response).to redirect_to(login_path)
     end
 
-    # ログインを挟むぶん、主催者以外の 404 とは応答が変わる。実在する交換会だけが
-    # ログイン画面へ、存在しない id が 404 へ分かれると、未ログインのまま
-    # id を試すだけで実在を確かめられてしまう。
-    # require_login が Exchange を引く前に返すことで、両者は同じ応答になる。
+    # require_login が Exchange を引く前に返すので応答が揃う。
     # 交換会を先に引く形へ直すと、ここが落ちる
     it '未ログインなら、実在しない交換会でも応答が変わらない' do
       travel_to(registration_phase) do

@@ -52,7 +52,6 @@ RSpec.describe User do
       expect(user.exchanges).to contain_exactly(joined)
     end
 
-    # 招待されていない交換会が一覧に漏れると、名前と日程だけで実在が知れてしまう
     it '参加していない交換会は引かない' do
       user = create(:user)
       create(:exchange)

@@ -68,7 +68,6 @@ RSpec.describe ExchangesController do
       expect(response.body).to include('夏の交換会')
     end
 
-    # 招待されていない交換会が漏れると、名前と日程だけで実在が知れてしまう
     it '参加していない交換会は並ばない' do
       create(:exchange, name: 'よその交換会')
 
@@ -395,7 +394,6 @@ RSpec.describe ExchangesController do
       expect(response.body).to include('夏の交換会')
     end
 
-    # 403 だと、招待されていない交換会の実在が URL を試すだけで確かめられる
     it '参加していなければ見つからない' do
       log_in_as(create(:user))
 
@@ -441,8 +439,6 @@ RSpec.describe ExchangesController do
       expect(response.body).to include(exchange_management_path(owned))
     end
 
-    # 押しても 404 になるリンクを見せない。主催者以外にはその画面の
-    # 存在自体を知らせない
     it '主催者以外には導線が出ない' do
       open_page
 
@@ -564,9 +560,7 @@ RSpec.describe ExchangesController do
         expect(response.body).to include('希望リストがまだ空です')
       end
 
-      # 導線は「あなたがすること」の直下に置き、独立した段を作らない。
-      # 押せる期間は writable? から引く。フェーズ名で条件を書き直すと、
-      # 押しても断られるボタンがどこかのフェーズに残る
+      # 導線は「あなたがすること」の直下に置き、独立した段を作らない
       it '登録期間には本を登録する導線が出る' do
         open_page
 
@@ -613,7 +607,6 @@ RSpec.describe ExchangesController do
         expect(response.body).to include(new_exchange_management_matching_path(exchange))
       end
 
-      # マッチングは一度だけ実行できる。残すと、押しても断られる導線になる
       it '実行済みなら実行の導線が出ない' do
         publish!
 
@@ -672,7 +665,6 @@ RSpec.describe ExchangesController do
         expect(response.body).to include(exchange_result_path(exchange))
       end
 
-      # 押しても 404 になるリンクは見せない
       it '結果公開前には結果への入口が出ない' do
         open_page
 
@@ -746,8 +738,8 @@ RSpec.describe ExchangesController do
       end
     end
 
-    # 状態ヘッダーの下には十数枚のカードが続く。読み進めた先で 6.1 の3点が
-    # 視界から消えないよう、畳んだ帯を上部に残す
+    # 状態ヘッダーの下には十数枚のカードが続く。読み進めた先でも
+    # フェーズ・残り・すべきことが視界から消えないよう、畳んだ帯を上部に残す
     describe '畳んだ帯' do
       def bar
         response.parsed_body.at_css('[data-state-header-target="bar"]')
@@ -777,8 +769,7 @@ RSpec.describe ExchangesController do
         expect(response.parsed_body.at_css('ol[aria-label="フェーズ"]')).to be_present
       end
 
-      # 帯に出す残りは状態ヘッダーと同じ数を指す。別々に組むと、片方だけが
-      # 古い数え方で残る
+      # 帯に出す残りは状態ヘッダーと同じ数を指す
       it '締切を持たないフェーズには残りを出さない' do
         open_page(at: awaiting_at)
 
@@ -966,7 +957,6 @@ RSpec.describe ExchangesController do
         expect(response.parsed_body.at_css('h2').parent.text).to include('2冊')
       end
 
-      # ギフトコードが一覧に並ばないことは、期待して探しに来る人がいるので毎回書く
       it '結果公開後は誰に渡ったかを読む並びだと断る' do
         publish!
 
@@ -1069,7 +1059,6 @@ RSpec.describe ExchangesController do
         expect(toggle.text).to include('続きを読む').and include('閉じる')
       end
 
-      # 折って隠れている本文が無ければ、押しても何も起きないボタンになる。
       # 何行に折れるかはブラウザでしか測れないので、伏せて出しておき、
       # 測ってから出す。JavaScript が無ければ出ないままにする
       it '開くボタンは伏せて出し、折られているかを測ってから出す' do
@@ -1380,8 +1369,8 @@ RSpec.describe ExchangesController do
       end
 
       # 十数行が同じ名前で並ぶと、読み上げたときにどの行のボタンなのかが分からない。
-      # 名前は見えている数字と続けて組む。aria-label で上書きすると、動かすたびに
-      # 振り直す先が数字と名前の2か所になり、片方だけ古くなる
+      # 名前は見えている数字と続けて組む。aria-label で上書きすると、
+      # 動かすたびに振り直す先が2か所になる
       it 'ハンドルの名前がどの本の何位かを言う' do
         wish_for('動かしたい本')
 
@@ -1412,8 +1401,7 @@ RSpec.describe ExchangesController do
         expect(help.text).not_to include('⠿')
       end
 
-      # 並べ替えは JavaScript でしか動かない。動かない環境に押せるハンドルを残すと、
-      # 押しても何も起きないボタンになる。説明も同じで、できない操作を書くことになる。
+      # 並べ替えは JavaScript でしか動かない。説明も同じ扱いにする。
       # カードからの追加・削除はそのまま通る
       it '並べ替えのハンドルと説明は JavaScript が動くまで押せない' do
         wish_for('1冊目')
@@ -1550,8 +1538,7 @@ RSpec.describe ExchangesController do
         expect(removal_form(rows.first).at_css('button')['aria-label']).to eq('希望から外す')
       end
 
-      # form は入れ子にできない。並べ替えの form が行を包んだままだと、
-      # 行の中の外すボタンはブラウザに落とされ、押しても何も起きない
+      # form は入れ子にできず、内側はブラウザに落とされる
       it '外すボタンの form が並べ替えの form に入れ子にならない' do
         wish_for('1冊目')
 
@@ -1606,8 +1593,7 @@ RSpec.describe ExchangesController do
         expect(wish_list.at_css('form')).to be_nil
       end
 
-      # 自分の本は受け取れない。押しても通らないボタンを
-      # 出しておいて断るのではなく、選べないことをその場で示す
+      # 自分の本は受け取れないので、選べないことをその場で示す
       it '自分の本は選べないことが分かる' do
         book = create(:book, participation:)
 
@@ -1632,7 +1618,7 @@ RSpec.describe ExchangesController do
         expect(card_for(wanted).text).to eq(card_for(ignored).text)
       end
 
-      # 登録期間はまだ選ぶ対象が揃っていない。出しても押せば断られる
+      # 登録期間はまだ選ぶ対象が揃っていない
       it '登録期間中は出ない' do
         book = book_by('佐藤 花子')
 
@@ -1695,7 +1681,6 @@ RSpec.describe ExchangesController do
         expect(response.body).not_to include(edit_exchange_book_path(exchange, theirs))
       end
 
-      # 押しても通らない導線を残さない
       it '登録期間外は自分の本にも編集と削除が出ない' do
         mine = create(:book, participation:)
 
@@ -1972,7 +1957,7 @@ RSpec.describe ExchangesController do
         expect(card_for(book).text).not_to include('希望した人がいませんでした')
       end
 
-      # 希望を出す期間は終わっている。押しても通らないボタンを残さない
+      # 希望を出す期間は終わっている
       it '希望に追加するボタンが消える' do
         book = book_by('佐藤 花子', title: '十三番目の便り')
         matched(book, '鈴木 一郎')
@@ -2217,7 +2202,6 @@ RSpec.describe ExchangesController do
       expect(response.body).to include('value="2026-08-10T10:00:00"')
     end
 
-    # 403 だと、招待されていない交換会の実在が漏れる
     it '主催者以外には見つからない' do
       log_in_as(create(:user))
 
@@ -2300,7 +2284,7 @@ RSpec.describe ExchangesController do
     end
 
     # 結果公開後も日程は変更できる。マッチングを実行したかどうかで
-    # フェーズが決まるので、日時を動かしても結果公開のままになる（4.）
+    # フェーズが決まるので、日時を動かしても結果公開のままになる
     context 'マッチングの実行後' do
       let!(:at) { '2026-08-20T00:00:00+09:00'.in_time_zone }
 

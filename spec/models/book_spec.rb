@@ -96,7 +96,7 @@ RSpec.describe Book do
     end
 
     it '受け取った人は結果公開後に読める' do
-      create(:assignment, book:, participation: recipient)
+      create(:assignment, book:, participation: recipient, returned: false)
 
       expect(book.gift_code_for(recipient.user, at:)).to eq('GIFT-1234')
     end
@@ -143,7 +143,7 @@ RSpec.describe Book do
     end
 
     it '見えるかどうかを判定できる' do
-      create(:assignment, book:, participation: recipient)
+      create(:assignment, book:, participation: recipient, returned: false)
 
       expect(book.gift_code_visible_to?(recipient.user, at:)).to be(true)
       expect(book.gift_code_visible_to?(exchange.owner, at:)).to be(false)

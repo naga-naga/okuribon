@@ -264,7 +264,7 @@ RSpec.describe ExchangesController do
       create(:book, participation:, gift_code: 'MYOWNGIFTCODE')
       received = create(:book, participation: create(:participation, exchange:),
                                gift_code: 'RECEIVEDGIFTCODE')
-      create(:assignment, book: received, participation:)
+      create(:assignment, book: received, participation:, returned: false)
 
       travel_to(now) { get exchanges_path }
 
@@ -547,7 +547,8 @@ RSpec.describe ExchangesController do
 
       it '結果公開には受け取った冊数が出る' do
         publish!
-        create(:assignment, participation:, book: create(:book, participation: create(:participation, exchange:)))
+        create(:assignment, participation:, returned: false,
+                            book: create(:book, participation: create(:participation, exchange:)))
 
         open_page
 
@@ -733,7 +734,7 @@ RSpec.describe ExchangesController do
       # 結果が出たあとに数えるのは、何冊が渡って何冊が戻ったか
       it '結果公開は成立と返却の内訳になる' do
         received = book_by('佐藤 花子')
-        create(:assignment, book: received, participation:)
+        create(:assignment, book: received, participation:, returned: false)
         publish!
 
         open_page
@@ -1876,7 +1877,7 @@ RSpec.describe ExchangesController do
       # 成立した割当。受け取る人は本の登録者とは別の参加になる
       def matched(book, recipient_name)
         recipient = create(:participation, exchange:, user: create(:user, display_name: recipient_name))
-        create(:assignment, book:, participation: recipient)
+        create(:assignment, book:, participation: recipient, returned: false)
       end
 
       # 返却は誰にも渡せなかった本が登録者へ戻ること。割当は登録者の参加に付く
@@ -1907,7 +1908,7 @@ RSpec.describe ExchangesController do
 
       it '自分が受け取った本は受け取る側が「あなた」になる' do
         book = book_by('佐藤 花子', title: '波打ち際の観測所')
-        create(:assignment, book:, participation:)
+        create(:assignment, book:, participation:, returned: false)
         publish!
 
         open_page
@@ -1918,7 +1919,7 @@ RSpec.describe ExchangesController do
       # 渡った先は松葉で示す。返却と同じ色で並べると、成立を数え直すことになる
       it '自分が受け取った本には印が付く' do
         book = book_by('佐藤 花子', title: '波打ち際の観測所')
-        create(:assignment, book:, participation:)
+        create(:assignment, book:, participation:, returned: false)
         publish!
 
         open_page
@@ -1997,7 +1998,7 @@ RSpec.describe ExchangesController do
     it 'ギフトコードが含まれない' do
       mine = create(:book, participation:, gift_code: 'MYOWNGIFTCODE')
       theirs = book_by('佐藤 花子', gift_code: 'OTHERGIFTCODE')
-      create(:assignment, book: theirs, participation:)
+      create(:assignment, book: theirs, participation:, returned: false)
       create(:assignment, book: mine, participation:, round: nil, returned: true)
       publish!
 

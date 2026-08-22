@@ -94,7 +94,7 @@ RSpec.describe Exchanges::Todo do
     before { exchange.update!(matched_at: Time.zone.parse('2026-02-22 21:04')) }
 
     it '受け取った冊数と贈り主の名前を出す' do
-      create(:assignment, participation:, book: create(:book, participation: giver))
+      create(:assignment, participation:, book: create(:book, participation: giver), returned: false)
 
       expect(todo).to have_attributes(headline: 'あなたに1冊届いています', tone: :done)
       expect(todo.detail).to include('ゆうと')

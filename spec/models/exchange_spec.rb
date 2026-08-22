@@ -246,11 +246,11 @@ RSpec.describe Exchange do
 
       # フォームから来る日時にはタイムゾーンが付かない。UTC として読むと9時間ずれる
       it 'タイムゾーンの付かない文字列は JST として解釈される' do
-        # 開始日時も絶対値で置く。factory の既定は 1.week.ago で、
-        # 実行した日によっては締切より後ろに来る。そうなると準備中と判定され、
+        # 3つとも絶対値で置く。既定に任せると実行した日によってフェーズが動き、
         # 見たいはずの解釈のずれと関係のない理由で落ちる
         exchange = build(:exchange, registration_starts_at: '2026-08-01 00:00:00',
-                                    registration_ends_at: '2026-08-08 00:00:00')
+                                    registration_ends_at: '2026-08-08 00:00:00',
+                                    wish_ends_at: '2026-08-15 00:00:00')
 
         expect(exchange.registration_ends_at).to eq('2026-08-08T00:00:00+09:00'.in_time_zone)
         expect(exchange.phase(at: '2026-08-07T15:00:00Z'.in_time_zone)).to eq(:wish)

@@ -6,7 +6,7 @@ RSpec.describe BooksController do
   include ActionView::RecordIdentifier
 
   let!(:user) { create(:user) }
-  let!(:exchange) { create(:exchange, name: '夏の交換会') }
+  let!(:exchange) { create(:exchange, :registration, name: '夏の交換会') }
   let!(:participation) { create(:participation, user:, exchange:) }
 
   before { log_in_as(user) }
@@ -30,8 +30,6 @@ RSpec.describe BooksController do
     end
   end
 
-  # フェーズは日時から導出されるため、登録期間の外は日程をずらして作る。
-  # 交換会の factory の既定は登録期間中
   def outside_registration
     exchange.update!(registration_starts_at: 3.weeks.from_now,
                      registration_ends_at: 4.weeks.from_now,

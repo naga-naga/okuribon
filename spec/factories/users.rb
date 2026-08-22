@@ -2,7 +2,8 @@
 
 FactoryBot.define do
   factory :user do
-    provider { 'github' }
+    # log_in_as がこの値をそのまま認証情報に載せる
+    provider { 'google_oauth2' }
     sequence(:uid, &:to_s)
     display_name { Faker::Name.name }
     avatar_url { Faker::Internet.url }

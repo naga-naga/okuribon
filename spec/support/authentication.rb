@@ -30,7 +30,6 @@ module RequestAuthenticationHelper
   end
 end
 
-# 踏むコールバックは request spec と同じで、踏み方だけがブラウザになる
 module SystemAuthenticationHelper
   include AuthenticationHelper
 

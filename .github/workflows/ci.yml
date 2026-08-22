@@ -108,12 +108,10 @@ jobs:
       - name: Prepare database
         run: bin/rails db:prepare
 
-      # system spec は本物のブラウザで開くので、スタイルシートが無いと
-      # 描画そのものが 500 になる。ビルド済みの CSS は追跡していない
+      # ビルド済みの CSS は追跡していない。system spec は本物のブラウザで開くので、
+      # 無いまま走らせると描画そのものが 500 になる
       - name: Build stylesheet
         run: bin/rails tailwindcss:build
 
-      # ブラウザは ubuntu-latest 同梱の google-chrome を PATH から拾う。
-      # cuprite が CDP で直に繋ぐので、chromedriver は入れない
       - name: Run tests
         run: bin/rspec

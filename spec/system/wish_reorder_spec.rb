@@ -3,7 +3,6 @@
 require 'rails_helper'
 
 RSpec.describe '希望リストの並べ替え' do
-  # 並べ替えが動くのは希望提出期間だけなので、trait はここで指定する
   let!(:exchange) { create(:exchange, :wish) }
   let!(:participation) { create(:participation, exchange:) }
   # 本ごとに登録者を分ける。自分が登録した本は希望に選べない
@@ -13,7 +12,6 @@ RSpec.describe '希望リストの並べ替え' do
     end
   end
 
-  # 送られた並びは book_ids で届く。画面から読めるのは題なので、突き合わせる側も題に直す
   let!(:sent_orders) { [] }
 
   before do
@@ -30,6 +28,7 @@ RSpec.describe '希望リストの並べ替え' do
 
   around do |example|
     orders = sent_orders
+    # 届くのは book_ids。画面から読めるのは題なので、突き合わせる側も題に直す
     titles = ->(ids) { Book.where(id: ids).index_by(&:id).values_at(*ids.map(&:to_i)).map(&:title) }
 
     subscription = ActiveSupport::Notifications.subscribe('process_action.action_controller') do |*, payload|
@@ -74,9 +73,8 @@ RSpec.describe '希望リストの並べ替え' do
     expect(sent_orders).to eq([['青の本', '緑の本', '赤の本']])
   end
 
-  # 保存の往復は画面に現れない。並びは送る前から動いているので、
-  # 動かした並びと返ってきた並びを画面の中身では見分けられない。
-  # 差し替わる区画に印を付けて、それが消えるのを待つ
+  # 並びは送る前から動いているので、動かした並びと返ってきた並びを画面の中身では
+  # 見分けられない。差し替わる区画に印を付けて、それが消えるのを待つ
   def saving_wish_list
     page.execute_script("document.getElementById('wish_list').dataset.pending = ''")
 
@@ -122,8 +120,7 @@ RSpec.describe '希望リストの並べ替え' do
     end
   end
 
-  # 掴んでいたハンドルは行と一緒に動くので、戻り先は行の位置で見る。
-  # ハンドル以外に focus があれば 0 を返す
+  # 掴んでいたハンドルは行と一緒に動くので、戻り先は行の位置で見る
   def focused_handle_position
     page.evaluate_script(<<~JS)
       (() => {

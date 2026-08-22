@@ -71,9 +71,7 @@ group :development, :test do
   gem 'faker'
   gem 'rspec-rails'
 
-  # JavaScript が動いて初めて成立する振る舞いを押さえる system spec 用。
-  # cuprite は CDP で Chrome に直接繋ぐので、chromedriver を持たずに済む。
-  # selenium は版の合う chromedriver をテストのたびに引いてくる
+  # system spec 用。cuprite は CDP で Chrome に直接繋ぐので、chromedriver を持たない
   gem 'capybara'
   gem 'cuprite'
 

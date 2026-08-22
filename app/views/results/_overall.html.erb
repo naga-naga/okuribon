@@ -1,5 +1,4 @@
-<%# 全体の成立結果。誰が誰の本を受け取ったかは参加者全員に見える。
-    ギフトコードは並べない。一覧系のビューには絶対に含めない（CLAUDE.md） %>
+<%# 誰が誰の本を受け取ったかは参加者全員に見える。ギフトコードは並べない %>
 <% returned_count = result_books.count { it.assignment&.returned? } %>
 
 <section class="border-t border-line pt-7">

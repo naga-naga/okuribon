@@ -4,9 +4,8 @@ module Notifications
   # 締切は交換会の日時カラムそのものなので、ウィンドウが開く時刻を予約して確認しに行く。
   # 定期的に全件を見に回るより、ウィンドウの縁を直接指せる。
   #
-  # 予約は取り消さない。主催者が締切を動かしたら新しい時刻を積み足すだけにする。
-  # 古い予約が残っても、Notifications::DeadlineReminder が実行時に締切を導出して
-  # 記録と突き合わせるので、空振りするか正しいリマインドを出すかのどちらかにしかならない
+  # 予約を取り消さない理由は Notifications::NotifyPhaseChangeJob と同じで、
+  # 実行時に締切を導出して記録と突き合わせるのは Notifications::DeadlineReminder
   class RemindDeadlineJob < ApplicationJob
     # どの締切を持つかは交換会が決める（Exchange::REMINDER_DEADLINES）。
     # 何時間前に知らせるかはリマインドの都合なので、引き算はこちらに置く。

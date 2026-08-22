@@ -29,11 +29,8 @@
       <% end %>
     </div>
   <% else %>
-    <%# 縦1列に積む。気になった1枚はその場で開き、読み終わったら元の位置に戻れる。
-        横に並べると、開いた1枚が幅を取ったぶん以降のカードがマスの中で
-        総入れ替えになり、読み比べの途中でどこまで見たかを見失う。
-        フェーズでも画面の幅でも並べ方は変えない。締切をまたいだ瞬間に
-        カードの大きさが変わると、読み比べていた並びを覚え直すことになる %>
+    <%# 縦1列に積む。横に並べると、開いた1枚が幅を取ったぶん以降のカードが
+        マスの中で総入れ替えになる。フェーズでも画面の幅でも並べ方は変えない %>
     <ul class="flex flex-col gap-4">
       <% books.each do |book| %>
         <% mine = book.participation_id == participation.id %>
@@ -43,28 +40,22 @@
         <% assignment = published ? book.assignment : nil %>
         <% returned = published && (assignment.nil? || assignment.returned?) %>
         <% received = published && !returned && assignment.participation_id == participation.id %>
-        <%# 希望を選ぶ間、自分の本だけは選べない。輪郭も文字も落として、
-            押せないことをボタンの有無だけに頼らず示す。
-            返却された本も同じだけ沈める。渡らなかったことを線や記号で示さない %>
+        <%# 選べない自分の本と、返却された本を同じだけ沈める。
+            渡らなかったことを線や記号で示さない %>
         <% dimmed = ((wishing || submitted) && mine) || returned %>
         <% position = positions[book.id] %>
         <%# 実行待ちの下段は、希望に入れた本だけに出す。入れなかった本にも
-            その旨を書くと、十数枚のうち大半が否定の一文を持つことになる。
-            順位が出ている本が同じ画面に並んでいるので、出ていないことが
-            そのまま入れなかったことにあたる。自分の本もここに入る（順位を持てない） %>
+            その旨を書くと、十数枚のうち大半が否定の一文を持つことになる %>
         <% submitted_wish = submitted && position %>
         <li id="<%= dom_id(book) %>" data-controller="book-card"
             class="group flex flex-col gap-4 rounded-[5px] border p-6
                    <%= book_card_tone(dimmed:, received:, mine:) %>">
-          <%# 開くと本文の折り返しが解ける。それ以外は変えず、見出しもボタンも文字の
-              大きさも動かさない。開いた瞬間に別の顔になると、読み比べていた
-              カードを見つけ直すことになる %>
+          <%# 開いても変わるのは本文の折り返しだけで、見出しもボタンも動かさない %>
           <div class="flex flex-1 flex-col gap-3.5">
             <div class="flex flex-1 flex-col gap-3.5">
-              <%# 誰が登録したかは参加者全員に見える %>
               <div>
-                <%# 題と、印とストアへのリンク。入りきらないときは題を削らず、
-                    印とリンクのほうを次の行へ落とす。日本語の題はどこでも折り返せるので、
+                <%# 入りきらないときは題を削らず、印とリンクのほうを次の行へ落とす。
+                    日本語の題はどこでも折り返せるので、
                     詰めると「海辺のキオ／スク」のように1行に数文字しか残らない %>
                 <div class="flex flex-wrap items-start gap-x-2.5 gap-y-2">
                   <h2 class="text-[18px] font-bold leading-[1.45]
@@ -73,8 +64,8 @@
                   </h2>
 
                   <div class="ml-auto flex flex-none items-center gap-2.5">
-                    <%# 自分の本は取得枠の数でもある。編集・削除の導線だけで見分けさせると、
-                        登録期間を過ぎたとたんにどれが自分の本か分からなくなる %>
+                    <%# 編集・削除の導線だけで見分けさせると、登録期間を過ぎたとたんに
+                        どれが自分の本か分からなくなる %>
                     <% if received %>
                       <span class="rounded-[3px] bg-success px-2 py-0.5 text-[11px] text-paper">
                         <%= t('book.result.recipient_badge') %>
@@ -85,9 +76,7 @@
 
                     <%# 買う先を見るのに本文を開かせる理由が無いので、閉じている間も出す。
                         下段に置くと、開くボタンが出ない本のカードでは左へ寄ってしまう。
-                        本文より上なら、下段に何が並んでも同じ場所にある。
-                        文字のリンクではなくボタンの見た目にする。この画面から出ていく唯一の導線で、
-                        下段に並ぶ文字のリンクに混ぜると読み流される %>
+                        本文より上なら、下段に何が並んでも同じ場所にある %>
                     <% if (store_url = book_store_url(book)) %>
                       <%= link_to 'ストアで見る ↗', store_url, target: '_blank', rel: 'noopener noreferrer',
                                   class: 'whitespace-nowrap rounded-[5px] border border-line-strong ' \
@@ -99,9 +88,7 @@
                 <p class="mt-1.5 text-[12px] text-ink-muted"><%= book.registrant.display_name %></p>
               </div>
 
-              <%# おすすめポイントが交換会の楽しみどころなので、朱の縦線を引いて
-                  あらすじより前に置く。閉じている間は抜粋で、開くと全文になる。
-                  折るのは CSS なので、開いてももう一度サーバーへ行かない。
+              <%# 折るのは CSS なので、開いてももう一度サーバーへ行かない。
                   見出しは閉じている間も出す。開いて初めて出てくると、
                   抜粋が何の抜粋なのかを開くまで名指せない %>
               <% if book.recommendation.present? %>
@@ -132,13 +119,10 @@
             </div>
           </div>
 
-          <%# この本に対してできることを集める段。開くボタンだけが伏せて出るので、
-              中身が全部伏せられたときは段ごと消す。空の段を残すと、
-              罫線だけが引かれた面が十数枚ぶん並ぶ %>
+          <%# 開くボタンだけが伏せて出るので、中身が全部伏せられたときは段ごと消す %>
           <footer class="mt-auto flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-line pt-3.5
                          [&:not(:has(>*:not([hidden])))]:hidden">
-            <%# 開くボタンと閉じるボタンは同じ1つ。文字だけを差し替える。
-                別々のボタンにすると、押した指の先でボタンが入れ替わる。
+            <%# 開くボタンと閉じるボタンは同じ1つで、文字だけを差し替える。
                 2つの文字は重ねて置く。長いほうの幅で場所が決まるので、
                 短い「閉じる」に変わっても隣に並ぶ操作が寄ってこない。
                 折られている本文があるかどうかは controller が測って出す %>
@@ -167,11 +151,9 @@
             <% end %>
 
             <% if submitted_wish %>
-              <%# 提出した希望はリストにも並んでいるが、十数枚のカードを読み返す側は
-                  そのつど右のリストと見比べることになる。何位で出したかをカードにも
-                  添える。出すのは自分の希望だけで、他人の順位も、その本を何人が
-                  希望したかも出さない。
-                  朱は押すものと締切の担当なので、もう動かせない順位は生成りに置く %>
+              <%# 何位で出したかをカードにも添える。無いと、十数枚を読み返す側が
+                  そのつど右のリストと見比べることになる。
+                  もう動かせない順位なので、朱ではなく生成りに置く %>
               <span class="tabular rounded-[3px] bg-fill px-3 py-1 text-[12.5px] text-ink-muted">
                 希望に入れた <%= position %>位
               </span>

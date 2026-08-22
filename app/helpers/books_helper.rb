@@ -41,7 +41,7 @@ module BooksHelper
   # 登録者が書いた URL をそのままリンクにするので、
   # http と https 以外は開かない。javascript: を書いて登録されると、
   # 読み比べに来た参加者のブラウザでそのまま走る。
-  # リンクにしないものは nil を返し、呼ぶ側に判定を書かせない
+  # リンクにしないものは nil を返す
   def book_store_url(book)
     uri = URI.parse(book.url.to_s)
 

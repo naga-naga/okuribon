@@ -46,8 +46,7 @@ class Exchange < ApplicationRecord
   }.freeze
 
   # 応答の組み立ては ApplicationController の rescue_from に集約する。
-  # 交換会を持たせるのは、拒否の画面が戻り先を出すため。コントローラの
-  # インスタンス変数から拾うと、変数を置き忘れたアクションだけ戻り先を出せなくなる
+  # 交換会は、拒否の画面が戻り先を出すために持たせる
   class PhaseViolation < StandardError
     attr_reader :exchange
 
@@ -73,8 +72,7 @@ class Exchange < ApplicationRecord
     end
   end
 
-  # 発行の規則を作成時と再発行で1つにする。別々に書くと、
-  # 長さを見直したときに片方だけ短いトークンが出続ける
+  # 発行の規則を作成時と再発行で1つにする
   def self.generate_invite_token
     SecureRandom.urlsafe_base64(INVITE_TOKEN_BYTES)
   end
@@ -124,15 +122,12 @@ class Exchange < ApplicationRecord
     :awaiting_matching
   end
 
-  # ギフトコードの可視性も結果画面の可否もここに乗る。
-  # フェーズ名との比較を呼ぶ側それぞれに書かせない。綴り間違いはエラーにならず false になり、
-  # 見えてはいけないものが見える側に倒れる
+  # ギフトコードの可視性も結果画面の可否もここに乗る
   def published?(at:)
     phase(at:) == :published
   end
 
-  # 未ログインの人も着地画面を見るため、利用者がいない場合も答える。
-  # 呼ぶ側それぞれに nil の判定を書かせない
+  # 未ログインの人も着地画面を見るため、利用者がいない場合も答える
   def participant?(user)
     return false if user.nil?
 
@@ -163,14 +158,13 @@ class Exchange < ApplicationRecord
     owner_id == user.id
   end
 
-  # ボタンの出し分けと remove_participant! の拒否を同じ規則から引く。
-  # 片方だけを直すと、押しても断られるボタンが残る
+  # ボタンの出し分けと remove_participant! の拒否を同じ規則から引く
   def removable_participant?(user, at:)
     participant?(user) && !owner?(user) && writable?(:participation, at:)
   end
 
   # 確認画面を開けるかどうかと、交換会ページに実行への導線を出すかどうかを
-  # 同じ規則から引く。片方だけを直すと、押しても断られる導線が残る。
+  # 同じ規則から引く。
   # 実行そのものの検証は Matching::Execution が行ロックの内側で持つので、これは
   # 見せてよいかの判定にあたる。
   # 実行済みで false になるのは phase が :published を返すため。
@@ -184,8 +178,7 @@ class Exchange < ApplicationRecord
   end
 
   # マッチング実行待ちが待っているのは主催者の操作で日時では動かず、
-  # 結果公開はもう終わっている。どちらも待つべき日時が無いので nil を返し、
-  # 呼ぶ側に締切を出させない
+  # 結果公開はもう終わっている。どちらも待つべき日時が無いので nil を返す
   def next_deadline(at:)
     case phase(at:)
     when :preparing then registration_starts_at
@@ -203,7 +196,7 @@ class Exchange < ApplicationRecord
   # 段の名前と日時カラムの対応をここだけに置く。
   # 結果公開が返すのは希望提出の締切で、公開そのものは主催者がマッチングを
   # 実行したときに起きる。日時では決まらないので、これは下限にあたる。
-  # fetch で落とす。そうしないと綴り間違いが nil になって気付けない
+  # 綴り間違いは fetch が落とす
   def schedule_starts_at(step)
     {
       registration: registration_starts_at,
@@ -214,7 +207,7 @@ class Exchange < ApplicationRecord
 
   # 段の名前と日時カラムの対応を schedule_starts_at と同じくここに集める。
   # 終端を含まない範囲にするのは、各期間が終了時刻を含まないため。
-  # fetch で落とす。そうしないと綴り間違いが nil になって気付けない
+  # 綴り間違いは fetch が落とす
   def period(step)
     {
       registration: registration_starts_at...registration_ends_at,
@@ -244,8 +237,7 @@ class Exchange < ApplicationRecord
   end
 
   # 入口は本人の辞退と主催者による除外の2つあるが、通す検証は同じなので、
-  # 経路ごとに分けずここへ集める。片方にだけ条件を書き足すと、辞退では
-  # 断られるものが除外では通る。
+  # 経路ごとに分けずここへ集める。
   # 参加と同じ操作名で表を引くため、抜けられる期間は参加できる期間と必ず一致する。
   # 別々に書くと、希望提出期間に入ってから抜けられて取得枠の計算が壊れる。
   # 登録した本は参加にぶら下がっているので、参加を消せば一緒に消える。
@@ -267,7 +259,6 @@ class Exchange < ApplicationRecord
   end
 
   # 書き込みを許すかどうかの判定はここだけに置く。
-  # 各コントローラがフェーズを直接見て条件を手書きすると、コントローラごとに食い違うため。
   # 表に無い操作名は fetch が落とす。そうしないと綴り間違いまで可否として答えてしまう
   def writable?(operation, at:)
     WRITABLE_PHASES.fetch(operation).include?(phase(at:))

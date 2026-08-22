@@ -1,21 +1,13 @@
 <% content_for :title, @exchange.name %>
 
-<%# 交換会ページ。上半分が状態ヘッダー、下半分が本の一覧と
-    希望リスト（6.2）。交換会を開くと本が並んでいて、その上に現在の状態が載っている。
-    状態だけを見せる交換会トップは持たない %>
-
 <%# 登録・希望の可否は1回だけ引く。カードごとに引き直すと、描いている途中で
-    締切をまたいだときに1つの画面の中で出し分けが食い違う。
-    押せる期間は writable? から引き、フェーズ名で条件を書き直さない。
-    フェーズ名で書くと、押しても断られるボタンがどこかのフェーズに残る %>
+    締切をまたいだときに1つの画面の中で出し分けが食い違う %>
 <% phase = @exchange.phase(at: requested_at) %>
 <% registering = @exchange.writable?(:book, at: requested_at) %>
 <% wishing = @exchange.writable?(:wish, at: requested_at) %>
 <% published = @exchange.published?(at: requested_at) %>
 
-<%# マッチングの実行へ送るかどうか。確認画面が開けるかどうかと同じ述語から引く。
-    ここでフェーズ名を書き直すと、確認画面が断る条件を変えたときに、
-    押しても断られる導線がこの画面に残る %>
+<%# マッチングの実行へ送るかどうか。確認画面が開けるかどうかと同じ述語から引く %>
 <% executing = @exchange.matching_executable?(current_user, at: requested_at) %>
 
 <%# 何が並ぶかはフェーズそのもので決まる。登録が始まるより前の一覧が空なのは、
@@ -52,11 +44,8 @@
                                     remaining: deadline && remaining_time_text(deadline, at: requested_at),
                                     wishes: (@wishes.size if phase == :wish), slots: my_books.size %>
 
-  <%# 状態ヘッダー。必ず一目で分かるべきは、今どのフェーズか・締切まであとどれくらいか・
-      自分は今なにをすべきかの3点。高さは、開いた直後に本のカードが1行ぶん見える
-      ところまでに抑える。全部を占めると、開くたびに状態を読ませてからでないと
-      本に辿り着けず、統合した意味が無くなる。
-      スクロールで上へ出たあとは、畳んだ帯が3点を引き取る %>
+  <%# 状態ヘッダー。高さは、開いた直後に本のカードが1行ぶん見えるところまでに抑える。
+      スクロールで上へ出たあとは、畳んだ帯が引き取る %>
   <section data-state-header-target="header"
            class="overflow-hidden rounded-[6px] border border-line bg-paper">
     <%# 交換会名と主催者名はこの画面が持つ。共通ヘッダーは画面をまたいで中身を
@@ -70,19 +59,14 @@
         </p>
       </div>
 
-      <%# 主催者管理画面へ辿り着く経路はこのページだけ（6.8）。交換会一覧は主催と
-          参加を区別せずに並べるので、そちらには置けない。
-          主催者以外には出さない。押しても 404 になるリンクは見せない %>
+      <%# 主催者管理画面へ辿り着く経路はこのページだけで、主催者にだけ出す %>
       <% if @exchange.owner?(current_user) %>
         <%= link_to '主催者管理', exchange_management_path(@exchange), class: 'text-[12.5px]' %>
       <% end %>
     </div>
 
-    <%# フェーズ帯。現在のフェーズ名だけを出すと、それが5つのうちのどこなのか、
-        次に何が来るのかが読み取れない。数週間かかるツールで、参加者が全体の
-        道のりを覚えている前提は置けない。
-        ただしフェーズは日時から導出されるもので、選べる先ではない（4.）。
-        リンクにも button にもせず、現在地以外は生成りに沈めた道のりとして描く %>
+    <%# フェーズ帯。押せるものに見せないため、リンクにも button にもせず、
+        現在地以外は生成りに沈めた道のりとして描く %>
     <ol aria-label="フェーズ" class="flex border-y border-line bg-fill">
       <% Exchange::PHASES.each do |step| %>
         <% current = step == phase %>
@@ -100,15 +84,11 @@
     </ol>
 
     <%# 左は「あなたがすること」と、その日の操作。右は締切と状況の数字。
-        フェーズが変わっても、どちらに何があるかを動かさない。数週間ぶりに開いても、
-        目の置き場所を覚え直さずに済むことを優先する。
-        結果公開だけは面ごと松葉に変わり、そのまま結果への入口になる %>
+        フェーズが変わっても、どちらに何があるかを動かさない %>
     <div class="flex flex-col gap-6 px-5 py-6 sm:px-7 lg:flex-row lg:items-start lg:gap-8
                 <%= exchange_header_style(published, :face) %>">
       <div class="min-w-0 flex-1">
-        <%# この画面でいちばん探されるのは、フェーズ名ではなく自分がすべきこと。
-            フェーズだけでは決まらないので、文言の組み立ては Exchanges::Todo に置く。
-            交換会一覧のカードも同じ headline を並べる（6.6） %>
+        <%# 文言の組み立ては Exchanges::Todo が持つ。交換会一覧も同じ headline を並べる %>
         <div class="rounded-[5px] <%= exchange_todo_style(@todo.tone, :panel) %>">
           <p class="font-mono text-[10.5px] tracking-[0.12em] <%= exchange_todo_style(@todo.tone, :eyebrow) %>">
             あなたがすること
@@ -121,20 +101,15 @@
           </p>
         </div>
 
-        <%# 導線は「あなたがすること」の直下に置き、独立した段を作らない。
-            その日の主な行き先は本の一覧で、それがこのページの下半分そのものに
-            なった。残るのは操作で、これは「すること」の一部にあたる。
-            見た目は行き先で分けない（exchange_todo_action_class） %>
+        <%# 導線は「あなたがすること」の直下に置き、独立した段を作らない %>
         <% if registering %>
           <p class="mt-4">
             <%= link_to '本を登録する', new_exchange_book_path(@exchange),
                         class: exchange_todo_action_class(@todo.tone) %>
           </p>
         <% elsif executing %>
-          <%# 主催者だけが、実行待ちに待つ以外の道を持つ。押し忘れが起きやすいので
-              （6.8）、管理画面の中だけでなくこの画面からも始められるようにする。
-              送るのは確認画面で、管理画面は経由しない。押す前に何人に何冊が渡るのかを
-              数で示すのは確認画面の仕事なので、間に管理画面を挟んでも増えるものが無い %>
+          <%# 送るのは確認画面で、管理画面は経由しない。押す前に数で示すのは
+              確認画面の仕事なので、間に管理画面を挟んでも増えるものが無い %>
           <p class="mt-4">
             <%= link_to 'マッチングを実行する', new_exchange_management_matching_path(@exchange),
                         class: exchange_todo_action_class(@todo.tone) %>
@@ -144,11 +119,9 @@
 
       <div class="border-t pt-6 lg:w-[300px] lg:flex-none lg:border-t-0 lg:border-l lg:pt-0 lg:pl-7
                   <%= exchange_header_style(published, :rule) %>">
-        <%# 締切の枠は、待つべき日時が無いフェーズでも空けない。空欄にすると、
-            締切を見落としたのか、そもそも無いのかが読み取れない %>
+        <%# 締切の枠は、待つべき日時が無いフェーズでも空けない %>
         <% if published %>
-          <%# 結果画面へ辿り着く経路はここだけ。ギフトコードを取り出せるのも
-              結果画面に限るので、渡った先をカードで見た人は上へ戻れば入れる %>
+          <%# 結果画面へ辿り着く経路はここだけ %>
           <p class="text-[11px] <%= exchange_header_style(published, :label) %>">公開</p>
           <p class="tabular mt-1 text-[15px] font-medium <%= exchange_header_style(published, :value) %>">
             <%= l @exchange.matched_at, format: :schedule %>
@@ -159,10 +132,8 @@
         <% elsif deadline %>
           <p class="text-[11px] text-ink-subtle"><%= @exchange.next_deadline_name(at: requested_at) %></p>
 
-          <%# 数週間ぶりに開く人がまず知りたいのは、日付そのものより残りの長さ。
-              ただし朱は1画面に1箇所だけにする。「あなたがすること」を朱で塗った
-              ときは、こちらを墨に落とす。2つ並ぶと、どちらに急かされているのか
-              読み取れない %>
+          <%# 朱は1画面に1箇所だけにする。「あなたがすること」を朱で塗ったときは、
+              こちらを墨に落とす %>
           <p class="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
             <span class="tabular text-[26px] font-bold leading-[1.2]
                          <%= @todo.tone == :urgent ? 'text-ink' : 'text-accent' %>">
@@ -177,8 +148,7 @@
           <p class="mt-1.5 text-[12px] leading-[1.8] text-ink-subtle">することはもうありません。</p>
         <% end %>
 
-        <%# 枠の位置は動かさず、中身はフェーズで入れ替える（6.1 の表）。
-            数字は絞り込んでも交換会全体のまま出す。ここで一緒に動かすと、
+        <%# 数字は絞り込んでも交換会全体のまま出す。ここで一緒に動かすと、
             登録がどこまで進んだのかが読めなくなる %>
         <dl aria-label="状況"
             class="tabular mt-4 flex overflow-hidden rounded-[4px] border
@@ -197,10 +167,7 @@
     </div>
   </section>
 
-  <%# 対応ストアや価格帯の目安が書かれている。読むのは本を登録する直前なので、
-      畳まずに出したままにする。畳んだ枠も1行ぶんの面を取るので節約できる高さは
-      少なく、押す直前に1クリック挟むほうが重い。
-      ただし概要は自由記述で長さに上限が無いため、状態ヘッダーの外に置く。
+  <%# 概要は自由記述で長さに上限が無いため、状態ヘッダーの外に置く。
       中に入れると、概要の長さで締切と状況の数字の位置が動く %>
   <section aria-label="概要と日程" class="mt-4 rounded-[5px] border border-line bg-paper px-5 py-4 sm:px-6">
     <% if @exchange.description.present? %>
@@ -209,9 +176,8 @@
       </p>
     <% end %>
 
-    <%# 動かせる期間だけを並べる。結果公開は主催者の実行で起きて日時では決まらない。
-        終了時刻は期間に含まれないので（4.）、範囲の右端は締切そのものにあたる。
-        書式は管理画面の日程と揃える。同じ日時が画面をまたいで別の顔で出ないようにする %>
+    <%# 終了時刻は期間に含まれないので、範囲の右端は締切そのものにあたる。
+        書式は管理画面の日程と揃える %>
     <dl class="flex flex-col gap-2 text-[12.5px] sm:flex-row sm:gap-8
                <%= 'mt-3.5 border-t border-line pt-3.5' if @exchange.description.present? %>">
       <% Exchange::PERIODS.each do |step| %>
@@ -226,9 +192,8 @@
     </dl>
   </section>
 
-  <%# 見出しはカードの並びの説明だけを持つ。フェーズごとの「次にすること」も、
-      参加人数も取得枠も、状態ヘッダーが上で出しているので繰り返さない。
-      ここに残す冊数は、いま並んでいるものが何枚なのかを一覧の直前で言うもの %>
+  <%# 見出しが出す冊数は、いま並んでいるものが何枚なのかを一覧の直前で言うもの。
+      参加人数も取得枠も状態ヘッダーが上で出しているので繰り返さない %>
   <div class="mt-8 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
     <div class="flex flex-wrap items-baseline gap-x-3 gap-y-2">
       <h2 class="text-[19px] font-bold leading-[1.45] text-ink">みんなの本</h2>
@@ -247,8 +212,7 @@
     <% end %>
   </div>
 
-  <%# 希望を選ぶ間と、提出したものを読み返す間だけ、一覧の脇に希望リストが並ぶ。
-      それ以外のフェーズでは並べる対象が無いので、一覧が幅いっぱいを使う %>
+  <%# 希望リストが並ばないフェーズでは、一覧が幅いっぱいを使う %>
   <div class="<%= 'lg:flex lg:items-start lg:gap-6' if wish_pane %>">
     <div class="min-w-0 flex-1">
       <%= render 'books/list', exchange: @exchange, books: listed,

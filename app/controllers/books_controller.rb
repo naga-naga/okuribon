@@ -7,7 +7,7 @@ class BooksController < ApplicationController
   before_action :require_login
   before_action :set_participation
 
-  # フォームを開く時点で止める。押しても通らない画面を開かせても仕方がない。
+  # フォームを開く時点で止める。
   # 一覧を交換会ページに畳んでから、このコントローラに残るのは書き込みのアクションだけに
   # なったので、除外は置かない。読むための経路が戻ってきたときに、
   # そのときだけ except: を書き足すほうが、書き忘れて検証が外れたままになることがない
@@ -63,8 +63,7 @@ class BooksController < ApplicationController
     exchange_path(@exchange)
   end
 
-  # 自分の本だけを引く。他人の本は見つからないことにする。
-  # 403 を返すと、その id の本が実在することを URL を試すだけで確かめられる
+  # 自分の本だけを引く。他人の本は 404 にして実在を伏せる
   def own_book
     @participation.books.find(params.expect(:id))
   end

@@ -7,7 +7,7 @@ module Exchanges
   # すでに登録した人では、次にすることが変わる。
   #
   # 文言の組み立てをビューに置かないのは、交換会一覧のカードが
-  # 同じ headline を並べるため。2か所で別々に組むと、片方だけが古い言い方で残る。
+  # 同じ headline を並べるため。
   class Todo
     # @param headline [String] すべきことの1行。交換会一覧はこれだけを使う
     # @param detail [String] 自分の状態にもとづく補足。トップだけが出す
@@ -84,8 +84,7 @@ module Exchanges
     # ここだけは主催者かどうかでも変わる。ほかのフェーズと違って、次に何が起きるかが
     # 見ている本人の操作にかかっているのが1人だけいる。その人にまで待てと言うと、
     # 交換会がそこで止まったままになる。
-    # 主催者かどうかは実行の可否から引く。フェーズ名で書き直すと、確認画面が
-    # 開かなくなったときに、押しても断られる導線がここに残る
+    # 主催者かどうかは実行の可否から引く
     def awaiting_matching
       options = { at: schedule(@exchange.wish_ends_at) }
 
@@ -107,7 +106,6 @@ module Exchanges
       return [slots.zero? ? :published_without_slots : :published_none, {}] if count.zero?
 
       # 贈り主の名前だけが要るので、Book を読み込まずに名前を引く。
-      # ギフトコードを、要りもしない画面へ運ばせない。
       # 同じ人から2冊届くことがあるので重複を落とす
       givers = received.joins(book: :registrant).distinct.pluck(:display_name)
 

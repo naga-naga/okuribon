@@ -22,7 +22,7 @@ module Dev
 
     # ルーティングは local のときだけ描くので、本番にこの経路は無い。
     # それでも塞ぐのは、環境の取り違えで描かれたときでも通さないため。
-    # 403 ではなく 404 を返し、経路があること自体を伏せる
+    # 404 を返し、経路があること自体を伏せる
     def block_outside_local
       head :not_found unless Rails.env.local?
     end

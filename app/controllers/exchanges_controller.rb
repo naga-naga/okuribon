@@ -60,8 +60,7 @@ class ExchangesController < ApplicationController
 
   private
 
-  # 主催者の交換会だけを引く。見つからなければ 404 になり、主催者以外には
-  # 存在そのものを伏せる。403 を返すと、招待されていない交換会の実在が漏れる
+  # 主催者の交換会だけを引く。主催者以外には 404 になり、実在を伏せる
   def owned_exchange
     current_user.owned_exchanges.find(params.expect(:id))
   end

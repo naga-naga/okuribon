@@ -48,11 +48,8 @@ module Matching
 
       Matching::Engine.new(
         participants: participations.map(&:id),
-        # Engine は識別子しか見ない。Book のレコードを読み込むと、暗号化された
-        # ギフトコードまで一緒に取得してしまうため、必要な2列だけを取り出して
-        # Matching::Book へ詰め替える。
-        # この module の中では Book と書くと Matching::Book が先に見つかるため、
-        # レコードのほうと読み違えないよう名前空間ごと書く
+        # Engine は識別子しか見ないので、Book のレコードは読み込まず、
+        # 必要な2列だけを取り出して Matching::Book へ詰め替える
         books: @exchange.books.order(:id).pluck(:id, :participation_id)
                         .map { |id, owner_id| Matching::Book.new(id:, owner_id:) },
         # 希望リストは順序が意味を持つ。association の order をあてにせず、
@@ -62,9 +59,7 @@ module Matching
       ).call
     end
 
-    # Matching::Assignment（Engine が返す構造体）と Assignment（レコード）は
-    # 名前が重なる。この module の中では前者が先に見つかるため、
-    # レコードのほうは :: を付けて名指しする
+    # Engine が返す構造体と名前が重なるため、レコードのほうは :: を付けて名指しする
     def save_assignments(result)
       result.assignments.each do |assignment|
         ::Assignment.create!(

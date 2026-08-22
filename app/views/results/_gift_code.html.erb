@@ -1,6 +1,5 @@
-<%# ギフトコードの平文を置く唯一の面。取得経路は Book#gift_code_for だけで、
-    見えない相手には nil が返る。ここで権限を判定し直さない。
-    伏せ字が既定で、開くのは明示的な操作。
+<%# ギフトコードの平文を置く唯一の面。取得は Book#gift_code_for に任せ、
+    ここで権限を判定し直さない。伏せ字が既定で、開くのは明示的な操作。
     開いた状態は保存しないので、画面を移れば必ず伏せ字に戻る %>
 <div class="flex flex-col gap-3 rounded-[5px] border border-line bg-surface-sunken px-4 py-4 sm:px-5"
      data-controller="reveal clipboard">

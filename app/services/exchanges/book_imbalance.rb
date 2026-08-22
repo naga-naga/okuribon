@@ -15,7 +15,7 @@ module Exchanges
 
     # @param participations [Enumerable] books_count に答える参加。
     #   Participation.with_counts が付ける。冊数を数えるだけの用なので、
-    #   Book そのものは読み込まない（ギフトコードを運ばないため）
+    #   Book そのものは読み込まない
     def initialize(participations)
       @participations = participations
     end

@@ -1,7 +1,6 @@
 <% content_for :title, "結果 — #{@exchange.name}" %>
 
-<%# 結果はまだ無いので 404 で返すが、行き止まりにはしない。
-    素の 404 だと、URL を間違えたのか時期が早いのかを参加者が区別できない %>
+<%# 404 で返すが、行き止まりにはしない（ResultsController#render_unpublished） %>
 <% content_for :breadcrumb do %>
   <%= breadcrumb_ancestor @exchange.name, exchange_path(@exchange) %>
 <% end %>

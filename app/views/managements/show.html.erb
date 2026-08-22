@@ -69,12 +69,11 @@
       </span>
     </div>
 
-    <%# 主催者に特権はない。書いておかないと、
-        管理画面ならコードも見られるはずだと探させることになる %>
+    <%# 書いておかないと、管理画面ならコードも見られるはずだと探させることになる %>
     <p class="mt-1.5 text-[12.5px] text-ink-subtle">ギフトコードは主催者にも見えません。</p>
 
-    <%# 除外できるのは登録の締切まで。締切を過ぎたら列ごと畳む。
-        押せる行が1つも無い列を残すと、見出しだけの空欄が並ぶ %>
+    <%# 除外できないフェーズでは列ごと畳む。押せる行が1つも無い列を残すと、
+        見出しだけの空欄が並ぶ %>
     <% exclusion_open = @exchange.writable?(:participation, at: requested_at) %>
 
     <%# 狭い画面では表が横に溢れるので、この枠の中だけ横に送れるようにする %>
@@ -102,7 +101,7 @@
                        <%= participation.books_count.zero? ? 'bg-surface-sunken' : 'bg-paper' %>">
               <td class="px-4 py-3 text-[13.5px] text-ink">
                 <%= participation.user.display_name %>
-                <%# 主催者は必ず参加者を兼ねる（6.9）。自分の行が紛れるので印を付ける %>
+                <%# 主催者の行も並ぶので、自分の行に印を付ける %>
                 <% if @exchange.owner?(participation.user) %>
                   <span class="text-[11px] text-ink-subtle">主催・あなた</span>
                 <% end %>
@@ -126,11 +125,9 @@
 
               <% if exclusion_open %>
                 <td class="px-4 py-3 text-right">
-                  <%# 主催者は必ず参加者を兼ねるので自分の行にはボタンを出さない。
-                      判定はサーバー側の Exchange#remove_participant! と同じ規則から引く。
-                      ここで条件を手書きすると、押しても断られるボタンが残る %>
+                  <%# 判定は Exchange#remove_participant! の拒否と同じ規則から引く %>
                   <% if @exchange.removable_participant?(participation.user, at: requested_at) %>
-                    <%# 外すと本もギフトコードも消える。戻せないので確認を挟む %>
+                    <%# 外すと本もギフトコードも消える。取り消せないので確認を挟む %>
                     <%= button_to t('management.participants.exclude'),
                                   exchange_management_participant_path(@exchange, participation),
                                   method: :delete,

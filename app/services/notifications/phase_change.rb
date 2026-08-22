@@ -4,10 +4,8 @@ module Notifications
   # 最後に知らせたフェーズ（notified_phase）と
   # いまのフェーズが食い違うものだけを投稿する。
   #
-  # 本文に載せるのは交換会名・フェーズ・締切・リンクだけにする。チャンネルへの
-  # 投稿は誰が読むかを選べないので、ギフトコードと個人の希望リストは載せられない。
-  # 送信サービスは渡された本文をそのまま投げるため、
-  # 混ぜないのはここの責任にあたる
+  # 送信サービスは渡された本文をそのまま投げるため、ギフトコードと
+  # 個人の希望リストを混ぜないのは、文面を組むここの責任にあたる
   class PhaseChange
     # 準備中は入っていない。交換会が作られた直後の状態で、始まりを知らせる
     # 変わり目ではない。記録だけは進めるので、登録期間に入れば1回だけ出る
@@ -70,9 +68,7 @@ module Notifications
       ].compact.join("\n")
     end
 
-    # 次の締切が無いフェーズがある。マッチング実行待ちが待っているのは主催者の
-    # 操作で日時では動かず、結果公開はもう終わっている。
-    # 行ごと落とし、締切の名前だけが残った行を出さない
+    # 締切の無いフェーズでは行ごと落とし、締切の名前だけが残った行を出さない
     def deadline_line
       deadline = @exchange.next_deadline(at: @at)
       return nil if deadline.nil?
@@ -82,10 +78,8 @@ module Notifications
                          at: I18n.l(deadline, format: :schedule))
     end
 
-    # リンクは素の URL を1行で置く。Slack は <url|text>、Discord は [text](url) と
-    # 記法が割れるが、素の URL はどちらもリンクになる。送り先ごとに文面を分けずに済む。
-    # ジョブにはリクエストが無いので、ホストは設定から採る
-    # （config/initializers/default_url_options.rb）
+    # リンクは素の URL で置く。ジョブにはリクエストが無いので、
+    # ホストは設定から採る（config/initializers/default_url_options.rb）
     def screen_url(phase)
       helpers = Rails.application.routes.url_helpers
 

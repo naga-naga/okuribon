@@ -17,8 +17,7 @@ class Book < ApplicationRecord
 
   validates :title, :gift_code, presence: true
 
-  # 伏せ字の出し分けと gift_code_for を同じ規則から引く。片方だけを直すと、
-  # 開いても中身の出ないボタンが残る
+  # 伏せ字の出し分けと gift_code_for を同じ規則から引く
   def gift_code_visible_to?(user, at:)
     return false if user.nil?
 
@@ -26,8 +25,7 @@ class Book < ApplicationRecord
   end
 
   # 平文の取得経路はここだけ。素のリーダーは private にしてあるので、
-  # 権限判定を迂回して読む道が無い。
-  # 見えない相手には nil を返す。呼ぶ側それぞれに可視性の条件を書かせない
+  # 権限判定を迂回して読む道が無い。見えない相手には nil を返す
   def gift_code_for(user, at:)
     return nil unless gift_code_visible_to?(user, at:)
 

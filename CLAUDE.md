@@ -124,6 +124,19 @@ MCP が使えずガイドを開けなかったときは、そのまま進めな�
 DB を伴う rake タスクは `RAILS_ENV` を明示する。
 `DATABASE_URL` は現在の環境の設定にしかマージされないため、`RAILS_ENV=test` を付けないと test の接続先が解決されない。
 
+### system spec
+
+`spec/system` は `bin/rspec` に含まれる。別のコマンドは無い。
+
+本物のブラウザで開くので、スタイルシートが要る。
+`app/assets/builds/tailwind.css` は追跡していないため、
+無ければ `RAILS_ENV=test bin/rails tailwindcss:build` で作る。
+無いまま走らせると、画面が 500 になって落ちる。
+
+ブラウザは Chrome を CDP で直に動かす（cuprite）。chromedriver は入れない。
+devcontainer は Playwright MCP のために入れた Chromium を `~/.cache/ms-playwright` から拾い、
+CI は `ubuntu-latest` 同梱の `google-chrome` を PATH から拾う。
+
 ## issue とブランチ
 
 タスクは GitHub issue で管理する。ラベルは2種類。

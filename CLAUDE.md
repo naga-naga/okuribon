@@ -47,7 +47,8 @@ spec.md に書くのは規範だけで、判断の経緯と却下した代替案
 - ギフトコードは Active Record Encryption で暗号化する
 - 非同期処理と定期実行は Solid Queue（`SOLID_QUEUE_IN_PUMA=true`）
 - 通知は Discord / Slack の Webhook。個人宛の通知はない
-- デプロイは Kamal
+- デプロイは Kamal。本番と、同じ構成のステージングの2つを持つ。
+  環境ごとの設定・credentials・環境変数は `docs/environments.md`
 
 ## ビジュアルガイド
 

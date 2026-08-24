@@ -2033,8 +2033,16 @@ RSpec.describe ExchangesController do
   end
 
   describe '#create' do
+    # 送る日時は絶対値なので、開く時刻を固定しないと登録の締切を過ぎて作れなくなる。
+    # travel_to は入れ子にできないため、自前の時刻を持つ例はこの入口を通さない
+    let!(:now) { '2026-08-01T10:00:00+09:00' }
+
+    def create_exchange(params = attributes)
+      travel_to(now) { post '/exchanges', params: { exchange: params } }
+    end
+
     it '交換会ができる' do
-      expect { post '/exchanges', params: { exchange: attributes } }.to change(Exchange, :count).by(1)
+      expect { create_exchange }.to change(Exchange, :count).by(1)
 
       expect(Exchange.last).to have_attributes(
         name: '夏の交換会',
@@ -2044,7 +2052,7 @@ RSpec.describe ExchangesController do
     end
 
     it '作成した人が主催者になる' do
-      post '/exchanges', params: { exchange: attributes }
+      create_exchange
 
       expect(Exchange.last.owner).to eq(user)
     end
@@ -2053,7 +2061,7 @@ RSpec.describe ExchangesController do
     it '主催者を送りつけても無視する' do
       other = create(:user)
 
-      post '/exchanges', params: { exchange: attributes.merge(owner_id: other.id) }
+      create_exchange(attributes.merge(owner_id: other.id))
 
       expect(Exchange.last.owner).to eq(user)
     end
@@ -2062,7 +2070,7 @@ RSpec.describe ExchangesController do
     # 読み出しと期待値が同じ Time.zone に依存し、設定を UTC に変えても
     # 両辺が揃って動いて通ってしまう。JST であることを固定できない
     it '日時を JST として受け取る' do
-      post '/exchanges', params: { exchange: attributes }
+      create_exchange
 
       expect(Exchange.last.registration_starts_at.rfc3339).to eq('2026-08-10T10:00:00+09:00')
     end
@@ -2070,7 +2078,7 @@ RSpec.describe ExchangesController do
     # 参加していない人には交換会が見えない。主催者だけが参加者でないまま残ると、
     # どの画面も「主催者が来たらどうするか」を個別に答えることになる
     it '主催者の参加も同時にできる' do
-      expect { post '/exchanges', params: { exchange: attributes } }
+      expect { create_exchange }
         .to change(Participation, :count).by(1)
 
       expect(Exchange.last.participant?(user)).to be(true)
@@ -2079,13 +2087,13 @@ RSpec.describe ExchangesController do
     # 作った本人がそのまま参加者として入れる。編集画面は設定を直す画面で、
     # 作り終えた人を最初に置く場所ではない
     it '交換会トップへ送る' do
-      post '/exchanges', params: { exchange: attributes }
+      create_exchange
 
       expect(response).to redirect_to(exchange_path(Exchange.last))
     end
 
     it '作成できたことを知らせる' do
-      post '/exchanges', params: { exchange: attributes }
+      create_exchange
 
       follow_redirect!
 
@@ -2095,7 +2103,7 @@ RSpec.describe ExchangesController do
     it 'ログインしていなければ作成できない' do
       log_out
 
-      expect { post '/exchanges', params: { exchange: attributes } }.not_to change(Exchange, :count)
+      expect { create_exchange }.not_to change(Exchange, :count)
 
       expect(response).to have_http_status(:found)
       expect(response).to redirect_to(login_path)
@@ -2105,7 +2113,7 @@ RSpec.describe ExchangesController do
       it '登録の締切が開始より前だと作られない' do
         invalid = attributes.merge(registration_ends_at: '2026-08-01T10:00')
 
-        expect { post '/exchanges', params: { exchange: invalid } }.not_to change(Exchange, :count)
+        expect { create_exchange(invalid) }.not_to change(Exchange, :count)
 
         expect(response).to have_http_status(:unprocessable_content)
         expect(response.body).to include('登録期間の終了日時は開始日時より後にしてください')
@@ -2115,13 +2123,13 @@ RSpec.describe ExchangesController do
       it '希望提出の締切が登録の締切と同時刻だと作られない' do
         invalid = attributes.merge(wish_ends_at: attributes[:registration_ends_at])
 
-        expect { post '/exchanges', params: { exchange: invalid } }.not_to change(Exchange, :count)
+        expect { create_exchange(invalid) }.not_to change(Exchange, :count)
 
         expect(response.body).to include('希望提出期間の終了日時は開始日時より後にしてください')
       end
 
       it '交換会名が空だと作られない' do
-        expect { post '/exchanges', params: { exchange: attributes.merge(name: '') } }
+        expect { create_exchange(attributes.merge(name: '')) }
           .not_to change(Exchange, :count)
 
         expect(response.body).to include('交換会名を入力してください')
@@ -2129,7 +2137,7 @@ RSpec.describe ExchangesController do
 
       # 差し戻したフォームに入力が残らないと、全部打ち直しになる
       it '差し戻したフォームに入力が残る' do
-        post '/exchanges', params: { exchange: attributes.merge(registration_ends_at: '2026-08-01T10:00') }
+        create_exchange(attributes.merge(registration_ends_at: '2026-08-01T10:00'))
 
         expect(response.body).to include('夏の交換会')
       end

@@ -14,6 +14,15 @@ RSpec.describe InvitationsController do
   end
 
   describe '#show' do
+    # 交換会の日時は絶対値なので、開く時刻を固定しないと登録期間が過ぎ、
+    # 参加できる前提で書いた例が時期によって落ちる。
+    # travel_to は入れ子にできないため、自前の時刻を持つ例はこの入口を通さない
+    let!(:during_registration) { '2026-08-20T10:00:00+09:00' }
+
+    def open_invitation
+      travel_to(during_registration) { get invitation_path(exchange.invite_token) }
+    end
+
     # 存在しない交換会と、招待されていない交換会を見分けられないようにする
     it '無効なトークンでは見つからない' do
       get invitation_path('deadbeefdeadbeef')
@@ -23,7 +32,7 @@ RSpec.describe InvitationsController do
 
     # 招待された人はまだログインしていない。何の集まりかを見てから決められるようにする
     describe '交換会の概要' do
-      before { get invitation_path(exchange.invite_token) }
+      before { open_invitation }
 
       it '未ログインでも開ける' do
         expect(response).to have_http_status(:ok)
@@ -49,7 +58,7 @@ RSpec.describe InvitationsController do
       it '参加者数が出る' do
         create_list(:participation, 2, exchange:)
 
-        get invitation_path(exchange.invite_token)
+        open_invitation
 
         expect(response.body).to include('3人')
       end
@@ -68,7 +77,7 @@ RSpec.describe InvitationsController do
       before do
         log_in_as(create(:user))
 
-        get invitation_path(exchange.invite_token)
+        open_invitation
       end
 
       it '「参加する」で参加できる' do
@@ -80,7 +89,7 @@ RSpec.describe InvitationsController do
     end
 
     describe '未ログインのとき' do
-      before { get invitation_path(exchange.invite_token) }
+      before { open_invitation }
 
       # 押した先が Google なので、押す前にそう分かるようにする
       it '「ログインして参加する」で参加の意図を伝える' do
@@ -106,7 +115,7 @@ RSpec.describe InvitationsController do
         create(:participation, exchange:, user: participant)
         log_in_as(participant)
 
-        get invitation_path(exchange.invite_token)
+        open_invitation
       end
 
       it '参加済みであることが分かる' do
@@ -145,7 +154,7 @@ RSpec.describe InvitationsController do
         exchange.join!(owner, at: '2026-08-15T10:00:00+09:00'.in_time_zone)
         log_in_as(owner)
 
-        get invitation_path(exchange.invite_token)
+        open_invitation
       end
 
       it '参加済みとして扱う' do

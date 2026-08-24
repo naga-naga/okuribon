@@ -119,3 +119,24 @@ production:
     <<: *primary_production
     database: okuribon_production_cable
     migrations_paths: db/cable_migrate
+
+# 名前を production と分けるのは、接続先を取り違えたときに
+# staging の db:prepare が本番のデータを触るのを防ぐため
+staging:
+  primary: &primary_staging
+    <<: *default
+    database: okuribon_staging
+    username: okuribon
+    password: <%= ENV["OKURIBON_DATABASE_PASSWORD"] %>
+  cache:
+    <<: *primary_staging
+    database: okuribon_staging_cache
+    migrations_paths: db/cache_migrate
+  queue:
+    <<: *primary_staging
+    database: okuribon_staging_queue
+    migrations_paths: db/queue_migrate
+  cable:
+    <<: *primary_staging
+    database: okuribon_staging_cable
+    migrations_paths: db/cable_migrate

@@ -37,3 +37,6 @@ development:
 
 production:
   <<: *shared
+
+staging:
+  <<: *shared

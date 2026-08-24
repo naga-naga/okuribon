@@ -35,9 +35,13 @@
 # Ignore key files for decrypting credentials and more.
 /config/*.key
 
+# 上の行は1階層下を拾わない
+/config/credentials/*.key
+
 
 /app/assets/builds/*
 !/app/assets/builds/.keep
 
 # Claude Code の個人設定。共有する設定は settings.json に書く
 /.claude/settings.local.json
+

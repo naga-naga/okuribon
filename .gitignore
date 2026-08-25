@@ -35,7 +35,7 @@
 # Ignore key files for decrypting credentials and more.
 /config/*.key
 
-# 上の行は1階層下を拾わない
+# /config/*.key は1階層下に当たらない
 /config/credentials/*.key
 
 

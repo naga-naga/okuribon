@@ -44,4 +44,3 @@
 
 # Claude Code の個人設定。共有する設定は settings.json に書く
 /.claude/settings.local.json
-

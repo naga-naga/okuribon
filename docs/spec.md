@@ -871,6 +871,9 @@ project_id は `d4c7c96c-beb2-4f1b-9128-5326c3412668`。
   （`docs/decisions/0021`、置き場と環境変数の一覧は `docs/environments.md`）
 - 環境が手元かデプロイ先かの判定は `Rails.env.local?` で見る。`production?` で見ると
   ステージングが手元の側へ落ち、裏口ログインや通知のリンクの出し分けが片方だけ入れ替わる
+- SSL はデプロイ先では kamal-proxy が終端し、コンテナへは http で届く。
+  proxy の `ssl` を有効にすると `X-Forwarded-Proto` も渡らないため、
+  アプリ側は `assume_ssl` で暗号化されている前提を置く
 - spec が本物の Webhook を叩かないよう、登録していない外部通信は webmock ですべて落とす。
   送信サービスを差し替えられるようにするだけでは、そこを通らない経路が残る
 

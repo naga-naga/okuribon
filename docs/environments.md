@@ -66,6 +66,7 @@ Google Cloud console の「承認済みのリダイレクト URI」に、環境�
 | `RAILS_ENV` | `production` / `staging` | 読む設定と credentials を決める |
 | `RAILS_MASTER_KEY` | その環境の `.key` の中身 | credentials の復号 |
 | `APP_HOST` | 各環境のホスト名 | 通知に載せるリンクのホスト |
+| `DB_HOST` | `okuribon-db-production` / `okuribon-db-staging` | PostgreSQL のコンテナ名 |
 | `OKURIBON_DATABASE_PASSWORD` | DB の `okuribon` のパスワード | PostgreSQL への接続 |
 | `SOLID_QUEUE_IN_PUMA` | `true` | Solid Queue を Puma の中で動かす |
 
@@ -75,6 +76,10 @@ Google Cloud console の「承認済みのリダイレクト URI」に、環境�
 `APP_HOST` に既定値は無い。未設定でも起動は通る（Docker のビルド中に
 `assets:precompile` が production で走るため）が、通知の文面を組む段でジョブが失敗する。
 
+`DB_HOST` はアクセサリのコンテナ名を指す。アプリと PostgreSQL は同じ `kamal` の
+ネットワークにいるので、名前で引ける。未設定だとアプリのコンテナの中の
+Unix ソケットを見に行き、起動時の `db:prepare` が接続に失敗する。
+
 任意のもの。既定のままでよい。
 
 | 変数 | 既定 | 何に使うか |
@@ -83,6 +88,30 @@ Google Cloud console の「承認済みのリダイレクト URI」に、環境�
 | `RAILS_MAX_THREADS` | 3 | Puma のスレッド数と DB の接続数 |
 | `WEB_CONCURRENCY` | 1 | Puma のワーカー数 |
 | `JOB_CONCURRENCY` | 1 | Solid Queue のワーカー数 |
+
+## Kamal へ渡す秘密
+
+`.kamal/` に置く。値そのものは書かず、取り出すコマンドか環境変数の参照だけを書く。
+どのファイルも追跡している。
+
+| ファイル | 読まれるとき | 中身 |
+| --- | --- | --- |
+| `.kamal/secrets-common` | 常に | レジストリの認証 |
+| `.kamal/secrets.production` | `-d production` | 本番の `RAILS_MASTER_KEY` と DB のパスワード |
+| `.kamal/secrets.staging` | `-d staging` | ステージングの同じもの |
+
+**destination を付けると `.kamal/secrets` は読まれない。** Kamal が探すのは
+`secrets-common` と `secrets.<destination>` の2つになる。`config/deploy.yml` の
+`require_destination` が destination の無い実行を弾いているので、
+`.kamal/secrets` は置いていない。
+
+`OKURIBON_DATABASE_PASSWORD` はシェルの環境変数から入る。パスワードマネージャから
+取り出して export してからデプロイする。未設定でも Kamal は止まらず、
+PostgreSQL のコンテナが初期化に失敗するところまで進む。
+
+レジストリは ECR で、`aws ecr get-login-password` が返すトークンを使う。
+12時間で切れるので、デプロイのたびに取り直している。`aws` のプロファイルは
+デプロイする手元の端末が持つ。
 
 ## データベース
 
@@ -98,6 +127,14 @@ Google Cloud console の「承認済みのリダイレクト URI」に、環境�
 
 ホストは分かれるが、名前も分けてある。名前が同じだと、接続先を取り違えたときに
 ステージングの `db:prepare` が本番のデータを触る。
+
+4つとも PostgreSQL 17 のアクセサリの中にある。アプリと同じホストで動き、
+データは `$PWD/okuribon-db-<環境>/data` に残る。デプロイでは作り直さない
+（`kamal accessory` が別に扱う）。ポートは公開していないので、外から触るには
+`bin/kamal dbc -d <環境>` か、ホストで `docker exec` を通す。
+
+作成は起動時の `db:prepare` に任せている。アクセサリは `POSTGRES_USER` と同じ名前の
+データベースだけを作り、アプリが使う4つはそこに含まれない。
 
 ## タイムゾーン
 

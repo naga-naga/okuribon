@@ -1,0 +1,20 @@
+# ホストとドメインは EC2 を用意するまでの仮の値。予約済みの範囲（TEST-NET-3 と
+# example.com）に採ってあるので、置き換え忘れたまま流しても実在の宛先には向かない
+servers:
+  web:
+    - &web_host 203.0.113.20
+
+proxy:
+  host: &domain staging.okuribon.example.com
+
+env:
+  clear:
+    # 漏れると、ステージングのホストが本番の credentials とデータベースを読みに行く
+    RAILS_ENV: staging
+    APP_HOST: *domain
+    DB_HOST: okuribon-db-staging
+
+accessories:
+  db:
+    service: okuribon-db-staging
+    host: *web_host

@@ -1,0 +1,20 @@
+# ホストとドメインは EC2 を用意するまでの仮の値。予約済みの範囲（TEST-NET-3 と
+# example.com）に採ってあるので、置き換え忘れたまま流しても実在の宛先には向かない
+servers:
+  web:
+    - &web_host 203.0.113.10
+
+proxy:
+  host: &domain okuribon.example.com
+
+env:
+  clear:
+    # Dockerfile が焼き込んでいる値と同じだが、ステージングと形を揃えて明示する
+    RAILS_ENV: production
+    APP_HOST: *domain
+    DB_HOST: okuribon-db-production
+
+accessories:
+  db:
+    service: okuribon-db-production
+    host: *web_host

@@ -871,6 +871,14 @@ project_id は `d4c7c96c-beb2-4f1b-9128-5326c3412668`。
   （`docs/decisions/0021`、置き場と環境変数の一覧は `docs/environments.md`）
 - 環境が手元かデプロイ先かの判定は `Rails.env.local?` で見る。`production?` で見ると
   ステージングが手元の側へ落ち、裏口ログインや通知のリンクの出し分けが片方だけ入れ替わる
+- 2つの環境は Kamal の destination で分ける。共通の設定は `config/deploy.yml` が持ち、
+  ホスト・ドメイン・`RAILS_ENV`・データベースのコンテナ名だけを destination のファイルに置く。
+  destination を付けない実行は弾く。Kamal が `.kamal/secrets.<destination>` を読むのは
+  destination が付いたときに限り、付けないと `.kamal/secrets` へ落ちるため、
+  どちらの環境の鍵を配ったのか分からないまま起動しうる
+- コンテナの名前は環境ごとに分ける。アプリには Kamal が destination を入れるが、
+  アクセサリには入らないので、データベースは名前を明示する。2つの環境を1台に載せても
+  取り合わない（`docs/decisions/0022`）
 - SSL はデプロイ先では kamal-proxy が終端し、コンテナへは http で届く。
   proxy の `ssl` を有効にすると `X-Forwarded-Proto` も渡らないため、
   アプリ側は `assume_ssl` で暗号化されている前提を置く

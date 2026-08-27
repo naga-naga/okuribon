@@ -8,6 +8,10 @@ services:
     volumes:
       - ..:/workspaces/okuribon:cached
       - bundle:/bundle
+      # イメージをボリュームに置く。コンテナを作り直すたびに pull し直さずに済む
+      - docker:/var/lib/docker
+    # docker-in-docker が中で dockerd を起こすために要る
+    privileged: true
     # devcontainer 側がプロセスを管理するので、居座るだけでよい
     command: sleep infinity
     environment:
@@ -41,3 +45,4 @@ services:
 volumes:
   postgres:
   bundle:
+  docker:

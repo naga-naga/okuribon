@@ -49,7 +49,7 @@ Claude Code をホストから隔離して動かすための開発環境。
 | Kamal | イメージのビルド | `deploy`、`rollback` |
 | AWS CLI | 無し | すべて |
 
-`terraform init` が認証を要るのは、state を S3 バックエンドに置いているため。
+`terraform init` に認証が要るのは、state を S3 バックエンドに置いているため。
 `kamal deploy` にはレジストリへの push と本番の `RAILS_MASTER_KEY` が要る。
 どちらもここでは通らない。**書くのはコンテナの中、配るのはホストから**になる。
 

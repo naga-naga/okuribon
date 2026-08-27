@@ -38,6 +38,29 @@ Claude Code をホストから隔離して動かすための開発環境。
   Claude Code からも読める
 - GitHub へのアクセスが必要なら、リポジトリに限定した短命のトークンを使う
 
+## デプロイの道具
+
+`docker` / `aws` / `terraform` が入っている。**認証情報はこのコンテナに置かない。**
+上の「守るべきこと」がそのまま当たる。置けば Claude Code からも読める。
+
+| | 中で通るもの | ホストで打つもの |
+|---|---|---|
+| Terraform | `fmt`、`validate`（`init -backend=false` の後） | `init`、`plan`、`apply` |
+| Kamal | イメージのビルド | `deploy`、`rollback` |
+| AWS CLI | 無し | すべて |
+
+`terraform init` が認証を要るのは、state を S3 バックエンドに置いているため。
+`kamal deploy` にはレジストリへの push と本番の `RAILS_MASTER_KEY` が要る。
+どちらもここでは通らない。**書くのはコンテナの中、配るのはホストから**になる。
+
+Docker を入れてあるのは、`Dockerfile` が通るかを手元で確かめるため。
+ビルドだけなら認証は要らない。
+
+ホストの Docker ソケットは渡していない。渡すと、コンテナから
+`docker run -v /:/host` でホストの全ファイルに手が届いてしまい、
+「何から守られているか」が成り立たなくなる。代わりに docker-in-docker を使い、
+コンテナの中に閉じた dockerd を持つ。`compose.yaml` の `privileged` はこのため。
+
 ## 権限プロンプトについて
 
 通信制限がないため、`--dangerously-skip-permissions` は常用しないこと。
@@ -52,6 +75,7 @@ Claude Code をホストから隔離して動かすための開発環境。
 | Claude Code の認証・設定・履歴 | 名前付きボリューム（プロジェクトごとに分離） |
 | インストールした gem | 名前付きボリューム `okuribon_bundle` |
 | Postgres のデータ | 名前付きボリューム `okuribon_postgres` |
+| Docker のイメージ | 名前付きボリューム `okuribon_docker` |
 | ソースコード | ホスト側のリポジトリ（bind mount） |
 
 コンテナを作り直しても再ログインは不要。完全に消したい場合は該当のボリュームを削除する。

@@ -102,9 +102,8 @@ RSpec.describe Exchanges::Creation do
   # 交換会だけが残ると、主催者が参加者でない交換会ができてしまう。
   # 参加の作成は組み立てた交換会に対して呼ぶので、差し替えられる場所がここしかない
   it '参加を作れなければ交換会も残らない' do
-    # rubocop:disable RSpec/AnyInstance
+    # rubocop:disable-next RSpec/AnyInstance
     allow_any_instance_of(Exchange).to receive(:join!).and_raise(ActiveRecord::StatementInvalid)
-    # rubocop:enable RSpec/AnyInstance
 
     expect { create_exchange }.to raise_error(ActiveRecord::StatementInvalid)
     expect(Exchange.count).to eq(0)

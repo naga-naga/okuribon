@@ -2247,7 +2247,13 @@ RSpec.describe ExchangesController do
 
     # 主催者は各期間の日時を後から変更できる
     it '日程を変更できる' do
-      patch exchange_path(exchange), params: { exchange: { wish_ends_at: '2026-10-01T10:00' } }
+      exchange.update!(registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
+                       registration_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
+                       wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone)
+
+      travel_to('2026-07-25T00:00:00+09:00'.in_time_zone) do
+        patch exchange_path(exchange), params: { exchange: { wish_ends_at: '2026-10-01T10:00' } }
+      end
 
       expect(exchange.reload.wish_ends_at.rfc3339).to eq('2026-10-01T10:00:00+09:00')
     end
@@ -2305,7 +2311,12 @@ RSpec.describe ExchangesController do
     context 'マッチングの実行後' do
       let!(:at) { '2026-08-20T00:00:00+09:00'.in_time_zone }
 
-      before { exchange.update!(matched_at: at) }
+      before do
+        exchange.update!(registration_starts_at: '2026-08-01T00:00:00+09:00'.in_time_zone,
+                         registration_ends_at: '2026-08-08T00:00:00+09:00'.in_time_zone,
+                         wish_ends_at: '2026-08-15T00:00:00+09:00'.in_time_zone,
+                         matched_at: at)
+      end
 
       it '日程を変更できる' do
         travel_to(at) do

@@ -18,8 +18,9 @@
     "source=claude-config-${devcontainerId},target=/home/vscode/.claude,type=volume",
     "source=${localEnv:HOME}/.claude/CLAUDE.md,target=/home/vscode/.claude/CLAUDE.md,type=bind",
     "source=${localEnv:HOME}/.claude/output-styles,target=/home/vscode/.claude/output-styles,type=bind",
-    // コミットの author を引き継ぐために読むだけ。~/.gitconfig には被せない
-    "source=${localEnv:HOME}/.gitconfig,target=/tmp/host-gitconfig,type=bind,readonly"
+    // コミットの author を引き継ぐために読むだけ。~/.gitconfig には被せない。
+    // /tmp の下には置けない。docker-in-docker が起動時に /tmp へ tmpfs を被せて隠す
+    "source=${localEnv:HOME}/.gitconfig,target=/usr/local/etc/host-gitconfig,type=bind,readonly"
   ],
 
   // GH_TOKEN は compose.yaml が .devcontainer/.env から読む

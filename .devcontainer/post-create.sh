@@ -26,7 +26,7 @@ git config --global --add credential."https://github.com".helper "!gh auth git-c
 # ~/.gitconfig にそのまま被せない理由は、上で設定した insteadOf が
 # ホスト側へ流れ込み、ホストの SSH での push を壊してしまうため。
 # 読み取り専用でマウントしたものから、必要な値だけを取り出す
-host_gitconfig=/tmp/host-gitconfig
+host_gitconfig=/usr/local/etc/host-gitconfig
 if [ -f "$host_gitconfig" ]; then
     host_user_name=$(git config --file "$host_gitconfig" --get user.name || true)
     host_user_email=$(git config --file "$host_gitconfig" --get user.email || true)
